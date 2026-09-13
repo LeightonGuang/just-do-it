@@ -1,47 +1,37 @@
-# Astro Starter Kit: Basics
+# Just Do It
 
-```sh
-npm create astro@latest -- --template basics
-```
+## Migrate database
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+1. `npm run drizzle:generate`
+2. `npm run migrate:local`
 
-## 🚀 Project Structure
+## Generate database migrations
 
-Inside of your Astro project, you'll see the following folders and files:
+After updating the Drizzle schema, generate a migration:
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
+`npm run drizzle:generate`
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+### Apply migrations locally
 
-## 🧞 Commands
+`npm run migrate:local`
 
-All commands are run from the root of the project, from a terminal:
+### Start the development server
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+`npm run dev`
 
-## 👀 Want to learn more?
+The application will be available at the local Astro development URL.
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-# just-do-it
+## Available Scripts
+
+### Script Description
+
+| Script                     | Description                        |
+| -------------------------- | ---------------------------------- |
+| `npm run dev`              | Start the Astro development server |
+| `npm run build`            | Build the application              |
+| `npm run preview`          | Preview the production build       |
+| `npm run astro`            | Run Astro CLI commands             |
+| `npm run generate-types`   | Generate Cloudflare Worker types   |
+| `npm run drizzle:generate` | Generate Drizzle migrations        |
+| `npm run migrate:local`    | Apply migrations to local D1       |
+| `npm run migrate:remote`   | Apply migrations to remote D1      |
