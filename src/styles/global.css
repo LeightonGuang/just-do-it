@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Sono", monospace;
+}
+
+button,
+a {
+  cursor: pointer;
+}
+
+@font-face {
+  font-family: "Sono";
+  font-style: normal;
+  font-weight: 200 800;
+  src: url("/fonts/Sono/Sono-VariableFont_MONO\,wght.ttf");
+}
