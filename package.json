@@ -10,7 +10,12 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "drizzle:generate": "drizzle-kit generate",
+    "migrate:local": "wrangler d1 migrations apply just-do-it --local",
+    "migrate:remote": "wrangler d1 migrations apply just-do-it --remote",
+    "db:clean": "powershell -Command \"if (Test-Path .wrangler) { Remove-Item -Recurse -Force .wrangler }; if (Test-Path drizzle/migrations) { Remove-Item -Recurse -Force drizzle/migrations }\"",
+    "db:reset": "npm run db:clean && npm run drizzle:generate && npm run migrate:local"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.1",
@@ -23,6 +28,7 @@
     "drizzle-orm": "^1.0.0-rc.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
     "wrangler": "^4.131.1"
   },
