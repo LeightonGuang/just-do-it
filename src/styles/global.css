@@ -19,3 +19,13 @@ button {
   font-weight: 200 800;
   src: url("/fonts/Sono/Sono-VariableFont_MONO\,wght.ttf");
 }
+
+:root {
+  --color-primary: oklch(67.336% 0.18442 37.113);
+  --color-background: oklch(89.496% 0.03332 83.691);
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-background: var(--color-background);
+}
