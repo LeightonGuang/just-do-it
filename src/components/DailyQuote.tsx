@@ -48,7 +48,7 @@ const DailyQuote = () => {
   }, []);
 
   return (
-    <div className="flex h-max w-max items-center gap-2 border">
+    <div className="flex h-max w-max items-center gap-2">
       <img className="size-10 rounded-full" src={quote?.i} alt={quote?.a} />
 
       <div className="flex flex-col">
