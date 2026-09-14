@@ -1,9 +1,9 @@
-import DailyQuote from "./DailyQuote";
+import Dashboard from "./Dashboard";
 
 const HomePage = () => {
   return (
     <main className="h-dvh w-dvw">
-      <DailyQuote />
+      <Dashboard />
     </main>
   );
 };
