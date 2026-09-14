@@ -8,8 +8,8 @@ body {
   font-family: "Sono", monospace;
 }
 
-button,
-a {
+a,
+button {
   cursor: pointer;
 }
 
