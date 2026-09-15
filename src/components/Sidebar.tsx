@@ -7,13 +7,38 @@ import ProjectsSidebar from "./ProjectsSidebar";
 const MIN_WIDTH = 150;
 const MAX_WIDTH = 300;
 const SNAP_THRESHOLD = 100;
+const DEFAULT_WIDTH = 256;
+const STORAGE_KEY = "sidebar-width";
 
 const Sidebar = ({ className }: { className?: string }) => {
-  const [width, setWidth] = useState(256);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const isDragging = useRef(false);
   const startX = useRef(0);
-  const startWidth = useRef(256);
+  const startWidth = useRef(DEFAULT_WIDTH);
+
+  // Load saved width from localStorage
+  useEffect(() => {
+    const savedWidth = localStorage.getItem(STORAGE_KEY);
+
+    if (savedWidth !== null) {
+      const parsedWidth = Number(savedWidth);
+
+      if (!Number.isNaN(parsedWidth)) {
+        setWidth(parsedWidth);
+      }
+    }
+
+    setIsHydrated(true);
+  }, []);
+
+  // Save width whenever it changes
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    localStorage.setItem(STORAGE_KEY, String(width));
+  }, [width, isHydrated]);
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
@@ -81,7 +106,10 @@ const Sidebar = ({ className }: { className?: string }) => {
 
   return (
     <aside
-      style={{ width: `${width}px` }}
+      style={{
+        width: `${width}px`,
+        visibility: isHydrated ? "visible" : "hidden",
+      }}
       className={twMerge(
         "relative h-dvh shrink-0 border-r border-border bg-sidebar",
         className,
@@ -112,21 +140,19 @@ const Sidebar = ({ className }: { className?: string }) => {
         className={twMerge(
           "fixed top-1/2 z-50 -translate-y-1/2 hover:cursor-grab active:cursor-grabbing",
 
-          !isCollapsed && "hover:bg-retro-brown/30 h-dvh w-3 -translate-y-1/2",
+          !isCollapsed && "h-dvh w-2 hover:bg-text/20",
 
           isCollapsed && [
             "flex h-16 w-5 items-center justify-center",
             "rounded-r-md",
             "border border-l-0 border-border",
-            "bg-retro-brown/10",
+            "bg-text/10",
             "shadow-sm",
-            "hover:bg-retro-brown/20",
+            "hover:bg-text/20",
           ],
         )}
       >
-        {isCollapsed && (
-          <div className="bg-retro-brown/60 h-8 w-1 rounded-full" />
-        )}
+        {isCollapsed && <div className="h-8 w-1 rounded-full bg-text/60" />}
       </div>
     </aside>
   );
