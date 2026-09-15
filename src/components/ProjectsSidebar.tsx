@@ -1,10 +1,6 @@
 import { twMerge } from "tailwind-merge";
 
-const projects = [
-  { id: 1, name: "DV Dental" },
-  { id: 2, name: "Saude Brasil" },
-  { id: 3, name: "Gym" },
-];
+import { projects, type Project } from "../../public/data/projects";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
   return (
@@ -28,6 +24,14 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
 
 export default ProjectsSidebar;
 
-const ProjectSidebarItem = ({ project }: { project: { name: string } }) => {
-  return <div className="text-xs">{project.name}</div>;
+const ProjectSidebarItem = ({ project }: { project: Project }) => {
+  return (
+    <a
+      style={{ color: project.colour }}
+      href={`/?project_id=${project.id}`}
+      className="bg-card p-1 text-xs hover:bg-card-hover"
+    >
+      {project.name}
+    </a>
+  );
 };

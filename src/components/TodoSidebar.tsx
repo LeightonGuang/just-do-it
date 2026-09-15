@@ -1,31 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
-const todos = [
-  {
-    id: 1,
-    name: "Work on Todo app",
-    project_id: 2,
-    project_colour: "#006b6b",
-    due_at: "2026-09-16T09:00:00",
-  },
-  {
-    id: 2,
-    name: "Groceries",
-    project_id: 1,
-    project_colour: "#ff6b6b",
-    due_at: "2026-09-16T18:30:00",
-  },
-  {
-    id: 3,
-    name: "Gym",
-    project_id: 1,
-    project_colour: "#ff6b6b",
-    due_at: "2026-09-17T07:30:00",
-  },
-];
-
-type Todo = (typeof todos)[number];
+import { dos, type Dos } from "../../public/data/dos";
 
 type Countdown = {
   days: number;
@@ -46,7 +22,7 @@ const TodoSidebar = ({ className }: { className?: string }) => {
       <h2 className="text-sm">Todos</h2>
 
       <div className="grid grid-cols-[minmax(0,1fr)_3ch_1ch_1ch_2ch_1ch_2ch] gap-y-1">
-        {todos.map((todo) => (
+        {dos.map((todo) => (
           <TodoSidebarItem key={todo.id} todo={todo} />
         ))}
       </div>
@@ -56,7 +32,7 @@ const TodoSidebar = ({ className }: { className?: string }) => {
 
 export default TodoSidebar;
 
-const TodoSidebarItem = ({ todo }: { todo: Todo }) => {
+const TodoSidebarItem = ({ todo }: { todo: Dos }) => {
   const [countdown, setCountdown] = useState<Countdown>(() =>
     getCountdown(todo.due_at),
   );
@@ -72,7 +48,7 @@ const TodoSidebarItem = ({ todo }: { todo: Todo }) => {
   return (
     <a
       href={`?project_id=${todo.project_id}&dos_id=${todo.id}`}
-      className="col-span-7 grid grid-cols-subgrid items-center rounded bg-card p-0.5 hover:bg-card-hover"
+      className="col-span-7 grid grid-cols-subgrid items-center bg-card p-1 hover:bg-card-hover"
     >
       {/* Todo */}
       <div className="flex min-w-0 items-center gap-1 pr-1">
