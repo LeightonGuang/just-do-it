@@ -2,6 +2,7 @@ import { twMerge } from "tailwind-merge";
 import { useState, useRef, useEffect } from "react";
 
 import TodoSidebar from "./TodoSidebar";
+import ProjectsSidebar from "./ProjectsSidebar";
 
 const MIN_WIDTH = 150;
 const MAX_WIDTH = 300;
@@ -82,7 +83,7 @@ const Sidebar = ({ className }: { className?: string }) => {
     <aside
       style={{ width: `${width}px` }}
       className={twMerge(
-        "relative h-dvh shrink-0 border-r border-retro-brown",
+        "relative h-dvh shrink-0 border-r border-border bg-sidebar",
         className,
       )}
     >
@@ -92,10 +93,13 @@ const Sidebar = ({ className }: { className?: string }) => {
           isCollapsed && "pointer-events-none invisible",
         )}
       >
-        <h1 className="p-2 whitespace-nowrap">Just Do it</h1>
+        <h1 className="p-2 text-lg font-medium whitespace-nowrap uppercase">
+          Just Do it
+        </h1>
 
         <div className="flex flex-col">
           <TodoSidebar />
+          <ProjectsSidebar />
         </div>
       </div>
 
@@ -108,12 +112,12 @@ const Sidebar = ({ className }: { className?: string }) => {
         className={twMerge(
           "fixed top-1/2 z-50 -translate-y-1/2 hover:cursor-grab active:cursor-grabbing",
 
-          !isCollapsed && "h-dvh w-3 -translate-y-1/2 hover:bg-retro-brown/30",
+          !isCollapsed && "hover:bg-retro-brown/30 h-dvh w-3 -translate-y-1/2",
 
           isCollapsed && [
             "flex h-16 w-5 items-center justify-center",
             "rounded-r-md",
-            "border border-l-0 border-retro-brown",
+            "border border-l-0 border-border",
             "bg-retro-brown/10",
             "shadow-sm",
             "hover:bg-retro-brown/20",
@@ -121,7 +125,7 @@ const Sidebar = ({ className }: { className?: string }) => {
         )}
       >
         {isCollapsed && (
-          <div className="h-8 w-1 rounded-full bg-retro-brown/60" />
+          <div className="bg-retro-brown/60 h-8 w-1 rounded-full" />
         )}
       </div>
     </aside>
