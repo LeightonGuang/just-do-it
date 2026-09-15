@@ -5,6 +5,7 @@
 }
 
 body {
+  margin: 0;
   font-family: "Sono", monospace;
 }
 
@@ -17,15 +18,49 @@ button {
   font-family: "Sono";
   font-style: normal;
   font-weight: 200 800;
-  src: url("/fonts/Sono/Sono-VariableFont_MONO\,wght.ttf");
+  src: url("/fonts/Sono/Sono-VariableFont_MONO,wght.ttf");
 }
 
 :root {
-  --color-primary: oklch(67.336% 0.18442 37.113);
-  --color-background: oklch(89.496% 0.03332 83.691);
+  /* Dot-grid settings */
+  --grid-size: 1rem;
+  --grid-dot-size: 1px;
+  --grid-dot-color: oklch(0.78 0.012 286);
+  --grid-background: oklch(0.9291 0.0054 286.3);
+
+  /* Application colours */
+  --color-primary: oklch(28.35% 0.049 271.5);
+  --color-background: oklch(92.91% 0.0054 286.3);
+  --color-sidebar: oklch(90.9% 0.006 286.3);
+  --color-card: oklch(0.9677 0.0027 286.35);
+  --color-card-hover: oklch(0.945 0.0035 286.35);
+  --color-input: oklch(0.956 0.004 286.32);
+  --color-border: oklch(0.8655 0.0082 286.23);
+  --color-text: oklch(0.2152 0.0078 285.73);
+  --color-text-muted: oklch(0.5479 0.0123 285.99);
 }
 
 @theme {
   --color-primary: var(--color-primary);
   --color-background: var(--color-background);
+  --color-sidebar: var(--color-sidebar);
+  --color-card: var(--color-card);
+  --color-card-hover: var(--color-card-hover);
+  --color-input: var(--color-input);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+}
+
+.dot-grid {
+  background-color: var(--grid-background);
+
+  background-image: radial-gradient(
+    circle,
+    var(--grid-dot-color) var(--grid-dot-size),
+    transparent var(--grid-dot-size)
+  );
+
+  background-size: var(--grid-size) var(--grid-size);
+  background-position: calc(var(--grid-size) / 2) calc(var(--grid-size) / 2);
 }
