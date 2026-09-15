@@ -8,19 +8,19 @@ const Workspace = ({
   className?: string;
 }) => {
   return (
-    <section className="flex h-dvh w-full flex-col items-center justify-between">
-      <div className={twMerge("size-full bg-red-200", className)}>
-        {children}
-      </div>
+    <section className="relative h-dvh w-full">
+      <div className={twMerge("size-full", className)}>{children}</div>
 
-      <div className="my-4 flex w-2/5 flex-col overflow-hidden rounded-lg border border-border">
-        <input
-          placeholder="/commands, search"
-          className="w-full bg-input p-2 text-sm focus:outline-none"
-        />
+      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+        <div className="pointer-events-auto flex h-16 w-160 flex-col overflow-hidden border border-border bg-card shadow-sm">
+          <input
+            placeholder="/commands, search"
+            className="w-full bg-input p-2 text-sm focus:outline-none"
+          />
 
-        <div className="border-t border-border p-2 text-sm">
-          some controls herel
+          <div className="border-t border-border p-1 text-sm">
+            some controls here
+          </div>
         </div>
       </div>
     </section>
