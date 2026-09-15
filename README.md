@@ -7,16 +7,21 @@ A task management application built with Astro, React, Tailwind CSS, Cloudflare 
 ## Table of Contents
 
 - [Database](#database)
+
   - [Development Database](#development-database)
+  - [Database Reset](#database-reset)
   - [Hard Reset](#hard-reset)
   - [If `.wrangler` Is Locked](#if-wrangler-is-locked)
+
 - [Database Migrations](#database-migrations)
 - [Production Database](#production-database)
 - [Available Scripts](#available-scripts)
 - [Quick Reference](#quick-reference)
 - [Development Rule](#development-rule)
 
-## Database
+---
+
+# Database
 
 This project uses:
 
@@ -25,67 +30,100 @@ This project uses:
 - **Drizzle Kit** — Migration generation
 - **Wrangler** — D1 management
 
-The database has two workflows:
+The database has two main workflows:
 
-- **Development** — Hard reset the local database whenever needed.
+- **Development** — The local database can be reset or completely rebuilt whenever needed.
 - **Production** — Use migrations to safely update the existing database.
 
 ---
 
 # Development Database
 
-During development, the database can be completely rebuilt whenever the schema changes.
+During development, it is acceptable to destroy and rebuild the local database because migration history and local data do not need to be preserved.
 
-Migration history does **not** need to be preserved at this stage.
+There are two reset commands depending on what you need.
 
-## Hard Reset
-
-A hard reset:
-
-1. Deletes the local `.wrangler` state.
-2. Deletes the existing Drizzle migrations.
-3. Generates a new migration from the current `schema.ts`.
-4. Applies the migration to the local D1 database.
-
-### Before resetting
-
-**Stop the development server first:**
-
-```text
-Ctrl + C
-```
-
-Make sure `npm run dev` and any other Astro/Wrangler processes are stopped.
-
-This is required because Wrangler/Miniflare may have SQLite files inside `.wrangler` open.
-
-### Reset the database
+## Database Reset
 
 ```bash
 npm run db:reset
 ```
 
-The resulting database is completely fresh and is based on the current Drizzle schema.
+This deletes the local `.wrangler` state and then applies the **existing Drizzle migrations** to a fresh local D1 database.
 
-### Reset flow
+Use this when your existing migrations are correct and you simply want to recreate the local D1 environment.
+
+The flow is:
 
 ```text
-src/db/schema.ts
-       │
-       │ Change schema
-       ▼
-npm run db:reset
-       │
-       ├── Delete .wrangler
-       │
-       ├── Delete drizzle/migrations
-       │
-       ├── Generate migration
-       │
-       └── Apply migration to local D1
-       │
-       ▼
-Fresh local database
+.wrangler
+   ↓
+Delete local Wrangler state
+   ↓
+Fresh local D1
+   ↓
+Apply existing migrations
+   ↓
+Local database recreated
+```
+
+---
+
+## Hard Reset
+
+```bash
+npm run db:hard-reset
+```
+
+A hard reset **drops the database tables defined in `scripts/reset.sql`**.
+
+This is useful when you want to completely wipe the existing local tables without preserving any of their data.
+
+The reset SQL is located at:
+
+```text
+scripts/reset.sql
+```
+
+Example:
+
+```sql
+DROP TABLE IF EXISTS dos;
+DROP TABLE IF EXISTS columns;
+DROP TABLE IF EXISTS projects;
+```
+
+Tables with foreign-key dependencies should be dropped in the correct order, starting with the tables that depend on other tables.
+
+For example:
+
+```text
+dos
+ ↓
+columns
+ ↓
+projects
+```
+
+So `dos` should be dropped before `columns`, and `columns` before `projects`.
+
+### Important
+
+`db:hard-reset` **only drops the tables**.
+
+It does not:
+
+- Delete `.wrangler`
+- Delete Drizzle migrations
+- Generate a new migration
+- Apply migrations automatically
+
+If you want to rebuild the database from your current Drizzle schema, run:
+
+```bash
+npm run db:hard-reset
+npm run drizzle:generate
+npm run migrate:local
 ```
 
 ---
@@ -101,6 +139,14 @@ The process cannot access the file
 
 first make sure all Astro/Wrangler development servers are stopped.
 
+```text
+Ctrl + C
+```
+
+Make sure `npm run dev` and any other Astro/Wrangler processes are stopped.
+
+Wrangler/Miniflare may have SQLite files inside `.wrangler` open while the development server is running.
+
 If the problem persists, check for running Node processes:
 
 ```powershell
@@ -113,11 +159,7 @@ If necessary, terminate the Node processes:
 Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
 ```
 
-Then run:
-
-```bash
-npm run db:reset
-```
+Then run your database command again.
 
 > **Warning:** This terminates all running Node processes, including other Node applications.
 
@@ -148,13 +190,7 @@ migrate:local
 Local D1 updated
 ```
 
-However, while the project is still in early development, you can simply use:
-
-```bash
-npm run db:reset
-```
-
-if you don't need to preserve the existing data or migration history.
+If you do not care about the existing local database, use the hard reset workflow instead.
 
 ---
 
@@ -197,22 +233,26 @@ npm run migrate:remote
 
 Migration history should be preserved once the application is deployed.
 
+> **Never run destructive reset commands against the production database.**
+
 ---
 
 # Available Scripts
 
-| Script                     | Description                                       |
-| -------------------------- | ------------------------------------------------- |
-| `npm run dev`              | Start the Astro development server                |
-| `npm run build`            | Build the application                             |
-| `npm run preview`          | Preview the production build                      |
-| `npm run astro`            | Run Astro CLI commands                            |
-| `npm run generate-types`   | Generate Cloudflare Worker types                  |
-| `npm run drizzle:generate` | Generate Drizzle migrations                       |
-| `npm run migrate:local`    | Apply migrations to local D1                      |
-| `npm run migrate:remote`   | Apply migrations to remote D1                     |
-| `npm run db:clean`         | Delete local Wrangler state and migration history |
-| `npm run db:reset`         | Hard reset and rebuild the local database         |
+| Script                     | Description                                                                |
+| -------------------------- | -------------------------------------------------------------------------- |
+| `npm run dev`              | Start the Astro development server                                         |
+| `npm run build`            | Build the application                                                      |
+| `npm run preview`          | Preview the production build                                               |
+| `npm run astro`            | Run Astro CLI commands                                                     |
+| `npm run cf-typegen`       | Generate Cloudflare Worker types                                           |
+| `npm run drizzle:generate` | Generate Drizzle migrations                                                |
+| `npm run migrate:local`    | Apply migrations to local D1                                               |
+| `npm run migrate:remote`   | Apply migrations to remote D1                                              |
+| `npm run db:reset`         | Delete local Wrangler state and recreate local D1 from existing migrations |
+| `npm run db:hard-reset`    | Drop local D1 tables using `scripts/reset.sql`                             |
+| `npm run query:local`      | Execute SQL against local D1                                               |
+| `npm run query:remote`     | Execute SQL against remote D1                                              |
 
 ---
 
@@ -225,17 +265,14 @@ Migration history should be preserved once the application is deployed.
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-
-    "generate-types": "wrangler types",
-
+    "cf-typegen": "wrangler types",
     "drizzle:generate": "drizzle-kit generate",
-
     "migrate:local": "wrangler d1 migrations apply just-do-it --local",
     "migrate:remote": "wrangler d1 migrations apply just-do-it --remote",
-
-    "db:clean": "powershell -Command \"if (Test-Path .wrangler) { Remove-Item -Recurse -Force .wrangler }; if (Test-Path drizzle/migrations) { Remove-Item -Recurse -Force drizzle/migrations }\"",
-
-    "db:reset": "npm run db:clean && npm run drizzle:generate && npm run migrate:local"
+    "db:reset": "powershell -Command \"if (Test-Path .wrangler) { Remove-Item -Recurse -Force .wrangler }\" && npm run migrate:local",
+    "db:hard-reset": "npx wrangler d1 execute just-do-it --local --file=scripts/reset.sql",
+    "query:local": "npx wrangler d1 execute just-do-it --local --command",
+    "query:remote": "npx wrangler d1 execute just-do-it --remote --command"
   }
 }
 ```
@@ -250,6 +287,18 @@ Migration history should be preserved once the application is deployed.
 npm run dev
 ```
 
+### Query the local database
+
+```bash
+npm run query:local "SELECT * FROM dos"
+```
+
+### Query the remote database
+
+```bash
+npm run query:remote "SELECT * FROM dos"
+```
+
 ### Change the database schema and preserve local data
 
 ```bash
@@ -257,18 +306,25 @@ npm run drizzle:generate
 npm run migrate:local
 ```
 
-### Completely reset the local database
-
-First stop the dev server:
-
-```text
-Ctrl + C
-```
-
-Then:
+### Reset the local database
 
 ```bash
 npm run db:reset
+```
+
+This recreates the local D1 environment using the existing migration files.
+
+### Completely drop the local database tables
+
+```bash
+npm run db:hard-reset
+```
+
+Then, if you want to rebuild them from the current Drizzle schema:
+
+```bash
+npm run drizzle:generate
+npm run migrate:local
 ```
 
 ### Apply migrations to production
@@ -276,29 +332,52 @@ npm run db:reset
 ```bash
 npm run drizzle:generate
 npm run migrate:local
+
 # Test locally
+
 npm run migrate:remote
 ```
 
 ---
 
-## Development Rule
+# Development Rule
 
 While the project is still in development:
 
+### I don't care about the existing database
+
+Use:
+
 ```bash
-npm run db:reset
+npm run db:hard-reset
+npm run drizzle:generate
+npm run migrate:local
 ```
 
-> **"I don't care about the existing database. Rebuild everything."**
+This drops the local tables and rebuilds them from the current schema.
 
-Once deployed:
+### I want to keep my local data
+
+Use:
 
 ```bash
 npm run drizzle:generate
 npm run migrate:local
+```
+
+This creates and applies a migration without destroying the existing database.
+
+### The application is deployed
+
+Use migrations:
+
+```bash
+npm run drizzle:generate
+npm run migrate:local
+
 # Test
+
 npm run migrate:remote
 ```
 
-> **"Keep the existing database and safely migrate it."**
+> **Production rule: Keep the existing database and safely migrate it. Never use destructive reset commands on production.**
