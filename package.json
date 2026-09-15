@@ -10,12 +10,15 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "generate-types": "wrangler types",
+    "cf-typegen": "wrangler types",
     "drizzle:generate": "drizzle-kit generate",
+    "drizzle:studio": "drizzle-kit studio",
     "migrate:local": "wrangler d1 migrations apply just-do-it --local",
     "migrate:remote": "wrangler d1 migrations apply just-do-it --remote",
-    "db:clean": "powershell -Command \"if (Test-Path .wrangler) { Remove-Item -Recurse -Force .wrangler }; if (Test-Path drizzle/migrations) { Remove-Item -Recurse -Force drizzle/migrations }\"",
-    "db:reset": "npm run db:clean && npm run drizzle:generate && npm run migrate:local"
+    "db:seed:local": "wrangler d1 execute just-do-it --local --file=src/db/seed.sql",
+    "db:hard-reset": "powershell -Command \"if (Test-Path .wrangler) { Remove-Item -Recurse -Force .wrangler }; if (Test-Path drizzle/migrations) { Remove-Item -Recurse -Force drizzle/migrations }\" && npm run drizzle:generate && npm run migrate:local && npm run db:seed:local",
+    "query:local": "wrangler d1 execute just-do-it --local --command",
+    "query:remote": "wrangler d1 execute just-do-it --remote --command"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.1",
@@ -36,6 +39,7 @@
     "esbuild": true
   },
   "devDependencies": {
+    "@types/node": "^26.6.0",
     "drizzle-kit": "^1.0.0-rc.4",
     "prettier": "^3.9.6",
     "prettier-plugin-astro": "^1.0.0",
