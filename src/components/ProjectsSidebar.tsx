@@ -10,7 +10,9 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
         className,
       )}
     >
-      <h2 className="text-sm">Projects</h2>
+      <h2 className="text-sm">
+        <a href="/projects">Projects</a>
+      </h2>
 
       {projects.map((project, i) => (
         <ProjectSidebarItem
