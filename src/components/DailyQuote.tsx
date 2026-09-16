@@ -52,7 +52,7 @@ const DailyQuote = () => {
       target="_blank"
       title="Zen Quotes"
       href="https://zenquotes.io/"
-      className="flex h-max max-w-3xl items-center gap-2 md:w-max"
+      className="flex h-max max-w-3xl items-center gap-2 bg-card p-1 md:w-max"
     >
       <img className="size-10 rounded-full" src={quote?.i} alt={quote?.a} />
 

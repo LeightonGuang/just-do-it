@@ -1,6 +1,6 @@
 const Kanban = () => {
   return (
-    <section className="dot-grid size-full min-h-screen border border-border p-8">
+    <section className="size-full min-h-screen border border-border p-8">
       <h1 className="mb-8 leading-4 font-medium text-text">Project Name</h1>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
