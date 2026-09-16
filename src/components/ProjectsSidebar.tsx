@@ -1,8 +1,22 @@
 import { twMerge } from "tailwind-merge";
+import { useEffect, useState } from "react";
 
-import { projects, type Project } from "../../public/data/projects";
+import { type Project } from "../db/schema";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  const fetchProjects = async () => {
+    const res = await fetch("/api/projects");
+    const data: Project[] = await res.json();
+
+    setProjects(data);
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
   return (
     <div
       className={twMerge(

@@ -1,0 +1,8 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProjectPage from "../components/projects/ProjectPage";
+---
+
+<BaseLayout title="Projects" description="Projects page">
+  <ProjectPage client:only="react" />
+</BaseLayout>
