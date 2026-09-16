@@ -48,7 +48,10 @@ const TodoSidebarItem = ({ todo }: { todo: Dos }) => {
   return (
     <a
       href={`?project_id=${todo.project_id}&dos_id=${todo.id}`}
-      className="col-span-7 grid grid-cols-subgrid items-center bg-card p-1 hover:bg-card-hover"
+      className={twMerge(
+        "col-span-7 grid grid-cols-subgrid items-center bg-card p-1 hover:bg-card-hover",
+        countdown.due && "bg-danger-background",
+      )}
     >
       {/* Todo */}
       <div className="flex min-w-0 items-center gap-1 pr-1">
@@ -90,7 +93,7 @@ const TodoSidebarItem = ({ todo }: { todo: Dos }) => {
         {!countdown.due ? (
           String(countdown.seconds).padStart(2, "0")
         ) : (
-          <span className="animate-pulse font-medium text-red-500">Due</span>
+          <span className="animate-pulse font-medium text-danger">Due</span>
         )}
       </span>
     </a>
