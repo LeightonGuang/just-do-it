@@ -87,7 +87,11 @@ const TodoSidebarItem = ({ todo }: { todo: Dos }) => {
 
       {/* Seconds */}
       <span className="text-right text-[10px] text-text-muted tabular-nums">
-        {!countdown.due ? String(countdown.seconds).padStart(2, "0") : "Due"}
+        {!countdown.due ? (
+          String(countdown.seconds).padStart(2, "0")
+        ) : (
+          <span className="animate-pulse font-medium text-red-500">Due</span>
+        )}
       </span>
     </a>
   );
