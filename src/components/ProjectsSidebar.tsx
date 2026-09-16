@@ -11,7 +11,9 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
       )}
     >
       <h2 className="text-sm">
-        <a href="/projects">Projects</a>
+        <a className="hover:underline" href="/projects">
+          Projects
+        </a>
       </h2>
 
       {projects.map((project, i) => (
