@@ -2,6 +2,8 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
+import { eq } from "drizzle-orm";
+
 import { projects } from "../../db/schema";
 
 export const GET: APIRoute = async () => {
@@ -37,6 +39,22 @@ export const POST: APIRoute = async ({ request }) => {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+
+  return Response.json({ success: true });
+};
+
+export const DELETE: APIRoute = async ({ request }) => {
+  const db = drizzle(env.just_do_it);
+
+  const body = (await request.json()) as {
+    id?: string;
+  };
+
+  const id = body.id;
+
+  if (!id) return Response.json({ error: "ID is required" }, { status: 400 });
+
+  await db.delete(projects).where(eq(projects.id, Number(id)));
 
   return Response.json({ success: true });
 };
