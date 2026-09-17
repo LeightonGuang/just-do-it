@@ -8,7 +8,8 @@ export const createProject: SubCommand = {
       type: "argument",
       argument: {
         name: "name",
-        placeholder: "Project name",
+        placeholder: "Project Name",
+        inputType: "text",
       },
     },
     {
@@ -16,6 +17,7 @@ export const createProject: SubCommand = {
       argument: {
         name: "colour",
         placeholder: "#000000",
+        inputType: "color",
       },
     },
   ],

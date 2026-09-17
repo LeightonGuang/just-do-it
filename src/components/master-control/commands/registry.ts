@@ -21,6 +21,7 @@ export type CommandPart =
       argument: {
         name: string;
         placeholder: string;
+        inputType: "text" | "color" | "number";
       };
     };
 

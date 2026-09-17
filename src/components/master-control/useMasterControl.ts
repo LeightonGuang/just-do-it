@@ -3,6 +3,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { COMMANDS } from "./commands/registry";
 import { useProjects } from "../contexts/ProjectContext";
 
+const isValidHexColor = (value: string) => {
+  return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+};
+
 const useMasterControl = () => {
   const { fetchDos, fetchProjects } = useProjects();
 
@@ -34,6 +38,8 @@ const useMasterControl = () => {
 
   const suggestions = useMemo(() => {
     if (!command.startsWith("/")) return [];
+
+    if (selectedSubCommand) return [];
 
     if (command === "/") {
       return COMMANDS.map((item) => ({
@@ -69,7 +75,7 @@ const useMasterControl = () => {
     }
 
     return [];
-  }, [command, rootCommand]);
+  }, [command, rootCommand, selectedSubCommand]);
 
   /*
    * Reset the highlighted suggestion whenever
@@ -112,11 +118,49 @@ const useMasterControl = () => {
     setError(null);
   };
 
+  const validateArguments = () => {
+    if (!selectedSubCommand?.parts) {
+      return null;
+    }
+
+    for (const part of selectedSubCommand.parts) {
+      if (part.type !== "argument") {
+        continue;
+      }
+
+      const { name, inputType, placeholder } = part.argument;
+      const value = argumentValues[name]?.trim() ?? "";
+
+      /*
+       * Required arguments
+       */
+      if (!value) {
+        return `${placeholder || name} is required`;
+      }
+
+      /*
+       * Color arguments
+       */
+      if (inputType === "color" && !isValidHexColor(value)) {
+        return `${name} must be a valid hex color`;
+      }
+    }
+
+    return null;
+  };
+
   /*
    * Execute the currently selected command.
    */
   const handleExecute = async () => {
     if (!selectedSubCommand?.execute) return;
+
+    const validationError = validateArguments();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     setExecuting(true);
     setError(null);
