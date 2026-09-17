@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { COMMANDS } from "./commands/registry";
 
@@ -8,39 +8,30 @@ const useMasterControl = () => {
     {},
   );
   const [executing, setExecuting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
 
   const argumentInputRef = useRef<HTMLInputElement>(null);
 
   const rootCommand = useMemo(() => {
-    const [root] = command.trim().split(/\s+/);
+    const [root] = command.split(" ");
 
     return COMMANDS.find((item) => item.command === root);
   }, [command]);
 
   const selectedSubCommand = useMemo(() => {
-    if (!rootCommand) {
-      return undefined;
-    }
+    if (!rootCommand) return undefined;
 
-    const [, subCommand] = command.trim().split(/\s+/);
+    const [, subCommand] = command.split(" ");
 
-    if (!subCommand) {
-      return undefined;
-    }
+    if (!subCommand) return undefined;
 
     return rootCommand.subCommands?.find((item) => item.name === subCommand);
   }, [command, rootCommand]);
 
-  /**
-   * Generate suggestions based on what the user has typed.
-   */
   const suggestions = useMemo(() => {
-    if (!command.startsWith("/")) {
-      return [];
-    }
+    if (!command.startsWith("/")) return [];
 
-    // User has only typed "/"
     if (command === "/") {
       return COMMANDS.map((item) => ({
         type: "command" as const,
@@ -50,7 +41,6 @@ const useMasterControl = () => {
       }));
     }
 
-    // User is typing the root command.
     if (!command.includes(" ")) {
       return COMMANDS.filter((item) => item.command.startsWith(command)).map(
         (item) => ({
@@ -62,9 +52,8 @@ const useMasterControl = () => {
       );
     }
 
-    // User has selected a root command and is typing a sub-command.
     if (rootCommand?.subCommands) {
-      const [, subQuery = ""] = command.trim().split(/\s+/);
+      const [, subQuery = ""] = command.split(" ");
 
       return rootCommand.subCommands
         .filter((item) => item.name.startsWith(subQuery))
@@ -79,59 +68,65 @@ const useMasterControl = () => {
     return [];
   }, [command, rootCommand]);
 
-  /**
-   * Select a command/sub-command from suggestions.
+  /*
+   * Reset the highlighted suggestion whenever
+   * the suggestion list changes.
+   */
+  useEffect(() => {
+    setSelectedSuggestionIndex(0);
+  }, [suggestions]);
+
+  /*
+   * Select a suggestion.
    */
   const handleSelect = (value: string) => {
-    setCommand(value);
+    const nextValue = `${value} `;
+
+    setCommand(nextValue);
     setArgumentValues({});
-    setError("");
+    setError(null);
 
     requestAnimationFrame(() => {
       argumentInputRef.current?.focus();
     });
   };
 
-  /**
-   * Update the command input.
+  /*
+   * Handle command input changes.
    */
   const handleCommandChange = (value: string) => {
     setCommand(value);
     setArgumentValues({});
-    setError("");
+    setError(null);
   };
 
-  /**
-   * Update a command argument.
-   */
   const handleArgumentChange = (name: string, value: string) => {
     setArgumentValues((current) => ({
       ...current,
       [name]: value,
     }));
 
-    setError("");
+    setError(null);
   };
 
-  /**
+  /*
    * Execute the currently selected command.
    */
   const handleExecute = async () => {
-    if (!selectedSubCommand?.execute || executing) {
-      return;
-    }
+    if (!selectedSubCommand?.execute) return;
 
     setExecuting(true);
-    setError("");
+    setError(null);
 
     try {
-      await selectedSubCommand.execute({
-        args: argumentValues,
-      });
+      await selectedSubCommand.execute({ args: argumentValues });
 
-      // Reset Master Control after successful execution.
+      /*
+       * Reset after successful execution.
+       */
       setCommand("");
       setArgumentValues({});
+      setSelectedSuggestionIndex(0);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Something went wrong");
     } finally {
@@ -139,26 +134,110 @@ const useMasterControl = () => {
     }
   };
 
+  /*
+   * Keyboard navigation for the suggestion list.
+   */
+  const handleSuggestionKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (suggestions.length === 0) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void handleExecute();
+      }
+
+      return;
+    }
+
+    /*
+     * Move down.
+     *
+     * Last item wraps to first.
+     */
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+
+      setSelectedSuggestionIndex((current) =>
+        current >= suggestions.length - 1 ? 0 : current + 1,
+      );
+
+      return;
+    }
+
+    /*
+     * Move up.
+     *
+     * First item wraps to last.
+     */
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+
+      setSelectedSuggestionIndex((current) =>
+        current <= 0 ? suggestions.length - 1 : current - 1,
+      );
+
+      return;
+    }
+
+    /*
+     * Enter selects the highlighted suggestion.
+     */
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      const selected = suggestions[selectedSuggestionIndex];
+
+      if (selected) handleSelect(selected.value);
+
+      return;
+    }
+
+    /*
+     * Escape closes the suggestions.
+     */
+    if (event.key === "Escape") {
+      event.preventDefault();
+
+      setCommand("");
+      setArgumentValues({});
+      setSelectedSuggestionIndex(0);
+    }
+  };
+
+  /*
+   * Keyboard handling for argument inputs.
+   *
+   * Enter executes the command.
+   */
+  const handleArgumentKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void handleExecute();
+    }
+  };
+
   return {
-    // State
     command,
     argumentValues,
     executing,
     error,
 
-    // Derived state
     rootCommand,
     selectedSubCommand,
-    suggestions,
 
-    // Refs
+    suggestions,
+    selectedSuggestionIndex,
+
     argumentInputRef,
 
-    // Actions
     handleSelect,
     handleCommandChange,
     handleArgumentChange,
     handleExecute,
+    handleSuggestionKeyDown,
+    handleArgumentKeyDown,
   };
 };
 

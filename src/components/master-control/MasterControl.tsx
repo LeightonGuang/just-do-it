@@ -9,50 +9,55 @@ const MasterControl = () => {
     error,
     selectedSubCommand,
     suggestions,
+    selectedSuggestionIndex,
     argumentInputRef,
+
     handleSelect,
     handleCommandChange,
     handleArgumentChange,
-    handleExecute,
+    handleSuggestionKeyDown,
+    handleArgumentKeyDown,
   } = useMasterControl();
 
   return (
     <div className="pointer-events-auto relative flex h-16 w-160 flex-col border border-border bg-card shadow-sm">
       {/* Suggestions */}
       {suggestions.length > 0 && (
-        <div className="absolute bottom-full left-0 flex w-80 flex-col gap-2 overflow-hidden border border-border bg-card p-1 shadow-lg">
-          {suggestions.map((item) => (
-            <button
-              type="button"
-              key={item.value}
-              disabled={executing}
-              onClick={() => handleSelect(item.value)}
-              className="flex w-full flex-col text-left hover:bg-card-hover disabled:opacity-50"
-            >
-              <span className="font-mono text-sm">{item.label}</span>
+        <div className="absolute bottom-full left-0 flex w-80 flex-col gap-1 overflow-hidden border border-border bg-card p-1 shadow-lg">
+          {suggestions.map((item, index) => {
+            const selected = index === selectedSuggestionIndex;
 
-              <span className="text-xs text-text-muted">
-                {item.description}
-              </span>
-            </button>
-          ))}
+            return (
+              <button
+                type="button"
+                key={item.value}
+                disabled={executing}
+                onClick={() => handleSelect(item.value)}
+                className={`flex w-full flex-col px-2 py-1.5 text-left transition-colors disabled:opacity-50 ${
+                  selected ? "bg-card-hover" : "hover:bg-card-hover"
+                }`}
+              >
+                <span className="font-mono text-sm">{item.label}</span>
+
+                <span className="text-xs text-text-muted">
+                  {item.description}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
       {/* Composer */}
       <div className="flex h-10 shrink-0 items-center bg-input">
+        {/* Command */}
         <input
           value={command}
           disabled={executing}
           placeholder="/commands, search"
+          onKeyDown={handleSuggestionKeyDown}
           onChange={(event) => handleCommandChange(event.target.value)}
           className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void handleExecute();
-            }
-          }}
         />
 
         {/* Arguments */}
@@ -72,6 +77,7 @@ const MasterControl = () => {
             <input
               disabled={executing}
               key={part.argument.name}
+              onKeyDown={handleArgumentKeyDown}
               placeholder={part.argument.placeholder}
               ref={index === 0 ? argumentInputRef : undefined}
               value={argumentValues[part.argument.name] ?? ""}
@@ -79,12 +85,6 @@ const MasterControl = () => {
                 handleArgumentChange(part.argument.name, event.target.value)
               }
               className="placeholder:text-muted-foreground/50 h-full w-32 bg-transparent px-2 text-sm outline-none"
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void handleExecute();
-                }
-              }}
             />
           );
         })}
@@ -97,6 +97,7 @@ const MasterControl = () => {
         </div>
       )}
 
+      {/* Controls */}
       <MasterControlHelper />
     </div>
   );
