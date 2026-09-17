@@ -1,4 +1,5 @@
 import Dashboard from "./Dashboard";
+import { ProjectsProvider } from "./contexts/ProjectContext";
 
 const HomePage = ({
   projectId,
@@ -9,7 +10,9 @@ const HomePage = ({
 }) => {
   return (
     <main className="h-dvh w-dvw">
-      <Dashboard projectId={projectId} todoId={todoId} />
+      <ProjectsProvider>
+        <Dashboard projectId={projectId} todoId={todoId} />
+      </ProjectsProvider>
     </main>
   );
 };

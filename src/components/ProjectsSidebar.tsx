@@ -2,20 +2,10 @@ import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
 import { type Project } from "../db/schema";
+import { useProjects } from "./contexts/ProjectContext";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
-  const [projects, setProjects] = useState<Project[]>([]);
-
-  const fetchProjects = async () => {
-    const res = await fetch("/api/projects");
-    const data: Project[] = await res.json();
-
-    setProjects(data);
-  };
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  const { sidebarProjects } = useProjects();
 
   return (
     <div
@@ -30,7 +20,7 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
         </a>
       </h2>
 
-      {projects.map((project, i) => (
+      {sidebarProjects.map((project) => (
         <ProjectSidebarItem
           project={project}
           key={`${project.name}-${project.id}`}
