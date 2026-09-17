@@ -19,7 +19,7 @@ export const createProject: SubCommand = {
       },
     },
   ],
-  execute: async ({ args }) => {
+  execute: async ({ args, refetch }) => {
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: {
@@ -38,5 +38,7 @@ export const createProject: SubCommand = {
 
       throw new Error(data.error ?? "Failed to create project");
     }
+
+    await refetch.projects();
   },
 };

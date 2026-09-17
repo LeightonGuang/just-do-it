@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { COMMANDS } from "./commands/registry";
+import { useProjects } from "../contexts/ProjectContext";
 
 const useMasterControl = () => {
+  const { fetchDos, fetchProjects } = useProjects();
+
   const [command, setCommand] = useState("");
   const [argumentValues, setArgumentValues] = useState<Record<string, string>>(
     {},
@@ -119,7 +122,10 @@ const useMasterControl = () => {
     setError(null);
 
     try {
-      await selectedSubCommand.execute({ args: argumentValues });
+      await selectedSubCommand.execute({
+        args: argumentValues,
+        refetch: { projects: fetchProjects, dos: fetchDos },
+      });
 
       /*
        * Reset after successful execution.
