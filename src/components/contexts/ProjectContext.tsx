@@ -10,8 +10,8 @@ type ProjectsContextValue = {
   loading: boolean;
   error: string;
 
-  fetchProjects: () => Promise<void>;
-  fetchDos: () => Promise<void>;
+  fetchSidebarProjects: () => Promise<void>;
+  fetchSidebarDos: () => Promise<void>;
 
   addProject: (name: string, colour: string) => Promise<boolean>;
   deleteProject: (id: number) => Promise<boolean>;
@@ -29,26 +29,26 @@ export const ProjectsProvider = ({
   const [sidebarProjects, setSidebarProjects] = useState<Project[]>([]);
   const [sidebarDos, setSidebarDos] = useState<Do[]>([]);
 
+  const [projectSuggestions, setProjectSuggestions] = useState<Project[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchProjects = useCallback(async () => {
+  const fetchSidebarProjects = useCallback(async () => {
     const res = await fetch("/api/projects");
 
     if (!res.ok) throw new Error("Failed to fetch projects");
 
     const data: Project[] = await res.json();
-
     setSidebarProjects(data);
   }, []);
 
-  const fetchDos = useCallback(async () => {
+  const fetchSidebarDos = useCallback(async () => {
     const res = await fetch("/api/tasks");
 
     if (!res.ok) throw new Error("Failed to fetch tasks");
 
     const data: Do[] = await res.json();
-
     setSidebarDos(data);
   }, []);
 
@@ -57,13 +57,13 @@ export const ProjectsProvider = ({
     setError("");
 
     try {
-      await Promise.all([fetchProjects(), fetchDos()]);
+      await Promise.all([fetchSidebarProjects(), fetchSidebarDos()]);
     } catch {
       setError("Failed to fetch data");
     } finally {
       setLoading(false);
     }
-  }, [fetchProjects, fetchDos]);
+  }, [fetchSidebarProjects, fetchSidebarDos]);
 
   const addProject = async (name: string, colour: string): Promise<boolean> => {
     setError("");
@@ -87,7 +87,7 @@ export const ProjectsProvider = ({
         return false;
       }
 
-      await fetchProjects();
+      await fetchSidebarProjects();
 
       return true;
     } catch {
@@ -142,8 +142,8 @@ export const ProjectsProvider = ({
         loading,
         error,
 
-        fetchProjects,
-        fetchDos,
+        fetchSidebarProjects,
+        fetchSidebarDos,
 
         addProject,
         deleteProject,
