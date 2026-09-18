@@ -119,14 +119,10 @@ const useMasterControl = () => {
   };
 
   const validateArguments = () => {
-    if (!selectedSubCommand?.parts) {
-      return null;
-    }
+    if (!selectedSubCommand?.parts) return null;
 
     for (const part of selectedSubCommand.parts) {
-      if (part.type !== "argument") {
-        continue;
-      }
+      if (part.type !== "argument") continue;
 
       const { name, inputType, placeholder } = part.argument;
       const value = argumentValues[name]?.trim() ?? "";
@@ -134,9 +130,7 @@ const useMasterControl = () => {
       /*
        * Required arguments
        */
-      if (!value) {
-        return `${placeholder || name} is required`;
-      }
+      if (!value) return `${placeholder || name} is required`;
 
       /*
        * Color arguments
@@ -280,16 +274,12 @@ const useMasterControl = () => {
   const focusInput = useCallback((index: number, position: "start" | "end") => {
     const input = inputRefs.current[index];
 
-    if (!input || input.disabled) {
-      return;
-    }
+    if (!input || input.disabled) return;
 
     input.focus();
 
     requestAnimationFrame(() => {
-      if (!input.isConnected) {
-        return;
-      }
+      if (!input.isConnected) return;
 
       const cursorPosition = position === "start" ? 0 : input.value.length;
 
