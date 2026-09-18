@@ -2,15 +2,37 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
-import { eq } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 
 import { projects } from "../../db/schema";
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ url }) => {
   const db = drizzle(env.just_do_it);
 
-  const allProjects = await db.select().from(projects);
+  const name = url.searchParams.get("name");
+  const limit = url.searchParams.get("limit");
 
+  if (name && limit) {
+    return Response.json(
+      { error: "Cannot use 'name' and 'limit' together." },
+      { status: 400 },
+    );
+  }
+
+  if (name) {
+    const filteredProjects = await db
+      .select()
+      .from(projects)
+      .where(ilike(projects.name, `%${name}%`));
+
+    return Response.json(filteredProjects);
+  }
+
+  if (limit) {
+    return Response.json(await db.select().from(projects).limit(Number(limit)));
+  }
+
+  const allProjects = await db.select().from(projects);
   return Response.json(allProjects);
 };
 
