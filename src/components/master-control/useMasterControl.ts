@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { COMMANDS } from "./commands/registry";
 import { useProjects } from "../contexts/ProjectContext";
@@ -268,26 +268,154 @@ const useMasterControl = () => {
     }
   };
 
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const setInputRef = useCallback(
+    (index: number, element: HTMLInputElement | null) => {
+      inputRefs.current[index] = element;
+    },
+    [],
+  );
+
+  const focusInput = useCallback((index: number, position: "start" | "end") => {
+    const input = inputRefs.current[index];
+
+    if (!input || input.disabled) {
+      return;
+    }
+
+    input.focus();
+
+    requestAnimationFrame(() => {
+      if (!input.isConnected) {
+        return;
+      }
+
+      const cursorPosition = position === "start" ? 0 : input.value.length;
+
+      input.setSelectionRange(cursorPosition, cursorPosition);
+    });
+  }, []);
+
+  const argumentParts =
+    selectedSubCommand?.parts?.filter((part) => part.type === "argument") ?? [];
+
+  const inputCount = 1 + argumentParts.length;
+
+  const handleInputKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    inputIndex: number,
+  ) => {
+    const input = event.currentTarget;
+    const selectionStart = input.selectionStart ?? 0;
+    const selectionEnd = input.selectionEnd ?? 0;
+    const valueLength = input.value.length;
+
+    if (
+      inputIndex === 0 &&
+      event.key === "Tab" &&
+      !event.shiftKey &&
+      suggestions.length > 0
+    ) {
+      event.preventDefault();
+
+      const selectedSuggestion = suggestions[selectedSuggestionIndex];
+
+      if (selectedSuggestion) {
+        handleSelect(selectedSuggestion.value);
+      }
+
+      return;
+    }
+
+    if (
+      inputIndex === 0 &&
+      event.key === " " &&
+      selectedSubCommand &&
+      inputCount > 1
+    ) {
+      event.preventDefault();
+
+      focusInput(1, "start");
+
+      return;
+    }
+
+    if (
+      event.key === "ArrowLeft" &&
+      !event.shiftKey &&
+      selectionStart === 0 &&
+      selectionEnd === 0 &&
+      inputIndex > 0
+    ) {
+      event.preventDefault();
+
+      focusInput(inputIndex - 1, "end");
+
+      return;
+    }
+
+    if (
+      event.key === "ArrowRight" &&
+      !event.shiftKey &&
+      selectionStart === valueLength &&
+      selectionEnd === valueLength &&
+      inputIndex < inputCount - 1
+    ) {
+      event.preventDefault();
+
+      focusInput(inputIndex + 1, "start");
+
+      return;
+    }
+
+    if (
+      event.key === "Backspace" &&
+      !event.shiftKey &&
+      selectionStart === 0 &&
+      selectionEnd === 0 &&
+      inputIndex > 0
+    ) {
+      event.preventDefault();
+
+      focusInput(inputIndex - 1, "end");
+
+      return;
+    }
+
+    if (inputIndex === 0) {
+      handleSuggestionKeyDown(event);
+    } else {
+      handleArgumentKeyDown(event);
+    }
+  };
+
+  const handleCommandRef = useCallback(
+    (element: HTMLInputElement | null) => {
+      setInputRef(0, element);
+    },
+    [setInputRef],
+  );
+
   return {
     command,
     argumentValues,
     executing,
     error,
-
-    rootCommand,
     selectedSubCommand,
-
     suggestions,
     selectedSuggestionIndex,
 
+    argumentParts,
+
     argumentInputRef,
+    setInputRef,
 
     handleSelect,
     handleCommandChange,
     handleArgumentChange,
-    handleExecute,
-    handleSuggestionKeyDown,
-    handleArgumentKeyDown,
+    handleInputKeyDown,
+    handleCommandRef,
   };
 };
 
