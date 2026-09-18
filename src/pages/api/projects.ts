@@ -65,18 +65,20 @@ export const POST: APIRoute = async ({ request }) => {
   return Response.json({ success: true });
 };
 
-export const DELETE: APIRoute = async ({ request }) => {
+export const DELETE: APIRoute = async ({ url }) => {
   const db = drizzle(env.just_do_it);
 
-  const body = (await request.json()) as {
-    id?: string;
-  };
-
-  const id = body.id;
+  const id = url.searchParams.get("id");
 
   if (!id) return Response.json({ error: "ID is required" }, { status: 400 });
 
-  await db.delete(projects).where(eq(projects.id, Number(id)));
+  const projectId = Number(id);
+
+  if (!Number.isInteger(projectId)) {
+    return Response.json({ error: "Invalid ID" }, { status: 400 });
+  }
+
+  await db.delete(projects).where(eq(projects.id, projectId));
 
   return Response.json({ success: true });
 };

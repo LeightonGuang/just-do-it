@@ -66,13 +66,7 @@ const ProjectPage = () => {
     setError("");
 
     try {
-      const res = await fetch("/api/projects", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id }),
-      });
+      const res = await fetch(`/api/projects?id=${id}`, { method: "DELETE" });
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
