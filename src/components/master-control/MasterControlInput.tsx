@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { twMerge } from "tailwind-merge";
 
 type MasterControlInputProps = {
@@ -9,16 +10,13 @@ type MasterControlInputProps = {
   onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
 };
 
-const MasterControlInput = ({
-  value,
-  placeholder,
-  disabled,
-  error,
-  onChange,
-  onKeyDown,
-}: MasterControlInputProps) => {
+const MasterControlInput = forwardRef<
+  HTMLInputElement,
+  MasterControlInputProps
+>(({ value, placeholder, disabled, error, onChange, onKeyDown }, ref) => {
   return (
     <input
+      ref={ref}
       type="text"
       value={value}
       autoComplete="off"
@@ -35,6 +33,8 @@ const MasterControlInput = ({
       )}
     />
   );
-};
+});
+
+MasterControlInput.displayName = "MasterControlInput";
 
 export default MasterControlInput;

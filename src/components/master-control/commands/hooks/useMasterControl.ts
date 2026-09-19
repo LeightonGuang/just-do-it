@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { COMMANDS } from "../registry";
 import { useProjects } from "../../../contexts/ProjectContext";
@@ -14,7 +14,9 @@ const isValidHexColor = (value: string) => {
   return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
 };
 
-const useMasterControl = () => {
+const useMasterControl = (
+  inputRef: React.RefObject<HTMLInputElement | null>,
+) => {
   const { fetchSidebarDos, fetchSidebarProjects } = useProjects();
 
   const [inputValue, setInputValue] = useState("");
@@ -221,6 +223,35 @@ const useMasterControl = () => {
     setError(null);
     setSuggestionsDismissed(false);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "/" || executing) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+
+      inputRef.current?.focus();
+      setInputValue("/");
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [executing, inputRef]);
 
   const navigation = useInputNavigation({
     suggestions,
