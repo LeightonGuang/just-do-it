@@ -20,7 +20,7 @@ const MasterControlSuggestions = ({
   }
 
   return (
-    <div className="absolute bottom-full left-0 z-40 flex w-80 flex-col gap-1 overflow-hidden border border-border bg-card p-1">
+    <div className="absolute bottom-full left-0 z-40 flex w-max flex-col gap-1 overflow-hidden border border-border bg-card p-1">
       {suggestions.map((suggestion, index) => {
         const selected = index === selectedIndex;
 

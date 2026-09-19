@@ -16,15 +16,17 @@ const isValidHexColor = (value: string) => {
 const useMasterControl = () => {
   const { fetchSidebarDos, fetchSidebarProjects } = useProjects();
 
-  const [command, setCommand] = useState("");
-  const [argumentValues, setArgumentValues] = useState<Record<string, string>>(
-    {},
-  );
+  const [inputValue, setInputValue] = useState("");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
 
-  const [root, subCommand] = command.split(" ");
+  const tokens = useMemo(() => {
+    return inputValue.trim().split(/\s+/).filter(Boolean);
+  }, [inputValue]);
+
+  const root = tokens[0] ?? "";
+  const subCommand = tokens[1] ?? "";
 
   const rootCommand = useMemo(() => {
     return COMMANDS.find((item) => item.command === root);
@@ -41,7 +43,30 @@ const useMasterControl = () => {
   const argumentParts =
     selectedSubCommand?.parts?.filter((part) => part.type === "argument") ?? [];
 
-  const inputCount = 1 + argumentParts.length;
+  const argumentValues = useMemo(() => {
+    if (!selectedSubCommand) return {};
+
+    const values: Record<string, string> = {};
+    const argumentTokens = tokens.slice(2);
+
+    if (argumentParts.length === 0) return values;
+
+    if (argumentParts.length === 1) {
+      values[argumentParts[0].argument.name] = argumentTokens.join(" ");
+      return values;
+    }
+
+    const lastArgument = argumentParts[argumentParts.length - 1];
+
+    values[lastArgument.argument.name] =
+      argumentTokens[argumentTokens.length - 1] ?? "";
+
+    const firstArgument = argumentParts[0];
+
+    values[firstArgument.argument.name] = argumentTokens.slice(0, -1).join(" ");
+
+    return values;
+  }, [tokens, selectedSubCommand, argumentParts]);
 
   const isDeleteProject =
     rootCommand?.command === "/delete" &&
@@ -52,14 +77,8 @@ const useMasterControl = () => {
     query: argumentValues.project ?? "",
   });
 
-  /*
-   * ---------------------------------------------------------
-   * Command suggestions
-   * ---------------------------------------------------------
-   */
-
   const commandSuggestions = useCommandSuggestions({
-    command,
+    command: inputValue,
     rootCommand,
     selectedSubCommand,
     projectSuggestions,
@@ -69,87 +88,28 @@ const useMasterControl = () => {
     ? []
     : commandSuggestions.suggestions;
 
-  /*
-   * ---------------------------------------------------------
-   * Select suggestion
-   * ---------------------------------------------------------
-   */
+  const handleSelect = useCallback(
+    (suggestion: MasterControlSuggestion) => {
+      setError(null);
 
-  const handleSelect = useCallback((suggestion: MasterControlSuggestion) => {
-    setError(null);
+      if (suggestion.type === "project") {
+        setInputValue(`${inputValue.trimEnd()} ${suggestion.project.name} `);
 
-    /*
-     * Dynamic argument suggestion.
-     *
-     * Example:
-     *
-     * /delete project
-     *               ↓
-     *             My Project
-     */
-    if (suggestion.type === "project") {
-      setArgumentValues((current) => ({
-        ...current,
-        project: suggestion.project.name,
-      }));
+        setSuggestionsDismissed(true);
+        return;
+      }
 
-      setSuggestionsDismissed(true);
+      setInputValue(`${suggestion.value} `);
+      setSuggestionsDismissed(false);
+    },
+    [inputValue],
+  );
 
-      return;
-    }
-
-    /*
-     * Command or subcommand suggestion.
-     *
-     * Example:
-     *
-     * /del
-     *   ↓
-     * /delete
-     *
-     * /delete p
-     *         ↓
-     * /delete project
-     */
-    setCommand(`${suggestion.value} `);
-    setArgumentValues({});
-    setSuggestionsDismissed(false);
-  }, []);
-
-  /*
-   * ---------------------------------------------------------
-   * Command input
-   * ---------------------------------------------------------
-   */
-
-  const handleCommandChange = useCallback((value: string) => {
-    setCommand(value);
-    setArgumentValues({});
+  const handleInputChange = useCallback((value: string) => {
+    setInputValue(value);
     setError(null);
     setSuggestionsDismissed(false);
   }, []);
-
-  /*
-   * ---------------------------------------------------------
-   * Argument input
-   * ---------------------------------------------------------
-   */
-
-  const handleArgumentChange = useCallback((name: string, value: string) => {
-    setArgumentValues((current) => ({
-      ...current,
-      [name]: value,
-    }));
-
-    setError(null);
-    setSuggestionsDismissed(false);
-  }, []);
-
-  /*
-   * ---------------------------------------------------------
-   * Validation
-   * ---------------------------------------------------------
-   */
 
   const validateArguments = useCallback(() => {
     if (!selectedSubCommand?.parts) {
@@ -177,12 +137,6 @@ const useMasterControl = () => {
     return null;
   }, [selectedSubCommand, argumentValues]);
 
-  /*
-   * ---------------------------------------------------------
-   * Execute
-   * ---------------------------------------------------------
-   */
-
   const handleExecute = useCallback(async () => {
     if (!selectedSubCommand?.execute) {
       return;
@@ -207,11 +161,7 @@ const useMasterControl = () => {
         },
       });
 
-      /*
-       * Successful execution resets the control.
-       */
-      setCommand("");
-      setArgumentValues({});
+      setInputValue("");
       setSuggestionsDismissed(false);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Something went wrong");
@@ -226,37 +176,19 @@ const useMasterControl = () => {
     fetchSidebarDos,
   ]);
 
-  /*
-   * ---------------------------------------------------------
-   * Reset
-   * ---------------------------------------------------------
-   */
-
   const reset = useCallback(() => {
-    setCommand("");
-    setArgumentValues({});
+    setInputValue("");
     setError(null);
     setSuggestionsDismissed(false);
   }, []);
 
-  /*
-   * ---------------------------------------------------------
-   * Input navigation
-   * ---------------------------------------------------------
-   */
-
   const navigation = useInputNavigation({
-    inputCount,
-
     suggestions,
     selectedSuggestionIndex: commandSuggestions.selectedIndex,
 
     hasRawSuggestions: commandSuggestions.rawSuggestions.length > 0,
 
-    hasSelectedSubCommand: Boolean(selectedSubCommand),
-
     onMoveSuggestionUp: commandSuggestions.moveUp,
-
     onMoveSuggestionDown: commandSuggestions.moveDown,
 
     onSelectSuggestion: handleSelect,
@@ -273,14 +205,10 @@ const useMasterControl = () => {
     onExecute: handleExecute,
   });
 
-  /*
-   * ---------------------------------------------------------
-   * Public API
-   * ---------------------------------------------------------
-   */
-
   return {
-    command,
+    inputValue,
+
+    command: root,
     argumentValues,
 
     executing,
@@ -293,11 +221,7 @@ const useMasterControl = () => {
     selectedSuggestionIndex: commandSuggestions.selectedIndex,
 
     handleSelect,
-    handleCommandChange,
-    handleArgumentChange,
-
-    setInputRef: navigation.setInputRef,
-
+    handleInputChange,
     handleInputKeyDown: navigation.handleKeyDown,
   };
 };
