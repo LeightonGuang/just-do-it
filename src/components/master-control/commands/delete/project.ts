@@ -3,17 +3,20 @@ import type { SubCommand } from "../registry";
 export const deleteProject: SubCommand = {
   name: "project",
   description: "Delete a project",
+
   parts: [
     {
       type: "argument",
       argument: {
         required: true,
-        name: "name",
+        name: "project",
         placeholder: "Project name",
-        inputType: "text",
+        kind: "entity",
+        entityType: "project",
       },
     },
   ],
+
   execute: async ({ entities, refetch }) => {
     const project = entities.project;
 

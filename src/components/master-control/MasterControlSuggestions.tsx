@@ -15,9 +15,7 @@ const MasterControlSuggestions = ({
   executing,
   onSelect,
 }: MasterControlSuggestionsProps) => {
-  if (suggestions.length === 0) {
-    return null;
-  }
+  if (suggestions.length === 0) return null;
 
   return (
     <div className="absolute bottom-full left-0 z-40 flex w-max flex-col gap-1 overflow-hidden border border-border bg-card p-1">
@@ -55,7 +53,8 @@ const CommandSuggestionContent = ({
 }: {
   suggestion:
     | Extract<MasterControlSuggestion, { type: "command" }>
-    | Extract<MasterControlSuggestion, { type: "sub-command" }>;
+    | Extract<MasterControlSuggestion, { type: "sub-command" }>
+    | Extract<MasterControlSuggestion, { type: "keyword" }>;
 }) => {
   return (
     <div className="flex min-w-0 flex-col">
@@ -76,14 +75,12 @@ const ProjectSuggestionContent = ({
   suggestion: Extract<MasterControlSuggestion, { type: "project" }>;
 }) => {
   return (
-    <>
-      <span
-        style={{ color: suggestion.project.colour }}
-        className="min-w-0 truncate font-mono text-sm"
-      >
-        {suggestion.project.name}
-      </span>
-    </>
+    <span
+      style={{ color: suggestion.project.colour }}
+      className="min-w-0 truncate font-mono text-sm"
+    >
+      {suggestion.project.name}
+    </span>
   );
 };
 

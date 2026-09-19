@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { COMMANDS } from "../registry";
+import { parseCommand } from "../parser";
 import { useProjects } from "../../../contexts/ProjectContext";
 
 import useInputNavigation from "./useInputNavigation";
@@ -46,62 +47,31 @@ const useMasterControl = (
     return rootCommand.subCommands?.find((item) => item.name === subCommand);
   }, [rootCommand, subCommand]);
 
+  const parsedCommand = useMemo(() => {
+    return parseCommand(inputValue, selectedSubCommand, selectedEntities);
+  }, [inputValue, selectedSubCommand, selectedEntities]);
+
+  const argumentValues = parsedCommand.args;
+
   const argumentParts =
     selectedSubCommand?.parts?.filter((part) => part.type === "argument") ?? [];
 
-  const argumentValues = useMemo(() => {
-    if (!selectedSubCommand) return {};
+  const activeEntityType =
+    parsedCommand.nextPart?.type === "argument" &&
+    parsedCommand.nextPart.argument.kind === "entity"
+      ? parsedCommand.nextPart.argument.entityType
+      : undefined;
 
-    const values: Record<string, string> = {};
-    const argumentTokens = tokens.slice(2);
-
-    if (argumentParts.length === 0) return values;
-
-    if (argumentParts.length === 1) {
-      const argument = argumentParts[0].argument;
-
-      values[argument.name] = argumentTokens.join(" ");
-
-      return values;
-    }
-
-    const lastArgument = argumentParts[argumentParts.length - 1];
-    const firstArguments = argumentParts.slice(0, -1);
-
-    // If the last argument is optional and no value was provided,
-    // all tokens belong to the previous argument(s).
-    const hasLastArgument =
-      argumentTokens.length > 0 &&
-      (lastArgument.argument.required ||
-        argumentTokens.length > firstArguments.length);
-
-    if (hasLastArgument) {
-      const lastValue = argumentTokens.at(-1) ?? "";
-      const firstValue = argumentTokens.slice(0, -1).join(" ");
-
-      firstArguments.forEach((part) => {
-        values[part.argument.name] = firstValue;
-      });
-
-      values[lastArgument.argument.name] = lastValue;
-    } else {
-      const value = argumentTokens.join(" ");
-
-      firstArguments.forEach((part) => {
-        values[part.argument.name] = value;
-      });
-    }
-
-    return values;
-  }, [tokens, selectedSubCommand, argumentParts]);
-
-  const isDeleteProject =
-    rootCommand?.command === "/delete" &&
-    selectedSubCommand?.name === "project";
+  const projectQuery =
+    parsedCommand.nextPart?.type === "argument" &&
+    parsedCommand.nextPart.argument.kind === "entity" &&
+    parsedCommand.nextPart.argument.entityType === "project"
+      ? (argumentValues[parsedCommand.nextPart.argument.name] ?? "")
+      : "";
 
   const projectSuggestions = useProjectSuggestions({
-    enabled: isDeleteProject,
-    query: argumentValues.name ?? "",
+    enabled: activeEntityType === "project",
+    query: projectQuery,
   });
 
   const commandSuggestions = useCommandSuggestions({
@@ -109,6 +79,7 @@ const useMasterControl = (
     rootCommand,
     selectedSubCommand,
     projectSuggestions,
+    nextPart: parsedCommand.nextPart,
   });
 
   const suggestions = suggestionsDismissed
@@ -120,8 +91,6 @@ const useMasterControl = (
       setError(null);
 
       if (suggestion.type === "project") {
-        const prefix = `${root} ${subCommand}`.trim();
-
         setSelectedEntities((current) => ({
           ...current,
           project: {
@@ -131,8 +100,17 @@ const useMasterControl = (
           },
         }));
 
-        setInputValue(`${prefix} ${suggestion.project.name} `);
+        setInputValue(`${inputValue.trim()} ${suggestion.project.name} `);
+
         setSuggestionsDismissed(true);
+
+        return;
+      }
+
+      if (suggestion.type === "keyword") {
+        setInputValue(`${inputValue.trim()} ${suggestion.value} `);
+
+        setSuggestionsDismissed(false);
 
         return;
       }
@@ -141,7 +119,7 @@ const useMasterControl = (
       setSelectedEntities({});
       setSuggestionsDismissed(false);
     },
-    [root, subCommand],
+    [inputValue],
   );
 
   const handleInputChange = useCallback((value: string) => {
@@ -159,24 +137,40 @@ const useMasterControl = (
     for (const part of selectedSubCommand.parts) {
       if (part.type !== "argument") continue;
 
-      const { name, inputType, placeholder, required } = part.argument;
+      const { name, kind, placeholder, required } = part.argument;
 
       const value = argumentValues[name]?.trim() ?? "";
 
-      // Only validate empty values when the argument is required
-      if (required && !value) return `${placeholder || name} is required`;
+      if (required && !value) {
+        return `${placeholder || name} is required`;
+      }
 
-      // Only validate the color if a value was actually provided
-      if (value && inputType === "color" && !isValidHexColor(value)) {
+      if (value && kind === "color" && !isValidHexColor(value)) {
         return `${name} must be a valid hex color`;
+      }
+
+      if (kind === "entity" && required && !selectedEntities[name]) {
+        return `${placeholder || name} is required`;
       }
     }
 
     return null;
-  }, [selectedSubCommand, argumentValues]);
+  }, [selectedSubCommand, argumentValues, selectedEntities]);
 
   const handleExecute = useCallback(async () => {
     if (!selectedSubCommand?.execute) {
+      return;
+    }
+
+    if (!parsedCommand.complete) {
+      const nextPart = parsedCommand.nextPart;
+
+      if (nextPart?.type === "keyword") {
+        setError(`Expected "${nextPart.keyword.value}"`);
+      } else if (nextPart?.type === "argument") {
+        setError(`${nextPart.argument.placeholder} is required`);
+      }
+
       return;
     }
 
@@ -210,6 +204,7 @@ const useMasterControl = (
     }
   }, [
     selectedSubCommand,
+    parsedCommand,
     argumentValues,
     selectedEntities,
     validateArguments,

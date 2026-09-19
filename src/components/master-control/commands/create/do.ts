@@ -3,34 +3,43 @@ import type { SubCommand } from "../registry";
 export const createDo: SubCommand = {
   name: "do",
   description: "Create a new do",
+
   parts: [
     {
       type: "argument",
       argument: {
-        required: true,
         name: "name",
         placeholder: "Do name",
-        inputType: "text",
+        required: true,
+        kind: "text",
+      },
+    },
+
+    {
+      type: "keyword",
+      keyword: {
+        value: "in",
+        description: "Select the project",
+        required: true,
+      },
+    },
+
+    {
+      type: "argument",
+      argument: {
+        name: "project",
+        placeholder: "Project",
+        required: true,
+        kind: "entity",
+        entityType: "project",
       },
     },
   ],
-  execute: async ({ args }) => {
-    const res = await fetch("/api/dos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: args.name,
-      }),
-    });
 
-    if (!res.ok) {
-      const data = (await res.json()) as {
-        error?: string;
-      };
+  execute: async ({ args, entities }) => {
+    const project = entities.project;
 
-      throw new Error(data.error ?? "Failed to create task");
-    }
+    console.log(args.name);
+    console.log(project);
   },
 };

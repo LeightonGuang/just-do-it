@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-
-import { COMMANDS } from "../registry";
+import { useMemo, useState } from "react";
 
 import type { Project } from "../../../../db/schema";
 import type { MasterControlSuggestion } from "../types";
 
+import { type SubCommand } from "../registry";
+import { COMMANDS, type Command, type CommandPart } from "../registry";
+
 type UseCommandSuggestionsOptions = {
   command: string;
-  rootCommand?: (typeof COMMANDS)[number];
-  selectedSubCommand?: NonNullable<
-    (typeof COMMANDS)[number]["subCommands"]
-  >[number];
+  rootCommand: Command | undefined;
+  selectedSubCommand: SubCommand | undefined;
   projectSuggestions: Project[];
+  nextPart?: CommandPart;
 };
 
 const useCommandSuggestions = ({
@@ -19,136 +19,134 @@ const useCommandSuggestions = ({
   rootCommand,
   selectedSubCommand,
   projectSuggestions,
+  nextPart,
 }: UseCommandSuggestionsOptions) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [dismissed, setDismissed] = useState(false);
 
-  const rawSuggestions = useMemo<MasterControlSuggestion[]>(() => {
-    if (!command.startsWith("/")) return [];
+  const suggestions = useMemo<MasterControlSuggestion[]>(() => {
+    const trimmedCommand = command.trim();
 
-    /*
-     * Dynamic argument suggestions.
-     */
-    const isDeleteProject =
-      rootCommand?.command === "/delete" &&
-      selectedSubCommand?.name === "project";
-
-    if (isDeleteProject) {
-      return projectSuggestions.map((project) => ({
-        type: "project",
-        project,
-        value: project.name,
-        label: project.name,
-      }));
+    if (!trimmedCommand.startsWith("/")) {
+      return [];
     }
 
-    /*
-     * A complete subcommand has been selected.
-     * At this point there are no command suggestions.
-     */
-    if (selectedSubCommand) return [];
+    if (!rootCommand) {
+      const query = trimmedCommand.slice(1).toLowerCase();
 
-    /*
-     * /
-     */
-    if (command === "/") {
-      return COMMANDS.map((item) => ({
-        type: "command",
+      return COMMANDS.filter((item) =>
+        item.command.slice(1).toLowerCase().startsWith(query),
+      ).map((item) => ({
+        type: "command" as const,
         value: item.command,
         label: item.command,
         description: item.description,
       }));
     }
 
-    /*
-     * /del
-     */
-    if (!command.includes(" ")) {
-      return COMMANDS.filter((item) => item.command.startsWith(command)).map(
-        (item) => ({
-          type: "command",
-          value: item.command,
-          label: item.command,
-          description: item.description,
-        }),
+    if (!selectedSubCommand) {
+      const query = trimmedCommand
+        .slice(rootCommand.command.length)
+        .trim()
+        .toLowerCase();
+
+      return (
+        rootCommand.subCommands
+          ?.filter((subCommand) =>
+            subCommand.name.toLowerCase().startsWith(query),
+          )
+          .map((subCommand) => ({
+            type: "sub-command" as const,
+            value: `${rootCommand.command} ${subCommand.name}`,
+            label: subCommand.name,
+            description: subCommand.description,
+          })) ?? []
       );
     }
 
-    /*
-     * /delete p
-     */
-    if (rootCommand?.subCommands) {
-      const [, subQuery = ""] = command.split(" ");
+    if (!nextPart) {
+      return [];
+    }
 
-      return rootCommand.subCommands
-        .filter((item) => item.name.startsWith(subQuery))
-        .map((item) => ({
-          type: "sub-command",
-          value: `${rootCommand.command} ${item.name}`,
-          label: item.name,
-          description: item.description,
+    if (nextPart.type === "keyword") {
+      const query = getCurrentPartQuery(
+        trimmedCommand,
+        selectedSubCommand,
+        nextPart,
+      );
+
+      if (
+        query &&
+        !nextPart.keyword.value.toLowerCase().startsWith(query.toLowerCase())
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          type: "keyword",
+          value: nextPart.keyword.value,
+          label: nextPart.keyword.value,
+          description: nextPart.keyword.description ?? "",
+        },
+      ];
+    }
+
+    if (nextPart.type === "argument" && nextPart.argument.kind === "entity") {
+      if (nextPart.argument.entityType === "project") {
+        return projectSuggestions.map((project) => ({
+          type: "project" as const,
+          project,
         }));
+      }
     }
 
     return [];
-  }, [command, rootCommand, selectedSubCommand, projectSuggestions]);
-
-  /*
-   * Any time the underlying suggestions change,
-   * start from the first suggestion.
-   */
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [rawSuggestions]);
-
-  const suggestions = dismissed ? [] : rawSuggestions;
-
-  const selectedSuggestion = suggestions[selectedIndex];
-
-  const moveDown = () => {
-    if (suggestions.length === 0) return;
-
-    setSelectedIndex((current) =>
-      current >= suggestions.length - 1 ? 0 : current + 1,
-    );
-  };
+  }, [command, rootCommand, selectedSubCommand, projectSuggestions, nextPart]);
 
   const moveUp = () => {
-    if (suggestions.length === 0) return;
+    setSelectedIndex((current) => Math.max(current - 1, 0));
+  };
 
+  const moveDown = () => {
     setSelectedIndex((current) =>
-      current <= 0 ? suggestions.length - 1 : current - 1,
+      Math.min(current + 1, Math.max(suggestions.length - 1, 0)),
     );
-  };
-
-  const dismiss = () => {
-    setDismissed(true);
-  };
-
-  const reopen = () => {
-    if (rawSuggestions.length > 0) setDismissed(false);
   };
 
   const reset = () => {
     setSelectedIndex(0);
-    setDismissed(false);
   };
 
   return {
     suggestions,
-    rawSuggestions,
-
+    rawSuggestions: suggestions,
     selectedIndex,
-    selectedSuggestion,
-
-    dismissed,
-
     moveUp,
     moveDown,
-    dismiss,
-    reopen,
     reset,
   };
+};
+
+const getCurrentPartQuery = (
+  command: string,
+  selectedSubCommand: SubCommand,
+  nextPart: CommandPart,
+) => {
+  if (nextPart.type !== "keyword") {
+    return "";
+  }
+
+  const parts = selectedSubCommand.parts ?? [];
+  const nextPartIndex = parts.findIndex(
+    (part) =>
+      part.type === "keyword" && part.keyword.value === nextPart.keyword.value,
+  );
+
+  if (nextPartIndex === -1) {
+    return "";
+  }
+
+  return "";
 };
 
 export default useCommandSuggestions;

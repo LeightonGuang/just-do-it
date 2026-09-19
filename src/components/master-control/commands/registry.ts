@@ -6,7 +6,6 @@ import type { MasterControlSelectedEntity } from "./types";
 
 export type CommandContext = {
   args: Record<string, string>;
-
   entities: Record<string, MasterControlSelectedEntity>;
 
   refetch: {
@@ -17,16 +16,21 @@ export type CommandContext = {
 
 export type CommandPart =
   | {
-      type: "literal";
-      value: string;
+      type: "keyword";
+      keyword: {
+        value: string;
+        description?: string;
+        required: boolean;
+      };
     }
   | {
       type: "argument";
       argument: {
         name: string;
         placeholder: string;
-        inputType: "text" | "color" | "number";
         required: boolean;
+        kind: "text" | "color" | "number" | "entity";
+        entityType?: "project" | "do" | "column";
       };
     };
 
