@@ -47,34 +47,61 @@ const useMasterControl = () => {
     if (!selectedSubCommand) return {};
 
     const values: Record<string, string> = {};
-    const argumentTokens = tokens.slice(2);
+    const argumentText = inputValue.trim().split(/\s+/).slice(2);
 
     if (argumentParts.length === 0) return values;
 
     if (argumentParts.length === 1) {
-      values[argumentParts[0].argument.name] = argumentTokens.join(" ");
+      values[argumentParts[0].argument.name] = argumentText.join(" ");
+
       return values;
     }
 
-    const lastArgument = argumentParts[argumentParts.length - 1];
+    let tokenIndex = 0;
 
-    values[lastArgument.argument.name] =
-      argumentTokens[argumentTokens.length - 1] ?? "";
+    for (let index = 0; index < argumentParts.length; index++) {
+      const part = argumentParts[index];
+      const isLastArgument = index === argumentParts.length - 1;
 
-    const firstArgument = argumentParts[0];
+      if (isLastArgument) {
+        values[part.argument.name] = argumentText[tokenIndex] ?? "";
+        break;
+      }
 
-    values[firstArgument.argument.name] = argumentTokens.slice(0, -1).join(" ");
+      const remainingArguments = argumentParts.length - index - 1;
+      const remainingTokens = argumentText.length - tokenIndex;
+      const tokensForArgument = Math.max(
+        0,
+        remainingTokens - remainingArguments,
+      );
+
+      values[part.argument.name] = argumentText
+        .slice(tokenIndex, tokenIndex + tokensForArgument)
+        .join(" ");
+
+      tokenIndex += tokensForArgument;
+    }
 
     return values;
-  }, [tokens, selectedSubCommand, argumentParts]);
+  }, [inputValue, selectedSubCommand, argumentParts]);
 
   const isDeleteProject =
     rootCommand?.command === "/delete" &&
     selectedSubCommand?.name === "project";
 
+  const projectQuery = useMemo(() => {
+    if (!isDeleteProject) return "";
+
+    const prefix = `${root} ${subCommand}`;
+
+    if (!inputValue.startsWith(prefix)) return "";
+
+    return inputValue.slice(prefix.length).trimStart();
+  }, [inputValue, root, subCommand, isDeleteProject]);
+
   const projectSuggestions = useProjectSuggestions({
     enabled: isDeleteProject,
-    query: argumentValues.project ?? "",
+    query: projectQuery,
   });
 
   const commandSuggestions = useCommandSuggestions({

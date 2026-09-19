@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
-import { eq, ilike } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 
 import { projects } from "../../db/schema";
 
@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ url }) => {
     const filteredProjects = await db
       .select()
       .from(projects)
-      .where(ilike(projects.name, `%${name}%`));
+      .where(like(projects.name, `%${name}%`));
 
     return Response.json(filteredProjects);
   }
