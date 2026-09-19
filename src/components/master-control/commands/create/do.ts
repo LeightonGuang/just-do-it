@@ -1,15 +1,15 @@
 import type { SubCommand } from "../registry";
 
 export const createDo: SubCommand = {
-  name: "task",
-  description: "Create a new task",
+  name: "do",
+  description: "Create a new do",
   parts: [
     {
       type: "argument",
       argument: {
         required: true,
         name: "name",
-        placeholder: "Task name",
+        placeholder: "Do name",
         inputType: "text",
       },
     },
