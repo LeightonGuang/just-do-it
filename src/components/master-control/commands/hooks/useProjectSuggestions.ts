@@ -48,7 +48,7 @@ const useProjectSuggestions = ({
         console.error("Failed to fetch project suggestions:", error);
         setProjects([]);
       }
-    }, 500);
+    }, 250);
 
     return () => {
       clearTimeout(timeout);

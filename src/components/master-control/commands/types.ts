@@ -21,3 +21,9 @@ export type ProjectSuggestion = {
 
 export type MasterControlSuggestion =
   CommandSuggestion | SubCommandSuggestion | ProjectSuggestion;
+
+export type MasterControlSelectedEntity = {
+  type: "project";
+  id: number;
+  label: string;
+};

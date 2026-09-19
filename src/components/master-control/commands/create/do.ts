@@ -7,6 +7,7 @@ export const createDo: SubCommand = {
     {
       type: "argument",
       argument: {
+        required: true,
         name: "name",
         placeholder: "Task name",
         inputType: "text",

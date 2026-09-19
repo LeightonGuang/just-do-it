@@ -7,14 +7,21 @@ export const deleteProject: SubCommand = {
     {
       type: "argument",
       argument: {
+        required: true,
         name: "name",
         placeholder: "Project name",
         inputType: "text",
       },
     },
   ],
-  execute: async ({ args, refetch }) => {
-    const res = await fetch(`/api/projects/${args.id}`, {
+  execute: async ({ entities, refetch }) => {
+    const project = entities.project;
+
+    if (!project || project.type !== "project") {
+      throw new Error("Project is required");
+    }
+
+    const res = await fetch(`/api/projects?id=${project.id}`, {
       method: "DELETE",
     });
 

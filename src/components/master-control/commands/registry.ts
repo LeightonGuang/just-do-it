@@ -2,8 +2,12 @@ import { createDo } from "./create/do";
 import { createProject } from "./create/project";
 import { deleteProject } from "./delete/project";
 
+import type { MasterControlSelectedEntity } from "./types";
+
 export type CommandContext = {
   args: Record<string, string>;
+
+  entities: Record<string, MasterControlSelectedEntity>;
 
   refetch: {
     projects: () => Promise<void>;
@@ -22,6 +26,7 @@ export type CommandPart =
         name: string;
         placeholder: string;
         inputType: "text" | "color" | "number";
+        required: boolean;
       };
     };
 

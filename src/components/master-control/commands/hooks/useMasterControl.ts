@@ -8,6 +8,7 @@ import useProjectSuggestions from "./useProjectSuggestions";
 import useCommandSuggestions from "./useCommnandSuggestions";
 
 import type { MasterControlSuggestion } from "../types";
+import type { MasterControlSelectedEntity } from "../types";
 
 const isValidHexColor = (value: string) => {
   return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
@@ -17,6 +18,9 @@ const useMasterControl = () => {
   const { fetchSidebarDos, fetchSidebarProjects } = useProjects();
 
   const [inputValue, setInputValue] = useState("");
+  const [selectedEntities, setSelectedEntities] = useState<
+    Record<string, MasterControlSelectedEntity>
+  >({});
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
@@ -47,61 +51,55 @@ const useMasterControl = () => {
     if (!selectedSubCommand) return {};
 
     const values: Record<string, string> = {};
-    const argumentText = inputValue.trim().split(/\s+/).slice(2);
+    const argumentTokens = tokens.slice(2);
 
     if (argumentParts.length === 0) return values;
 
     if (argumentParts.length === 1) {
-      values[argumentParts[0].argument.name] = argumentText.join(" ");
+      const argument = argumentParts[0].argument;
+
+      values[argument.name] = argumentTokens.join(" ");
 
       return values;
     }
 
-    let tokenIndex = 0;
+    const lastArgument = argumentParts[argumentParts.length - 1];
+    const firstArguments = argumentParts.slice(0, -1);
 
-    for (let index = 0; index < argumentParts.length; index++) {
-      const part = argumentParts[index];
-      const isLastArgument = index === argumentParts.length - 1;
+    // If the last argument is optional and no value was provided,
+    // all tokens belong to the previous argument(s).
+    const hasLastArgument =
+      argumentTokens.length > 0 &&
+      (lastArgument.argument.required ||
+        argumentTokens.length > firstArguments.length);
 
-      if (isLastArgument) {
-        values[part.argument.name] = argumentText[tokenIndex] ?? "";
-        break;
-      }
+    if (hasLastArgument) {
+      const lastValue = argumentTokens.at(-1) ?? "";
+      const firstValue = argumentTokens.slice(0, -1).join(" ");
 
-      const remainingArguments = argumentParts.length - index - 1;
-      const remainingTokens = argumentText.length - tokenIndex;
-      const tokensForArgument = Math.max(
-        0,
-        remainingTokens - remainingArguments,
-      );
+      firstArguments.forEach((part) => {
+        values[part.argument.name] = firstValue;
+      });
 
-      values[part.argument.name] = argumentText
-        .slice(tokenIndex, tokenIndex + tokensForArgument)
-        .join(" ");
+      values[lastArgument.argument.name] = lastValue;
+    } else {
+      const value = argumentTokens.join(" ");
 
-      tokenIndex += tokensForArgument;
+      firstArguments.forEach((part) => {
+        values[part.argument.name] = value;
+      });
     }
 
     return values;
-  }, [inputValue, selectedSubCommand, argumentParts]);
+  }, [tokens, selectedSubCommand, argumentParts]);
 
   const isDeleteProject =
     rootCommand?.command === "/delete" &&
     selectedSubCommand?.name === "project";
 
-  const projectQuery = useMemo(() => {
-    if (!isDeleteProject) return "";
-
-    const prefix = `${root} ${subCommand}`;
-
-    if (!inputValue.startsWith(prefix)) return "";
-
-    return inputValue.slice(prefix.length).trimStart();
-  }, [inputValue, root, subCommand, isDeleteProject]);
-
   const projectSuggestions = useProjectSuggestions({
     enabled: isDeleteProject,
-    query: projectQuery,
+    query: argumentValues.name ?? "",
   });
 
   const commandSuggestions = useCommandSuggestions({
@@ -120,20 +118,33 @@ const useMasterControl = () => {
       setError(null);
 
       if (suggestion.type === "project") {
-        setInputValue(`${inputValue.trimEnd()} ${suggestion.project.name} `);
+        const prefix = `${root} ${subCommand}`.trim();
 
+        setSelectedEntities((current) => ({
+          ...current,
+          project: {
+            type: "project",
+            id: suggestion.project.id,
+            label: suggestion.project.name,
+          },
+        }));
+
+        setInputValue(`${prefix} ${suggestion.project.name} `);
         setSuggestionsDismissed(true);
+
         return;
       }
 
       setInputValue(`${suggestion.value} `);
+      setSelectedEntities({});
       setSuggestionsDismissed(false);
     },
-    [inputValue],
+    [root, subCommand],
   );
 
   const handleInputChange = useCallback((value: string) => {
     setInputValue(value);
+    setSelectedEntities({});
     setError(null);
     setSuggestionsDismissed(false);
   }, []);
@@ -144,19 +155,17 @@ const useMasterControl = () => {
     }
 
     for (const part of selectedSubCommand.parts) {
-      if (part.type !== "argument") {
-        continue;
-      }
+      if (part.type !== "argument") continue;
 
-      const { name, inputType, placeholder } = part.argument;
+      const { name, inputType, placeholder, required } = part.argument;
 
       const value = argumentValues[name]?.trim() ?? "";
 
-      if (!value) {
-        return `${placeholder || name} is required`;
-      }
+      // Only validate empty values when the argument is required
+      if (required && !value) return `${placeholder || name} is required`;
 
-      if (inputType === "color" && !isValidHexColor(value)) {
+      // Only validate the color if a value was actually provided
+      if (value && inputType === "color" && !isValidHexColor(value)) {
         return `${name} must be a valid hex color`;
       }
     }
@@ -182,6 +191,7 @@ const useMasterControl = () => {
     try {
       await selectedSubCommand.execute({
         args: argumentValues,
+        entities: selectedEntities,
         refetch: {
           projects: fetchSidebarProjects,
           dos: fetchSidebarDos,
@@ -189,6 +199,7 @@ const useMasterControl = () => {
       });
 
       setInputValue("");
+      setSelectedEntities({});
       setSuggestionsDismissed(false);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Something went wrong");
@@ -198,6 +209,7 @@ const useMasterControl = () => {
   }, [
     selectedSubCommand,
     argumentValues,
+    selectedEntities,
     validateArguments,
     fetchSidebarProjects,
     fetchSidebarDos,
@@ -205,6 +217,7 @@ const useMasterControl = () => {
 
   const reset = useCallback(() => {
     setInputValue("");
+    setSelectedEntities({});
     setError(null);
     setSuggestionsDismissed(false);
   }, []);
@@ -237,6 +250,7 @@ const useMasterControl = () => {
 
     command: root,
     argumentValues,
+    selectedEntities,
 
     executing,
     error,

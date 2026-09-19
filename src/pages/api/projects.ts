@@ -45,15 +45,10 @@ export const POST: APIRoute = async ({ request }) => {
   };
 
   const name = body.name?.trim();
-  const colour = body.colour;
+  const colour = body.colour ?? "#000000";
 
-  if (!name) {
+  if (!name)
     return Response.json({ error: "Name is required" }, { status: 400 });
-  }
-
-  if (!colour) {
-    return Response.json({ error: "Colour is required" }, { status: 400 });
-  }
 
   await db.insert(projects).values({
     name,
