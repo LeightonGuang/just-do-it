@@ -3,6 +3,7 @@ import type { SubCommand } from "../registry";
 export const createProject: SubCommand = {
   name: "project",
   description: "Create a new project",
+
   parts: [
     {
       type: "argument",
@@ -10,7 +11,7 @@ export const createProject: SubCommand = {
         required: true,
         name: "name",
         placeholder: "Project Name",
-        inputType: "text",
+        kind: "text",
       },
     },
     {
@@ -19,10 +20,11 @@ export const createProject: SubCommand = {
         required: false,
         name: "colour",
         placeholder: "#000000",
-        inputType: "color",
+        kind: "color",
       },
     },
   ],
+
   execute: async ({ args, refetch }) => {
     const res = await fetch("/api/projects", {
       method: "POST",
