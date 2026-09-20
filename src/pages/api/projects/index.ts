@@ -1,10 +1,9 @@
 import type { APIRoute } from "astro";
+import { eq, like } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
-import { eq, like } from "drizzle-orm";
-
-import { projects } from "../../db/schema";
+import { projects } from "../../../db/schema";
 
 export const GET: APIRoute = async ({ url }) => {
   const db = drizzle(env.just_do_it);
