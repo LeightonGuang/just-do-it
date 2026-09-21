@@ -7,7 +7,7 @@ import { columns, dos, projects } from "../../../../db/schema";
 
 import type { Column, Do, Project } from "../../../../db/schema";
 
-export type ProjectResponse = {
+export type KanbanResponse = {
   project: Project;
   columns: Column[];
   dos: Do[];
@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ params }) => {
     .from(dos)
     .where(eq(dos.project_id, projectId));
 
-  const response: ProjectResponse = {
+  const response: KanbanResponse = {
     project,
     columns: projectColumns,
     dos: projectDos,

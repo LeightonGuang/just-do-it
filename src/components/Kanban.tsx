@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
-
-import type { Column, Do, Project } from "../db/schema";
-import type { ProjectResponse } from "../pages/api/projects/[projectId]";
+import { useKanban } from "./contexts/KanbanContext";
 
 const Kanban = ({
   projectId,
@@ -10,40 +7,7 @@ const Kanban = ({
   projectId: string;
   todoId: string | null;
 }) => {
-  const [project, setProject] = useState<Project | null>(null);
-  const [columns, setColumns] = useState<Column[]>([]);
-  const [dos, setDos] = useState<Do[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(`/api/projects/${projectId}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch project");
-        }
-
-        const data: ProjectResponse = await response.json();
-
-        setProject(data.project);
-        setColumns(data.columns);
-        setDos(data.dos);
-      } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Something went wrong",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [projectId]);
+  const { loading, error, project, columns, dos } = useKanban();
 
   if (loading) {
     return (
@@ -56,7 +20,7 @@ const Kanban = ({
   if (error) {
     return (
       <section className="size-full min-h-screen border border-border p-8">
-        <p className="text-red-500">{error}</p>
+        <p className="text-danger">{error}</p>
       </section>
     );
   }
@@ -73,7 +37,7 @@ const Kanban = ({
     <section className="size-full min-h-screen border border-border p-8">
       <h1 className="mb-8 leading-4 font-medium text-text">{project.name}</h1>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-8">
         {columns.map((column) => {
           const columnDos = dos.filter(
             (doItem) => doItem.column_id === column.id,

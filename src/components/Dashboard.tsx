@@ -2,6 +2,7 @@ import Kanban from "./Kanban";
 import Sidebar from "./Sidebar";
 import Workspace from "./Workspace";
 import DailyQuote from "./DailyQuote";
+import { KanbanProvider } from "./contexts/KanbanContext";
 
 const Dashboard = ({
   projectId,
@@ -16,7 +17,9 @@ const Dashboard = ({
 
       <Workspace className="dot-grid flex size-full items-center justify-center">
         {projectId ? (
-          <Kanban projectId={projectId} todoId={todoId} />
+          <KanbanProvider projectId={projectId}>
+            <Kanban projectId={projectId} todoId={todoId} />
+          </KanbanProvider>
         ) : (
           <DailyQuote />
         )}
