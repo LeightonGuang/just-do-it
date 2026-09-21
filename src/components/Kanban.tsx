@@ -1,12 +1,9 @@
+import { twMerge } from "tailwind-merge";
+
+import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts/KanbanContext";
 
-const Kanban = ({
-  projectId,
-  todoId,
-}: {
-  projectId: string;
-  todoId: string | null;
-}) => {
+const Kanban = ({ doId }: { doId: string | null }) => {
   const { loading, error, project, columns, dos } = useKanban();
 
   if (loading) {
@@ -54,18 +51,13 @@ const Kanban = ({
 
               <div className="mt-4 flex flex-col gap-2">
                 {columnDos.map((doItem) => (
-                  <div
+                  <KanbanCard
                     key={doItem.id}
-                    className="border border-border bg-do p-3 transition-colors hover:bg-do-hover"
-                  >
-                    <p className="font-medium text-text">{doItem.title}</p>
-
-                    {doItem.description && (
-                      <p className="mt-1 text-sm text-text-muted">
-                        {doItem.description}
-                      </p>
+                    doItem={doItem}
+                    className={twMerge(
+                      Number(doId) === doItem.id && "border border-black",
                     )}
-                  </div>
+                  />
                 ))}
               </div>
             </article>

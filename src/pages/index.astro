@@ -3,12 +3,12 @@ import HomePage from "../components/HomePage.tsx";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
 const projectId = Astro.url.searchParams.get("project_id");
-const todoId = Astro.url.searchParams.get("todo_id");
+const doId = Astro.url.searchParams.get("do_id");
 ---
 
 <BaseLayout
   title="Just Do It"
   description="Just Do It is a task management app."
 >
-  <HomePage client:load projectId={projectId} todoId={todoId} />
+  <HomePage client:load projectId={projectId} doId={doId} />
 </BaseLayout>

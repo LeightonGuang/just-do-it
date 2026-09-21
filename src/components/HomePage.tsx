@@ -3,15 +3,15 @@ import { ProjectsProvider } from "./contexts/ProjectContext";
 
 const HomePage = ({
   projectId,
-  todoId,
+  doId,
 }: {
   projectId: string | null;
-  todoId: string | null;
+  doId: string | null;
 }) => {
   return (
     <main className="h-dvh w-dvw">
       <ProjectsProvider>
-        <Dashboard projectId={projectId} todoId={todoId} />
+        <Dashboard projectId={projectId} doId={doId} />
       </ProjectsProvider>
     </main>
   );

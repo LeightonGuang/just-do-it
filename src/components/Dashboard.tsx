@@ -6,10 +6,10 @@ import { KanbanProvider } from "./contexts/KanbanContext";
 
 const Dashboard = ({
   projectId,
-  todoId,
+  doId,
 }: {
   projectId: string | null;
-  todoId: string | null;
+  doId: string | null;
 }) => {
   return (
     <div className="flex">
@@ -18,7 +18,7 @@ const Dashboard = ({
       <Workspace className="dot-grid flex size-full items-center justify-center">
         {projectId ? (
           <KanbanProvider projectId={projectId}>
-            <Kanban projectId={projectId} todoId={todoId} />
+            <Kanban doId={doId} />
           </KanbanProvider>
         ) : (
           <DailyQuote />
