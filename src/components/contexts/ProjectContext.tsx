@@ -44,7 +44,7 @@ export const ProjectsProvider = ({
   }, []);
 
   const fetchSidebarDos = useCallback(async () => {
-    const res = await fetch("/api/tasks");
+    const res = await fetch("/api/dos");
 
     if (!res.ok) throw new Error("Failed to fetch tasks");
 

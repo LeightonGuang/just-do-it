@@ -49,8 +49,8 @@ const useEntitySuggestions = ({
           }
         } else if (entityType === "do") {
           const url = trimmedQuery
-            ? `/api/tasks?title=${encodeURIComponent(trimmedQuery)}`
-            : "/api/tasks";
+            ? `/api/dos?title=${encodeURIComponent(trimmedQuery)}`
+            : "/api/dos";
           const res = await fetch(url, { signal: controller.signal });
           if (res.ok) {
             const data: Do[] = await res.json();

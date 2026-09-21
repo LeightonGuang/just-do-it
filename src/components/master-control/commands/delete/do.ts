@@ -19,7 +19,9 @@ export const deleteDo: SubCommand = {
     let doId: number | undefined = entities.do?.id;
 
     if (!doId && args.do) {
-      const res = await fetch(`/api/tasks?title=${encodeURIComponent(args.do.trim())}`);
+      const res = await fetch(
+        `/api/dos?title=${encodeURIComponent(args.do.trim())}`,
+      );
       if (res.ok) {
         const found = await res.json();
         if (Array.isArray(found) && found.length > 0) {
@@ -28,11 +30,9 @@ export const deleteDo: SubCommand = {
       }
     }
 
-    if (!doId) {
-      throw new Error(`Do "${args.do || ""}" not found`);
-    }
+    if (!doId) throw new Error(`Do "${args.do || ""}" not found`);
 
-    const res = await fetch(`/api/tasks?id=${doId}`, {
+    const res = await fetch(`/api/dos/${doId}`, {
       method: "DELETE",
     });
 

@@ -31,7 +31,9 @@ export const updateDoTitle: SubCommand = {
     let doId: number | undefined = entities.do?.id;
 
     if (!doId && args.do) {
-      const res = await fetch(`/api/tasks?title=${encodeURIComponent(args.do.trim())}`);
+      const res = await fetch(
+        `/api/dos?title=${encodeURIComponent(args.do.trim())}`,
+      );
       if (res.ok) {
         const found = await res.json();
         if (Array.isArray(found) && found.length > 0) {
@@ -48,7 +50,7 @@ export const updateDoTitle: SubCommand = {
       throw new Error("New title is required");
     }
 
-    const res = await fetch("/api/tasks", {
+    const res = await fetch("/api/dos", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

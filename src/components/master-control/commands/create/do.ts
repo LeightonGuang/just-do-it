@@ -58,7 +58,7 @@ export const createDo: SubCommand = {
       throw new Error("No project found. Please create a project first.");
     }
 
-    const res = await fetch("/api/tasks", {
+    const res = await fetch("/api/dos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

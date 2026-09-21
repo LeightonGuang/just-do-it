@@ -32,7 +32,9 @@ export const moveDo: SubCommand = {
     let columnId: number | undefined = entities.column?.id;
 
     if (!doId && args.do) {
-      const res = await fetch(`/api/tasks?title=${encodeURIComponent(args.do.trim())}`);
+      const res = await fetch(
+        `/api/dos?title=${encodeURIComponent(args.do.trim())}`,
+      );
       if (res.ok) {
         const found = await res.json();
         if (Array.isArray(found) && found.length > 0) {
@@ -42,7 +44,9 @@ export const moveDo: SubCommand = {
     }
 
     if (!columnId && args.column) {
-      const res = await fetch(`/api/columns?name=${encodeURIComponent(args.column.trim())}`);
+      const res = await fetch(
+        `/api/columns?name=${encodeURIComponent(args.column.trim())}`,
+      );
       if (res.ok) {
         const found = await res.json();
         if (Array.isArray(found) && found.length > 0) {
@@ -59,7 +63,7 @@ export const moveDo: SubCommand = {
       throw new Error(`Column "${args.column || ""}" not found`);
     }
 
-    const res = await fetch("/api/tasks", {
+    const res = await fetch("/api/dos", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
