@@ -1,5 +1,5 @@
 import Dashboard from "./Dashboard";
-import { ProjectsProvider } from "./contexts/ProjectContext";
+import { SidebarProvider } from "./contexts/SidebarContext";
 
 const HomePage = ({
   projectId,
@@ -10,9 +10,9 @@ const HomePage = ({
 }) => {
   return (
     <main className="h-dvh w-dvw">
-      <ProjectsProvider>
+      <SidebarProvider>
         <Dashboard projectId={projectId} doId={doId} />
-      </ProjectsProvider>
+      </SidebarProvider>
     </main>
   );
 };

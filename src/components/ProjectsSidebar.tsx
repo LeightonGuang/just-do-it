@@ -2,7 +2,7 @@ import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
 import { type Project } from "../db/schema";
-import { useProjects } from "./contexts/ProjectContext";
+import { useProjects } from "./contexts/SidebarContext";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
   const { sidebarProjects } = useProjects();

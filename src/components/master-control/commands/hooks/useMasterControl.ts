@@ -5,7 +5,7 @@ import { parseCommand } from "../parser";
 import useInputNavigation from "./useInputNavigation";
 import useEntitySuggestions from "./useEntitySuggestions";
 import useCommandSuggestions from "./useCommandSuggestions";
-import { useProjects } from "../../../contexts/ProjectContext";
+import { useProjects } from "../../../contexts/SidebarContext";
 
 import type { MasterControlSuggestion, SelectedEntity } from "../types";
 
