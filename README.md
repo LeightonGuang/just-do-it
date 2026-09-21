@@ -21,6 +21,27 @@ A task management application built with Astro, React, Tailwind CSS, Cloudflare 
 
 ---
 
+# Commands
+
+## Table of commands
+
+| command | sub command | keyword     | argument   | description                     |
+| ------- | ----------- | ----------- | ---------- | ------------------------------- |
+| /create | do          | in          | project    | create a new do                 |
+|         | project     | -           | pjt name   | create a new project            |
+|         | column      | in          | project    | create a new column             |
+| /delete | do          | -           | do title   | delete a do                     |
+|         | project     | -           | pjt name   | delete a project                |
+|         | column      | in          | project    | delete a column                 |
+| /move   | do          | to          | column     | move a do to a different column |
+| /update | do          | title       | new title  | update a do title               |
+|         | do          | description | new desc   | update a do description         |
+|         | do          | due_at      | new date   | update a do due date            |
+|         | project     | name        | new name   | update project name             |
+|         | project     | colour      | hex colour | update project colour           |
+|         | column      | name        | new name   | update project column name      |
+|         | column      | order       | new order  | update project column order     |
+
 # Database
 
 This project uses:
