@@ -8,19 +8,19 @@ export const createProject: SubCommand = {
     {
       type: "argument",
       argument: {
-        required: true,
         name: "name",
-        placeholder: "Project Name",
+        placeholder: "Project Name [colour optional — hex starts with #]",
         kind: "text",
+        required: true,
       },
     },
     {
       type: "argument",
       argument: {
-        required: false,
         name: "colour",
-        placeholder: "#000000",
+        placeholder: "#hex",
         kind: "color",
+        required: false,
       },
     },
   ],
@@ -33,7 +33,7 @@ export const createProject: SubCommand = {
       },
       body: JSON.stringify({
         name: args.name,
-        colour: args.colour,
+        colour: args.colour || undefined,
       }),
     });
 

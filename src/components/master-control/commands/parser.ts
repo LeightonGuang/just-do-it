@@ -8,21 +8,21 @@ export type CommandParseResult = {
   complete: boolean;
 };
 
-const findLastKeywordIndex = (
-  tokens: string[],
-  keyword: string,
-  startIndex: number,
-) => {
-  const normalizedKeyword = keyword.toLowerCase();
-
-  for (let index = tokens.length - 1; index >= startIndex; index--) {
-    if (tokens[index].toLowerCase() === normalizedKeyword) {
-      return index;
-    }
-  }
-
-  return -1;
+const isHexStart = (value: string) => {
+  return value.startsWith("#");
 };
+
+const isValidHexColor = (value: string) => {
+  return /^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(value);
+};
+
+/**
+ * Parses the user's command input into arguments and determines what part
+ * of the command should come next. It handles keywords, entity arguments
+ * like projects, free-text values like project names, and optional hex
+ * colours. It also keeps partial values while the user is typing so the
+ * UI can show the appropriate hint or suggestions.
+ */
 
 export const parseCommand = (
   input: string,
@@ -41,16 +41,15 @@ export const parseCommand = (
   const argumentTokens = tokens.slice(2);
 
   const args: Record<string, string> = {};
-
   let tokenIndex = 0;
 
   for (let partIndex = 0; partIndex < subCommand.parts.length; partIndex++) {
     const part = subCommand.parts[partIndex];
 
     if (part.type === "keyword") {
-      const currentToken = argumentTokens[tokenIndex];
+      const token = argumentTokens[tokenIndex];
 
-      if (currentToken?.toLowerCase() === part.keyword.value.toLowerCase()) {
+      if (token?.toLowerCase() === part.keyword.value.toLowerCase()) {
         tokenIndex++;
         continue;
       }
@@ -63,45 +62,108 @@ export const parseCommand = (
       };
     }
 
-    const nextPart = subCommand.parts[partIndex + 1];
+    const argument = part.argument;
 
-    if (nextPart?.type === "keyword" && tokenIndex < argumentTokens.length) {
-      const keywordIndex = findLastKeywordIndex(
-        argumentTokens,
-        nextPart.keyword.value,
-        tokenIndex,
-      );
+    if (argument.kind === "entity") {
+      const selected = selectedEntities[argument.name];
 
-      if (keywordIndex !== -1) {
-        const value = argumentTokens
-          .slice(tokenIndex, keywordIndex)
-          .join(" ")
-          .trim();
+      if (selected) {
+        args[argument.name] = selected.label;
+        tokenIndex++;
+        continue;
+      }
 
-        if (value) {
-          args[part.argument.name] = value;
+      const value = argumentTokens[tokenIndex];
+
+      if (value) {
+        args[argument.name] = value;
+        tokenIndex++;
+      }
+
+      if (argument.required && !value) {
+        return {
+          args,
+          entities: selectedEntities,
+          nextPart: part,
+          complete: false,
+        };
+      }
+
+      continue;
+    }
+
+    if (argument.kind === "text") {
+      const remainingTokens = argumentTokens.slice(tokenIndex);
+
+      const colorIndex = remainingTokens.findIndex(isHexStart);
+
+      if (colorIndex !== -1) {
+        const name = remainingTokens.slice(0, colorIndex).join(" ").trim();
+
+        if (name) {
+          args[argument.name] = name;
         }
 
-        tokenIndex = keywordIndex;
+        tokenIndex += colorIndex;
 
         continue;
       }
+
+      const value = remainingTokens.join(" ").trim();
+
+      if (value) {
+        args[argument.name] = value;
+        tokenIndex = argumentTokens.length;
+
+        continue;
+      }
+
+      if (argument.required) {
+        return {
+          args,
+          entities: selectedEntities,
+          nextPart: part,
+          complete: false,
+        };
+      }
+
+      continue;
     }
 
-    const value = argumentTokens.slice(tokenIndex).join(" ").trim();
+    if (argument.kind === "color") {
+      const value = argumentTokens[tokenIndex];
 
-    if (value) {
-      args[part.argument.name] = value;
-      tokenIndex = argumentTokens.length;
-    }
+      if (!value) {
+        return {
+          args,
+          entities: selectedEntities,
+          nextPart: part,
+          complete: true,
+        };
+      }
 
-    if (!value && part.argument.required) {
-      return {
-        args,
-        entities: selectedEntities,
-        nextPart: part,
-        complete: false,
-      };
+      if (!value.startsWith("#")) {
+        return {
+          args,
+          entities: selectedEntities,
+          nextPart: part,
+          complete: false,
+        };
+      }
+
+      args[argument.name] = value;
+      tokenIndex++;
+
+      if (!isValidHexColor(value)) {
+        return {
+          args,
+          entities: selectedEntities,
+          nextPart: part,
+          complete: false,
+        };
+      }
+
+      continue;
     }
   }
 

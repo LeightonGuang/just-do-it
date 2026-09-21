@@ -13,10 +13,9 @@ const MasterControl = () => {
     inputValue,
     executing,
     error,
-
     suggestions,
+    currentArgument,
     selectedSuggestionIndex,
-
     handleSelect,
     handleInputChange,
     handleInputKeyDown,
@@ -24,8 +23,6 @@ const MasterControl = () => {
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
-      // Don't trigger when the user is already typing in an input,
-      // textarea, or other editable element.
       const target = event.target as HTMLElement | null;
 
       if (
@@ -43,8 +40,6 @@ const MasterControl = () => {
       event.preventDefault();
 
       inputRef.current?.focus();
-
-      // Put "/" into the input.
       handleInputChange("/");
     };
 
@@ -63,6 +58,7 @@ const MasterControl = () => {
         executing={executing}
         onSelect={handleSelect}
         suggestions={suggestions}
+        currentArgument={currentArgument}
         selectedIndex={selectedSuggestionIndex}
       />
 

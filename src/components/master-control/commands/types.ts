@@ -21,6 +21,13 @@ export type KeywordSuggestion = {
   description: string;
 };
 
+export type ArgumentSuggestion = {
+  type: "argument";
+  value: string;
+  label: string;
+  description: string;
+};
+
 export type ProjectSuggestion = {
   type: "project";
   project: Project;
@@ -30,6 +37,7 @@ export type MasterControlSuggestion =
   | CommandSuggestion
   | SubCommandSuggestion
   | KeywordSuggestion
+  | ArgumentSuggestion
   | ProjectSuggestion;
 
 export type MasterControlSelectedEntity =

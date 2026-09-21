@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import type { MasterControlSuggestion } from "../types";
+import useCommandSuggestions from "./useCommnandSuggestions";
 
 type UseInputNavigationOptions = {
   suggestions: MasterControlSuggestion[];

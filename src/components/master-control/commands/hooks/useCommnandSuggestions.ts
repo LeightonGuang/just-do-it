@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { Project } from "../../../../db/schema";
 import type { MasterControlSuggestion } from "../types";
 
-import { type SubCommand } from "../registry";
-import { COMMANDS, type Command, type CommandPart } from "../registry";
+import { type SubCommand } from '../registry';
+import { COMMANDS, type Command, type CommandPart } from '../registry';
 
 type UseCommandSuggestionsOptions = {
   command: string;
@@ -12,6 +12,51 @@ type UseCommandSuggestionsOptions = {
   selectedSubCommand: SubCommand | undefined;
   projectSuggestions: Project[];
   nextPart?: CommandPart;
+  resetSelectionKey?: number;
+};
+
+const getCurrentArgument = (
+  command: string,
+  selectedSubCommand: SubCommand,
+) => {
+  const tokens = command.trim().split(/\s+/).filter(Boolean);
+  const argumentTokens = tokens.slice(2);
+
+  const argumentParts =
+    selectedSubCommand.parts?.filter(
+      (part) => part.type === "argument",
+    ) ?? [];
+
+  if (argumentParts.length === 0) {
+    return undefined;
+  }
+
+  const projectArgument = argumentParts.find(
+    (part) =>
+      part.type === "argument" &&
+      part.argument.kind === "entity" &&
+      part.argument.entityType === "project",
+  );
+
+  const colorArgument = argumentParts.find(
+    (part) =>
+      part.type === "argument" &&
+      part.argument.kind === "color",
+  );
+
+  const hasColor = argumentTokens.some((token) =>
+    token.startsWith("#"),
+  );
+
+  if (hasColor && colorArgument?.type === "argument") {
+    return colorArgument.argument;
+  }
+
+  if (projectArgument?.type === "argument") {
+    return projectArgument.argument;
+  }
+
+  return undefined;
 };
 
 const useCommandSuggestions = ({
@@ -20,96 +65,118 @@ const useCommandSuggestions = ({
   selectedSubCommand,
   projectSuggestions,
   nextPart,
+  resetSelectionKey,
 }: UseCommandSuggestionsOptions) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const suggestions = useMemo<MasterControlSuggestion[]>(() => {
-    const trimmedCommand = command.trim();
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [resetSelectionKey]);
 
-    if (!trimmedCommand.startsWith("/")) {
-      return [];
+  const result = useMemo(() => {
+    const trimmed = command.trim();
+
+    if (!trimmed.startsWith("/")) {
+      return {
+        suggestions: [],
+        currentArgument: undefined,
+      };
     }
 
     if (!rootCommand) {
-      const query = trimmedCommand.slice(1).toLowerCase();
+      const query = trimmed.slice(1).toLowerCase();
 
-      return COMMANDS.filter((item) =>
-        item.command.slice(1).toLowerCase().startsWith(query),
-      ).map((item) => ({
-        type: "command" as const,
-        value: item.command,
-        label: item.command,
-        description: item.description,
-      }));
+      return {
+        suggestions: COMMANDS.filter((item) =>
+          item.command
+            .slice(1)
+            .toLowerCase()
+            .startsWith(query),
+        ).map((item) => ({
+          type: "command" as const,
+          value: item.command,
+          label: item.command,
+          description: item.description,
+        })),
+        currentArgument: undefined,
+      };
     }
 
     if (!selectedSubCommand) {
-      const query = trimmedCommand
+      const query = trimmed
         .slice(rootCommand.command.length)
         .trim()
         .toLowerCase();
 
-      return (
-        rootCommand.subCommands
-          ?.filter((subCommand) =>
-            subCommand.name.toLowerCase().startsWith(query),
-          )
-          .map((subCommand) => ({
-            type: "sub-command" as const,
-            value: `${rootCommand.command} ${subCommand.name}`,
-            label: subCommand.name,
-            description: subCommand.description,
-          })) ?? []
-      );
+      return {
+        suggestions:
+          rootCommand.subCommands
+            ?.filter((item) =>
+              item.name.toLowerCase().startsWith(query),
+            )
+            .map((item) => ({
+              type: "sub-command" as const,
+              value: `${rootCommand.command} ${item.name}`,
+              label: item.name,
+              description: item.description,
+            })) ?? [],
+        currentArgument: undefined,
+      };
     }
 
-    if (!nextPart) {
-      return [];
-    }
+    const currentArgument = getCurrentArgument(
+      command,
+      selectedSubCommand,
+    );
 
-    if (nextPart.type === "keyword") {
-      const query = getCurrentPartQuery(
-        trimmedCommand,
-        selectedSubCommand,
-        nextPart,
-      );
+    const argumentTokens = trimmed
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(2);
 
-      if (
-        query &&
-        !nextPart.keyword.value.toLowerCase().startsWith(query.toLowerCase())
-      ) {
-        return [];
-      }
+    const hasColor = argumentTokens.some((token) =>
+      token.startsWith("#"),
+    );
 
-      return [
-        {
-          type: "keyword",
-          value: nextPart.keyword.value,
-          label: nextPart.keyword.value,
-          description: nextPart.keyword.description ?? "",
-        },
-      ];
-    }
-
-    if (nextPart.type === "argument" && nextPart.argument.kind === "entity") {
-      if (nextPart.argument.entityType === "project") {
-        return projectSuggestions.map((project) => ({
+    if (
+      !hasColor &&
+      nextPart?.type === "argument" &&
+      nextPart.argument.kind === "entity" &&
+      nextPart.argument.entityType === "project"
+    ) {
+      return {
+        suggestions: projectSuggestions.map((project) => ({
           type: "project" as const,
           project,
-        }));
-      }
+        })),
+        currentArgument,
+      };
     }
 
-    return [];
-  }, [command, rootCommand, selectedSubCommand, projectSuggestions, nextPart]);
+    return {
+      suggestions: [],
+      currentArgument,
+    };
+  }, [
+    command,
+    rootCommand,
+    selectedSubCommand,
+    projectSuggestions,
+    nextPart,
+  ]);
 
   const moveUp = () => {
-    setSelectedIndex((current) => Math.max(current - 1, 0));
+    setSelectedIndex((current) =>
+      Math.max(current - 1, 0),
+    );
   };
 
   const moveDown = () => {
     setSelectedIndex((current) =>
-      Math.min(current + 1, Math.max(suggestions.length - 1, 0)),
+      Math.min(
+        current + 1,
+        Math.max(result.suggestions.length - 1, 0),
+      ),
     );
   };
 
@@ -118,35 +185,15 @@ const useCommandSuggestions = ({
   };
 
   return {
-    suggestions,
-    rawSuggestions: suggestions,
+    suggestions: result.suggestions,
+    rawSuggestions: result.suggestions,
+    currentArgument: result.currentArgument,
     selectedIndex,
     moveUp,
     moveDown,
     reset,
+    setSelectedIndex,
   };
-};
-
-const getCurrentPartQuery = (
-  command: string,
-  selectedSubCommand: SubCommand,
-  nextPart: CommandPart,
-) => {
-  if (nextPart.type !== "keyword") {
-    return "";
-  }
-
-  const parts = selectedSubCommand.parts ?? [];
-  const nextPartIndex = parts.findIndex(
-    (part) =>
-      part.type === "keyword" && part.keyword.value === nextPart.keyword.value,
-  );
-
-  if (nextPartIndex === -1) {
-    return "";
-  }
-
-  return "";
 };
 
 export default useCommandSuggestions;

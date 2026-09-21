@@ -86,6 +86,14 @@ const useMasterControl = (
     ? []
     : commandSuggestions.suggestions;
 
+  const currentArgument = suggestionsDismissed
+    ? undefined
+    : commandSuggestions.currentArgument;
+
+  const currentArgumentValue = currentArgument
+    ? argumentValues[currentArgument.name]
+    : undefined;
+
   const handleSelect = useCallback(
     (suggestion: MasterControlSuggestion) => {
       setError(null);
@@ -102,8 +110,7 @@ const useMasterControl = (
 
         setInputValue(`${inputValue.trim()} ${suggestion.project.name} `);
 
-        setSuggestionsDismissed(true);
-
+        setSuggestionsDismissed(false);
         return;
       }
 
@@ -111,7 +118,6 @@ const useMasterControl = (
         setInputValue(`${inputValue.trim()} ${suggestion.value} `);
 
         setSuggestionsDismissed(false);
-
         return;
       }
 
@@ -135,7 +141,9 @@ const useMasterControl = (
     }
 
     for (const part of selectedSubCommand.parts) {
-      if (part.type !== "argument") continue;
+      if (part.type !== "argument") {
+        continue;
+      }
 
       const { name, kind, placeholder, required } = part.argument;
 
@@ -239,6 +247,7 @@ const useMasterControl = (
 
       inputRef.current?.focus();
       setInputValue("/");
+      setSuggestionsDismissed(false);
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -251,29 +260,22 @@ const useMasterControl = (
   const navigation = useInputNavigation({
     suggestions,
     selectedSuggestionIndex: commandSuggestions.selectedIndex,
-
     hasRawSuggestions: commandSuggestions.rawSuggestions.length > 0,
-
     onMoveSuggestionUp: commandSuggestions.moveUp,
     onMoveSuggestionDown: commandSuggestions.moveDown,
-
     onSelectSuggestion: handleSelect,
-
     onDismissSuggestions: () => {
       setSuggestionsDismissed(true);
     },
-
     onReopenSuggestions: () => {
       setSuggestionsDismissed(false);
     },
-
     onReset: reset,
     onExecute: handleExecute,
   });
 
   return {
     inputValue,
-
     command: root,
     argumentValues,
     selectedEntities,
@@ -285,6 +287,9 @@ const useMasterControl = (
     argumentParts,
 
     suggestions,
+    currentArgument,
+    currentArgumentValue,
+
     selectedSuggestionIndex: commandSuggestions.selectedIndex,
 
     handleSelect,
