@@ -15,7 +15,11 @@ const Dashboard = ({
       <Sidebar />
 
       <Workspace className="dot-grid flex size-full items-center justify-center">
-        {projectId ? <Kanban /> : <DailyQuote />}
+        {projectId ? (
+          <Kanban projectId={projectId} todoId={todoId} />
+        ) : (
+          <DailyQuote />
+        )}
       </Workspace>
     </div>
   );

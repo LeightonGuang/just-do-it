@@ -32,8 +32,13 @@ button {
   --color-primary: oklch(28.35% 0.049 271.5); /* #212842 */
   --color-background: oklch(92.91% 0.0054 286.3); /* #e7e7eb */
   --color-sidebar: oklch(90.9% 0.006 286.3); /* #e0e0e5 */
+
   --color-card: oklch(0.9677 0.0027 286.35); /* #f4f4f6 */
   --color-card-hover: oklch(0.945 0.0035 286.35); /* #ececef */
+
+  --color-do: var(--color-do);
+  --color-do-hover: var(--color-do-hover);
+
   --color-input: oklch(0.956 0.004 286.32); /* #f0f0f3 */
   --color-border: oklch(0.8655 0.0082 286.23); /* #d2d2d8 */
   --color-text: oklch(0.2152 0.0078 285.73); /* #19191d */
@@ -49,8 +54,13 @@ button {
   --color-primary: var(--color-primary);
   --color-background: var(--color-background);
   --color-sidebar: var(--color-sidebar);
+
   --color-card: var(--color-card);
   --color-card-hover: var(--color-card-hover);
+
+  --color-do: var(--color-do);
+  --color-do-hover: var(--color-do-hover);
+
   --color-input: var(--color-input);
   --color-border: var(--color-border);
   --color-text: var(--color-text);
