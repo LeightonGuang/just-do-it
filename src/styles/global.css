@@ -36,8 +36,8 @@ button {
   --color-card: oklch(0.9677 0.0027 286.35); /* #f4f4f6 */
   --color-card-hover: oklch(0.945 0.0035 286.35); /* #ececef */
 
-  --color-do: var(--color-do);
-  --color-do-hover: var(--color-do-hover);
+  --color-do: oklch(0.985 0.002 286.35);
+  --color-do-hover: oklch(0.975 0.003 286.35);
 
   --color-input: oklch(0.956 0.004 286.32); /* #f0f0f3 */
   --color-border: oklch(0.8655 0.0082 286.23); /* #d2d2d8 */
