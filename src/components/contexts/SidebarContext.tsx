@@ -82,11 +82,11 @@ export const SidebarProvider = ({
   );
 };
 
-export const useProjects = () => {
+export const useSidebar = () => {
   const context = useContext(SidebarContext);
 
   if (!context)
-    throw new Error("useProjects must be used inside ProjectsProvider");
+    throw new Error("useSidebar must be used inside ProjectsProvider");
 
   return context;
 };

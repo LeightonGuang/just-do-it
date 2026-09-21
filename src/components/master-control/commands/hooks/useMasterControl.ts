@@ -5,7 +5,7 @@ import { parseCommand } from "../parser";
 import useInputNavigation from "./useInputNavigation";
 import useEntitySuggestions from "./useEntitySuggestions";
 import useCommandSuggestions from "./useCommandSuggestions";
-import { useProjects } from "../../../contexts/SidebarContext";
+import { useSidebar } from "../../../contexts/SidebarContext";
 
 import type { MasterControlSuggestion, SelectedEntity } from "../types";
 
@@ -16,7 +16,7 @@ const isValidHexColor = (value: string) => {
 const useMasterControl = (
   inputRef: React.RefObject<HTMLInputElement | null>,
 ) => {
-  const { fetchSidebarDos, fetchSidebarProjects } = useProjects();
+  const { fetchSidebarDos, fetchSidebarProjects } = useSidebar();
 
   const [inputValue, setInputValue] = useState("");
   const [selectedEntities, setSelectedEntities] = useState<
@@ -175,14 +175,10 @@ const useMasterControl = (
   }, []);
 
   const validateArguments = useCallback(() => {
-    if (!selectedSubCommand?.parts) {
-      return null;
-    }
+    if (!selectedSubCommand?.parts) return null;
 
     for (const part of selectedSubCommand.parts) {
-      if (part.type !== "argument") {
-        continue;
-      }
+      if (part.type !== "argument") continue;
 
       const { name, valueType, placeholder, required } = part;
       const value = argumentValues[name]?.trim() ?? "";
@@ -200,9 +196,7 @@ const useMasterControl = (
   }, [selectedSubCommand, argumentValues]);
 
   const handleExecute = useCallback(async () => {
-    if (!selectedSubCommand?.execute) {
-      return;
-    }
+    if (!selectedSubCommand?.execute) return;
 
     if (!parsedCommand.complete) {
       const nextPart = parsedCommand.nextPart;
