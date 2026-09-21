@@ -1,58 +1,63 @@
-import type { Project } from "../../../db/schema";
+import type { Project, Do, Column } from "../../../db/schema";
 
-export type CommandSuggestion = {
-  type: "command";
-  value: string;
-  label: string;
-  description: string;
-};
+export type EntityType = "project" | "do" | "column";
 
-export type SubCommandSuggestion = {
-  type: "sub-command";
-  value: string;
-  label: string;
-  description: string;
-};
+export type ArgumentValueType = "text" | "number" | "color" | "date" | "entity";
 
-export type KeywordSuggestion = {
+export type KeywordPart = {
   type: "keyword";
   value: string;
-  label: string;
-  description: string;
 };
 
-export type ArgumentSuggestion = {
+export type ArgumentPart = {
   type: "argument";
-  value: string;
-  label: string;
-  description: string;
+  name: string;
+  placeholder?: string;
+  valueType: ArgumentValueType;
+  entityType?: EntityType;
+  required?: boolean;
+  greedy?: boolean;
 };
 
-export type ProjectSuggestion = {
-  type: "project";
-  project: Project;
+export type CommandPart = KeywordPart | ArgumentPart;
+
+export type SelectedEntity = {
+  type: EntityType;
+  id: number;
+  label: string;
+  raw?: unknown;
+};
+
+export type CommandContext = {
+  args: Record<string, string>;
+  entities: Record<string, SelectedEntity>;
+  refetch: {
+    projects: () => Promise<void>;
+    dos: () => Promise<void>;
+  };
+};
+
+export type CommandExecute = (context: CommandContext) => Promise<void>;
+
+export type SubCommand = {
+  name: string;
+  description: string;
+  parts: CommandPart[];
+  execute: CommandExecute;
+};
+
+export type Command = {
+  name: string;
+  description: string;
+  subCommands: SubCommand[];
 };
 
 export type MasterControlSuggestion =
-  | CommandSuggestion
-  | SubCommandSuggestion
-  | KeywordSuggestion
-  | ArgumentSuggestion
-  | ProjectSuggestion;
+  | { type: "command"; value: string; label: string; description: string }
+  | { type: "sub-command"; value: string; label: string; description: string }
+  | { type: "keyword"; value: string; label: string; description?: string }
+  | { type: "project"; project: Project }
+  | { type: "do"; doItem: Do }
+  | { type: "column"; column: Column };
 
-export type MasterControlSelectedEntity =
-  | {
-      type: "project";
-      id: number;
-      label: string;
-    }
-  | {
-      type: "do";
-      id: number;
-      label: string;
-    }
-  | {
-      type: "column";
-      id: number;
-      label: string;
-    };
+export type MasterControlSelectedEntity = SelectedEntity;

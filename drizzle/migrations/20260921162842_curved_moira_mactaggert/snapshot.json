@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "9b779af3-fe42-4e39-9f1b-52fc9a3217d0",
+  "id": "06aea0e3-f363-47e4-9fdc-28ad44847b7f",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -54,7 +54,7 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "order",
+      "name": "position",
       "entityType": "columns",
       "table": "columns"
     },
@@ -75,6 +75,16 @@
       "default": null,
       "generated": null,
       "name": "column_id",
+      "entityType": "columns",
+      "table": "dos"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "project_id",
       "entityType": "columns",
       "table": "dos"
     },
@@ -110,6 +120,26 @@
     },
     {
       "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "dos"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "dos"
+    },
+    {
+      "type": "integer",
       "notNull": false,
       "autoincrement": true,
       "default": null,
@@ -134,7 +164,7 @@
       "autoincrement": false,
       "default": "'#000000'",
       "generated": null,
-      "name": "color",
+      "name": "colour",
       "entityType": "columns",
       "table": "projects"
     },
@@ -185,6 +215,21 @@
       "onDelete": "NO ACTION",
       "nameExplicit": false,
       "name": "fk_dos_column_id_columns_id_fk",
+      "entityType": "fks",
+      "table": "dos"
+    },
+    {
+      "columns": [
+        "project_id"
+      ],
+      "tableTo": "projects",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_dos_project_id_projects_id_fk",
       "entityType": "fks",
       "table": "dos"
     },

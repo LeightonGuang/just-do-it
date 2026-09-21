@@ -3,7 +3,7 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  colour: text("color").notNull().default("#000000"), // hex code
+  colour: text("colour").notNull().default("#000000"), // hex code
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
@@ -16,7 +16,7 @@ export const columns = sqliteTable("columns", {
     .notNull()
     .references(() => projects.id),
   name: text("name").notNull(),
-  order: integer("order").notNull(),
+  position: integer("position").notNull(),
 });
 
 export type Column = typeof columns.$inferSelect;

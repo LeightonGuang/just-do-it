@@ -2,14 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { COMMANDS } from "../registry";
 import { parseCommand } from "../parser";
+import useInputNavigation from "./useInputNavigation";
+import useEntitySuggestions from "./useEntitySuggestions";
+import useCommandSuggestions from "./useCommandSuggestions";
 import { useProjects } from "../../../contexts/ProjectContext";
 
-import useInputNavigation from "./useInputNavigation";
-import useProjectSuggestions from "./useProjectSuggestions";
-import useCommandSuggestions from "./useCommnandSuggestions";
-
-import type { MasterControlSuggestion } from "../types";
-import type { MasterControlSelectedEntity } from "../types";
+import type { MasterControlSuggestion, SelectedEntity } from "../types";
 
 const isValidHexColor = (value: string) => {
   return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
@@ -22,7 +20,7 @@ const useMasterControl = (
 
   const [inputValue, setInputValue] = useState("");
   const [selectedEntities, setSelectedEntities] = useState<
-    Record<string, MasterControlSelectedEntity>
+    Record<string, SelectedEntity>
   >({});
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +34,7 @@ const useMasterControl = (
   const subCommand = tokens[1] ?? "";
 
   const rootCommand = useMemo(() => {
-    return COMMANDS.find((item) => item.command === root);
+    return COMMANDS.find((item) => item.name === root);
   }, [root]);
 
   const selectedSubCommand = useMemo(() => {
@@ -58,27 +56,27 @@ const useMasterControl = (
 
   const activeEntityType =
     parsedCommand.nextPart?.type === "argument" &&
-    parsedCommand.nextPart.argument.kind === "entity"
-      ? parsedCommand.nextPart.argument.entityType
+    parsedCommand.nextPart.valueType === "entity"
+      ? parsedCommand.nextPart.entityType
       : undefined;
 
-  const projectQuery =
+  const entityQuery =
     parsedCommand.nextPart?.type === "argument" &&
-    parsedCommand.nextPart.argument.kind === "entity" &&
-    parsedCommand.nextPart.argument.entityType === "project"
-      ? (argumentValues[parsedCommand.nextPart.argument.name] ?? "")
+    parsedCommand.nextPart.valueType === "entity"
+      ? (argumentValues[parsedCommand.nextPart.name] ?? "")
       : "";
 
-  const projectSuggestions = useProjectSuggestions({
-    enabled: activeEntityType === "project",
-    query: projectQuery,
+  const entitySuggestions = useEntitySuggestions({
+    enabled: !!activeEntityType,
+    entityType: activeEntityType,
+    query: entityQuery,
   });
 
   const commandSuggestions = useCommandSuggestions({
     command: inputValue,
     rootCommand,
     selectedSubCommand,
-    projectSuggestions,
+    entitySuggestions,
     nextPart: parsedCommand.nextPart,
   });
 
@@ -98,6 +96,26 @@ const useMasterControl = (
     (suggestion: MasterControlSuggestion) => {
       setError(null);
 
+      if (suggestion.type === "command") {
+        setInputValue(`${suggestion.value} `);
+        setSelectedEntities({});
+        setSuggestionsDismissed(false);
+        return;
+      }
+
+      if (suggestion.type === "sub-command") {
+        setInputValue(`${suggestion.value} `);
+        setSelectedEntities({});
+        setSuggestionsDismissed(false);
+        return;
+      }
+
+      if (suggestion.type === "keyword") {
+        setInputValue(`${inputValue.trim()} ${suggestion.value} `);
+        setSuggestionsDismissed(false);
+        return;
+      }
+
       if (suggestion.type === "project") {
         setSelectedEntities((current) => ({
           ...current,
@@ -105,25 +123,46 @@ const useMasterControl = (
             type: "project",
             id: suggestion.project.id,
             label: suggestion.project.name,
+            raw: suggestion.project,
           },
         }));
 
         setInputValue(`${inputValue.trim()} ${suggestion.project.name} `);
-
         setSuggestionsDismissed(false);
         return;
       }
 
-      if (suggestion.type === "keyword") {
-        setInputValue(`${inputValue.trim()} ${suggestion.value} `);
+      if (suggestion.type === "do") {
+        setSelectedEntities((current) => ({
+          ...current,
+          do: {
+            type: "do",
+            id: suggestion.doItem.id,
+            label: suggestion.doItem.title,
+            raw: suggestion.doItem,
+          },
+        }));
 
+        setInputValue(`${inputValue.trim()} ${suggestion.doItem.title} `);
         setSuggestionsDismissed(false);
         return;
       }
 
-      setInputValue(`${suggestion.value} `);
-      setSelectedEntities({});
-      setSuggestionsDismissed(false);
+      if (suggestion.type === "column") {
+        setSelectedEntities((current) => ({
+          ...current,
+          column: {
+            type: "column",
+            id: suggestion.column.id,
+            label: suggestion.column.name,
+            raw: suggestion.column,
+          },
+        }));
+
+        setInputValue(`${inputValue.trim()} ${suggestion.column.name} `);
+        setSuggestionsDismissed(false);
+        return;
+      }
     },
     [inputValue],
   );
@@ -145,25 +184,20 @@ const useMasterControl = (
         continue;
       }
 
-      const { name, kind, placeholder, required } = part.argument;
-
+      const { name, valueType, placeholder, required } = part;
       const value = argumentValues[name]?.trim() ?? "";
 
       if (required && !value) {
         return `${placeholder || name} is required`;
       }
 
-      if (value && kind === "color" && !isValidHexColor(value)) {
-        return `${name} must be a valid hex color`;
-      }
-
-      if (kind === "entity" && required && !selectedEntities[name]) {
-        return `${placeholder || name} is required`;
+      if (value && valueType === "color" && !isValidHexColor(value)) {
+        return `${name} must be a valid hex color (e.g. #ff0000)`;
       }
     }
 
     return null;
-  }, [selectedSubCommand, argumentValues, selectedEntities]);
+  }, [selectedSubCommand, argumentValues]);
 
   const handleExecute = useCallback(async () => {
     if (!selectedSubCommand?.execute) {
@@ -174,9 +208,9 @@ const useMasterControl = (
       const nextPart = parsedCommand.nextPart;
 
       if (nextPart?.type === "keyword") {
-        setError(`Expected "${nextPart.keyword.value}"`);
+        setError(`Expected "${nextPart.value}"`);
       } else if (nextPart?.type === "argument") {
-        setError(`${nextPart.argument.placeholder} is required`);
+        setError(`${nextPart.placeholder || nextPart.name} is required`);
       }
 
       return;
@@ -205,8 +239,8 @@ const useMasterControl = (
       setInputValue("");
       setSelectedEntities({});
       setSuggestionsDismissed(false);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Something went wrong");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setExecuting(false);
     }

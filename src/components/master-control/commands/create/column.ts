@@ -1,10 +1,14 @@
 import type { SubCommand } from "../types";
 
-export const deleteProject: SubCommand = {
-  name: "project",
-  description: "Delete a project",
+export const createColumn: SubCommand = {
+  name: "column",
+  description: "Create a new column",
 
   parts: [
+    {
+      type: "keyword",
+      value: "in",
+    },
     {
       type: "argument",
       name: "project",
@@ -12,6 +16,14 @@ export const deleteProject: SubCommand = {
       valueType: "entity",
       entityType: "project",
       required: true,
+    },
+    {
+      type: "argument",
+      name: "name",
+      placeholder: "Column name",
+      valueType: "text",
+      required: true,
+      greedy: true,
     },
   ],
 
@@ -29,16 +41,23 @@ export const deleteProject: SubCommand = {
     }
 
     if (!projectId) {
-      throw new Error("Project is required");
+      throw new Error(`Project "${args.project || ""}" not found`);
     }
 
-    const res = await fetch(`/api/projects?id=${projectId}`, {
-      method: "DELETE",
+    const res = await fetch("/api/columns", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: args.name,
+        project_id: projectId,
+      }),
     });
 
     if (!res.ok) {
       const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to delete project");
+      throw new Error(data.error ?? "Failed to create column");
     }
 
     await refetch.projects();

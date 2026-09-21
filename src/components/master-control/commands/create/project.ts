@@ -1,4 +1,4 @@
-import type { SubCommand } from "../registry";
+import type { SubCommand } from "../types";
 
 export const createProject: SubCommand = {
   name: "project",
@@ -7,21 +7,17 @@ export const createProject: SubCommand = {
   parts: [
     {
       type: "argument",
-      argument: {
-        name: "name",
-        placeholder: "Project Name [colour optional — hex starts with #]",
-        kind: "text",
-        required: true,
-      },
+      name: "name",
+      placeholder: "Project name",
+      valueType: "text",
+      required: true,
     },
     {
       type: "argument",
-      argument: {
-        name: "colour",
-        placeholder: "#hex",
-        kind: "color",
-        required: false,
-      },
+      name: "colour",
+      placeholder: "#hex color",
+      valueType: "color",
+      required: false,
     },
   ],
 
@@ -38,10 +34,7 @@ export const createProject: SubCommand = {
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as {
-        error?: string;
-      };
-
+      const data = (await res.json()) as { error?: string };
       throw new Error(data.error ?? "Failed to create project");
     }
 

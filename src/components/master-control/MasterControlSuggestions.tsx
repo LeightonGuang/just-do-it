@@ -1,11 +1,10 @@
 import { twMerge } from "tailwind-merge";
 
-import type { CommandPart } from "./commands/registry";
-import type { MasterControlSuggestion } from "./commands/types";
+import type { ArgumentPart, MasterControlSuggestion } from "./commands/types";
 
 type MasterControlSuggestionsProps = {
   suggestions: MasterControlSuggestion[];
-  currentArgument?: Extract<CommandPart, { type: "argument" }>["argument"];
+  currentArgument?: ArgumentPart;
   currentArgumentValue?: string;
   selectedIndex: number;
   executing: boolean;
@@ -25,13 +24,9 @@ const MasterControlSuggestions = ({
   }
 
   return (
-    <div className="absolute bottom-full left-0 z-40 flex w-max min-w-48 flex-col gap-1 overflow-hidden border border-border bg-card p-1">
+    <div className="absolute bottom-full left-0 z-40 flex max-h-60 w-max min-w-48 flex-col gap-1 overflow-y-auto border border-border bg-card p-1 shadow-lg">
       {suggestions.map((suggestion, index) => {
         const selected = index === selectedIndex;
-
-        if (suggestion.type === "argument") {
-          return null;
-        }
 
         return (
           <button
@@ -49,6 +44,10 @@ const MasterControlSuggestions = ({
           >
             {suggestion.type === "project" ? (
               <ProjectSuggestionContent suggestion={suggestion} />
+            ) : suggestion.type === "do" ? (
+              <DoSuggestionContent suggestion={suggestion} />
+            ) : suggestion.type === "column" ? (
+              <ColumnSuggestionContent suggestion={suggestion} />
             ) : (
               <CommandSuggestionContent suggestion={suggestion} />
             )}
@@ -90,12 +89,43 @@ const ProjectSuggestionContent = ({
   suggestion: Extract<MasterControlSuggestion, { type: "project" }>;
 }) => {
   return (
-    <span
-      style={{ color: suggestion.project.colour }}
-      className="min-w-0 truncate font-mono text-sm"
-    >
-      {suggestion.project.name}
-    </span>
+    <div className="flex items-center gap-2">
+      <span
+        className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: suggestion.project.colour }}
+      />
+      <span className="min-w-0 truncate font-mono text-sm">
+        {suggestion.project.name}
+      </span>
+    </div>
+  );
+};
+
+const DoSuggestionContent = ({
+  suggestion,
+}: {
+  suggestion: Extract<MasterControlSuggestion, { type: "do" }>;
+}) => {
+  return (
+    <div className="flex min-w-0 flex-col">
+      <span className="truncate font-mono text-sm">
+        {suggestion.doItem.title}
+      </span>
+    </div>
+  );
+};
+
+const ColumnSuggestionContent = ({
+  suggestion,
+}: {
+  suggestion: Extract<MasterControlSuggestion, { type: "column" }>;
+}) => {
+  return (
+    <div className="flex min-w-0 flex-col">
+      <span className="truncate font-mono text-sm">
+        {suggestion.column.name}
+      </span>
+    </div>
   );
 };
 
@@ -103,15 +133,15 @@ const ArgumentHint = ({
   argument,
   value,
 }: {
-  argument: Extract<CommandPart, { type: "argument" }>["argument"];
+  argument: ArgumentPart;
   value?: string;
 }) => {
   const isColour =
-    argument.kind === "color" &&
+    argument.valueType === "color" &&
     /^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(value ?? "");
 
   return (
-    <div className="flex items-center justify-between gap-6 px-2 py-1.5">
+    <div className="mt-0.5 flex items-center justify-between gap-6 border-t border-border px-2 py-1.5">
       <div className="flex items-center gap-2">
         {isColour && (
           <span
@@ -121,7 +151,7 @@ const ArgumentHint = ({
         )}
 
         <span className="font-mono text-sm text-text-muted">
-          {value || argument.placeholder}
+          {value || argument.placeholder || argument.name}
         </span>
       </div>
 
