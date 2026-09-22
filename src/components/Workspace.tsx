@@ -10,11 +10,13 @@ const Workspace = ({
   className?: string;
 }) => {
   return (
-    <section className="relative h-dvh w-full">
-      <div className={twMerge("size-full", className)}>{children}</div>
+    <section className="relative min-h-dvh w-full">
+      <div className={twMerge("w-full", className)}>{children}</div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
-        <MasterControl />
+      <div className="pointer-events-none sticky bottom-4 z-50 flex justify-center">
+        <div className="pointer-events-auto">
+          <MasterControl />
+        </div>
       </div>
     </section>
   );
