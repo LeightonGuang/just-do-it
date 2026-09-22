@@ -151,7 +151,7 @@ const ArgumentHint = ({
   value?: string;
 }) => {
   const isColour =
-    argument.valueType === "color" &&
+    argument.valueType === "colour" &&
     /^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(value ?? "");
 
   return (

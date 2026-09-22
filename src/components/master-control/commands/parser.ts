@@ -163,15 +163,11 @@ export const parseCommand = (
 
     const keywordPart = parts[current.partIndex];
 
-    if (keywordPart.type !== "keyword") {
-      continue;
-    }
+    if (keywordPart.type !== "keyword") continue;
 
     const argumentPart = parts[current.partIndex + 1];
 
-    if (!argumentPart || argumentPart.type !== "argument") {
-      continue;
-    }
+    if (!argumentPart || argumentPart.type !== "argument") continue;
 
     const valueStart = current.end;
 
@@ -181,14 +177,12 @@ export const parseCommand = (
 
     if (value) {
       /*
-       * Color arguments should only receive the color.
+       * Colour arguments should only receive the colour.
        */
-      if (argumentPart.valueType === "color") {
-        const colorMatch = value.match(/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/);
+      if (argumentPart.valueType === "colour") {
+        const colourMatch = value.match(/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/);
 
-        if (colorMatch) {
-          args[argumentPart.name] = colorMatch[0];
-        }
+        if (colourMatch) args[argumentPart.name] = colourMatch[0];
       } else {
         args[argumentPart.name] = value;
       }

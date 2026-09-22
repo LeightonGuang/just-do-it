@@ -15,8 +15,8 @@ export const createProject: SubCommand = {
     {
       type: "argument",
       name: "colour",
-      placeholder: "#hex color",
-      valueType: "color",
+      placeholder: "#hex colour",
+      valueType: "colour",
       required: false,
     },
   ],

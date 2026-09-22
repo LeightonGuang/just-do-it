@@ -10,7 +10,7 @@ import { useSidebar } from "../../../contexts/SidebarContext";
 
 import type { MasterControlSuggestion, SelectedEntity } from "../types";
 
-const isValidHexColor = (value: string) => {
+const isValidHexColur = (value: string) => {
   return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
 };
 
@@ -222,11 +222,9 @@ const useMasterControl = (
 
       const value = argumentValues[name]?.trim() ?? "";
 
-      if (required && !value) {
-        return `${placeholder || name} is required`;
-      }
+      if (required && !value) return `${placeholder || name} is required`;
 
-      if (value && valueType === "color" && !isValidHexColor(value)) {
+      if (value && valueType === "colour" && !isValidHexColur(value)) {
         return `${name} must be a valid hex color (e.g. #ff0000)`;
       }
     }

@@ -37,7 +37,7 @@ export const editProject: SubCommand = {
       type: "argument",
       name: "colour",
       placeholder: "New colour",
-      valueType: "color",
+      valueType: "colour",
       required: false,
     },
   ],
@@ -71,6 +71,8 @@ export const editProject: SubCommand = {
       throw new Error("Nothing to update");
     }
 
+    // TODO: Check if colour is valid
+
     const res = await fetch(`/api/projects/${projectId}`, {
       method: "PATCH",
       headers: {
@@ -78,7 +80,7 @@ export const editProject: SubCommand = {
       },
       body: JSON.stringify({
         ...(name ? { name } : {}),
-        ...(colour ? { color: colour } : {}),
+        ...(colour ? { colour } : {}),
       }),
     });
 

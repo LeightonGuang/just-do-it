@@ -2,7 +2,8 @@ import type { Project, Do, Column } from "../../../db/schema";
 
 export type EntityType = "project" | "do" | "column";
 
-export type ArgumentValueType = "text" | "number" | "color" | "date" | "entity";
+export type ArgumentValueType =
+  "text" | "number" | "colour" | "date" | "entity";
 
 export type KeywordPart = {
   type: "keyword";
