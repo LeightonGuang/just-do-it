@@ -7,6 +7,8 @@ export type ArgumentValueType = "text" | "number" | "color" | "date" | "entity";
 export type KeywordPart = {
   type: "keyword";
   value: string;
+  /** Whether this keyword can be omitted from the command. */
+  optional?: boolean;
 };
 
 export type ArgumentPart = {
@@ -16,6 +18,7 @@ export type ArgumentPart = {
   valueType: ArgumentValueType;
   entityType?: EntityType;
   required?: boolean;
+  /** Whether this argument consumes multiple values, and only take the remaining values.  */
   greedy?: boolean;
 };
 
@@ -31,7 +34,8 @@ export type SelectedEntity = {
 export type CommandContext = {
   args: Record<string, string>;
   entities: Record<string, SelectedEntity>;
-  projectId: string | null; // Currently open Kanban project, null when no project is open.
+  /** Currently opened Kanban project, null when no project is open.  */
+  projectId: string | null;
   refetch: {
     projects: () => Promise<void>;
     dos: () => Promise<void>;

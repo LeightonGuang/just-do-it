@@ -16,7 +16,7 @@ export const parseCommand = (
   selectedSubCommand?: SubCommand,
   selectedEntities: Record<string, SelectedEntity> = {},
 ): ParsedCommand => {
-  if (!selectedSubCommand?.parts) {
+  if (!selectedSubCommand) {
     return {
       args: {},
       entities: selectedEntities,
@@ -25,9 +25,10 @@ export const parseCommand = (
     };
   }
 
-  const trimmedInput = inputValue.trim();
-  const tokens = trimmedInput.split(/\s+/).filter(Boolean);
   const parts = selectedSubCommand.parts;
+  const input = inputValue.trim();
+
+  const tokens = input.split(/\s+/).filter(Boolean);
 
   if (tokens.length < 2) {
     return {
@@ -38,230 +39,202 @@ export const parseCommand = (
     };
   }
 
-  const rootAndSubLen = tokens[0].length + 1 + tokens[1].length;
+  /*
+   * Remove:
+   *
+   * /edit project
+   *
+   * leaving:
+   *
+   * This name New colour #ffffff
+   */
+  const commandPrefix = `${tokens[0]} ${tokens[1]}`;
 
-  let remainingText = trimmedInput.slice(rootAndSubLen).trimStart();
+  let remaining = input.slice(commandPrefix.length).trim();
 
   const args: Record<string, string> = {};
 
-  let nextPart: CommandPart | null = null;
-  let complete = true;
+  /*
+   * Find all keywords that exist in this command.
+   */
+  const keywordParts = parts
+    .map((part, index) => ({
+      part,
+      index,
+    }))
+    .filter(
+      (
+        item,
+      ): item is {
+        part: Extract<CommandPart, { type: "keyword" }>;
+        index: number;
+      } => item.part.type === "keyword",
+    );
 
-  for (let idx = 0; idx < parts.length; idx++) {
-    const part = parts[idx];
+  /*
+   * Find the positions of keywords in the input.
+   */
+  const foundKeywords: {
+    partIndex: number;
+    keyword: string;
+    index: number;
+    end: number;
+  }[] = [];
 
-    if (part.type === "keyword") {
-      const currentText = remainingText.trimStart();
+  for (const { part, index: partIndex } of keywordParts) {
+    const regex = new RegExp(`\\b${escapeRegex(part.value)}\\b`, "gi");
 
-      const keywordRegex = new RegExp(
-        `^${escapeRegex(part.value)}(?:\\s|$)`,
-        "i",
-      );
+    let match: RegExpExecArray | null;
 
-      if (keywordRegex.test(currentText)) {
-        remainingText = currentText.slice(part.value.length).trimStart();
+    while ((match = regex.exec(remaining)) !== null) {
+      if (match.index === undefined) continue;
 
-        continue;
-      }
-
-      nextPart = part;
-      complete = false;
-      break;
+      foundKeywords.push({
+        partIndex,
+        keyword: part.value,
+        index: match.index,
+        end: match.index + match[0].length,
+      });
     }
+  }
 
-    if (part.type !== "argument") {
-      continue;
-    }
+  /*
+   * Sort keywords by where they occur in the input.
+   */
+  foundKeywords.sort((a, b) => a.index - b.index);
 
-    const selectedEntity = selectedEntities[part.name];
+  /*
+   * Parse the first required entity.
+   *
+   * Everything before the first keyword belongs to the
+   * project argument.
+   */
+  const projectPartIndex = parts.findIndex(
+    (part) => part.type === "argument" && part.valueType === "entity",
+  );
 
-    if (part.valueType === "entity" && selectedEntity) {
-      const label = selectedEntity.label;
-      const currentText = remainingText.trimStart();
+  if (projectPartIndex !== -1) {
+    const firstKeyword = foundKeywords[0];
 
-      const entityRegex = new RegExp(`^${escapeRegex(label)}(?:\\s|$)`, "i");
+    if (firstKeyword) {
+      const projectValue = remaining.slice(0, firstKeyword.index).trim();
 
-      if (entityRegex.test(currentText)) {
-        args[part.name] = label;
-
-        remainingText = currentText.slice(label.length).trimStart();
-
-        continue;
+      if (projectValue) {
+        args[
+          parts[projectPartIndex].type === "argument"
+            ? parts[projectPartIndex].name
+            : "project"
+        ] = projectValue;
       }
-    }
+    } else if (remaining) {
+      const selectedProject = selectedEntities.project;
 
-    if (part.valueType === "entity" && part.entityType) {
-      const currentText = remainingText.trimStart();
+      if (selectedProject) {
+        args.project = selectedProject.label;
+      } else {
+        /*
+         * Project entity is normally one value.
+         */
+        const spaceIndex = remaining.indexOf(" ");
 
-      if (!currentText) {
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
-      if (idx === parts.length - 1) {
-        args[part.name] = currentText;
-        remainingText = "";
-
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
-      const spaceIndex = currentText.indexOf(" ");
-
-      if (spaceIndex === -1) {
-        args[part.name] = currentText;
-
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
-      args[part.name] = currentText.slice(0, spaceIndex).trim();
-
-      remainingText = currentText.slice(spaceIndex).trimStart();
-
-      continue;
-    }
-
-    const nextPartInList = parts[idx + 1];
-
-    if (nextPartInList && nextPartInList.type === "keyword") {
-      const keyword = nextPartInList.value;
-
-      const keywordRegex = new RegExp(`\\b${escapeRegex(keyword)}\\b`, "gi");
-
-      let lastMatch: RegExpExecArray | null = null;
-      let match: RegExpExecArray | null;
-
-      while ((match = keywordRegex.exec(remainingText)) !== null) {
-        lastMatch = match;
-      }
-
-      if (lastMatch) {
-        args[part.name] = remainingText.slice(0, lastMatch.index).trim();
-
-        remainingText = remainingText
-          .slice(lastMatch.index + lastMatch[0].length)
-          .trimStart();
-
-        idx += 1;
-        continue;
-      }
-
-      const argValue = remainingText.trim();
-
-      if (!argValue) {
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
-      args[part.name] = argValue;
-      remainingText = "";
-
-      nextPart = nextPartInList;
-      complete = false;
-      break;
-    }
-
-    if (part.valueType === "color") {
-      const colorMatch = remainingText.match(
-        /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/,
-      );
-
-      if (colorMatch && colorMatch.index !== undefined) {
-        const beforeColor = remainingText.slice(0, colorMatch.index).trim();
-
-        const previousPart = parts[idx - 1];
-
-        if (previousPart?.type === "argument" && !args[previousPart.name]) {
-          args[previousPart.name] = beforeColor;
+        if (spaceIndex === -1) {
+          args.project = remaining;
+        } else {
+          args.project = remaining.slice(0, spaceIndex).trim();
         }
-
-        args[part.name] = colorMatch[0];
-        remainingText = "";
-
-        continue;
       }
     }
+  }
 
-    if (part.greedy) {
-      const argValue = remainingText.trim();
+  /*
+   * Parse each keyword's argument.
+   *
+   * Example:
+   *
+   * name New colour #fff
+   *
+   * becomes:
+   *
+   * name   -> New
+   * colour -> #fff
+   */
+  for (let i = 0; i < foundKeywords.length; i++) {
+    const current = foundKeywords[i];
 
-      if (argValue) {
-        args[part.name] = argValue;
-        remainingText = "";
-        continue;
-      }
+    const keywordPart = parts[current.partIndex];
 
-      if (part.required) {
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
+    if (keywordPart.type !== "keyword") {
       continue;
     }
 
-    if (idx === parts.length - 1) {
-      const argValue = remainingText.trim();
+    const argumentPart = parts[current.partIndex + 1];
 
-      if (argValue) {
-        args[part.name] = argValue;
-        remainingText = "";
-        continue;
-      }
-
-      if (part.required) {
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
+    if (!argumentPart || argumentPart.type !== "argument") {
       continue;
     }
 
-    const spaceIndex = remainingText.indexOf(" ");
+    const valueStart = current.end;
 
-    if (spaceIndex !== -1) {
-      args[part.name] = remainingText.slice(0, spaceIndex).trim();
+    const valueEnd = foundKeywords[i + 1]?.index ?? remaining.length;
 
-      remainingText = remainingText.slice(spaceIndex).trimStart();
-    } else {
-      const argValue = remainingText.trim();
+    const value = remaining.slice(valueStart, valueEnd).trim();
 
-      if (argValue) {
-        args[part.name] = argValue;
+    if (value) {
+      /*
+       * Color arguments should only receive the color.
+       */
+      if (argumentPart.valueType === "color") {
+        const colorMatch = value.match(/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/);
+
+        if (colorMatch) {
+          args[argumentPart.name] = colorMatch[0];
+        }
+      } else {
+        args[argumentPart.name] = value;
       }
+    }
+  }
 
-      remainingText = "";
+  /*
+   * Work out whether the command is complete.
+   */
+  let complete = true;
+  let nextPart: CommandPart | null = null;
+
+  /*
+   * Required arguments must exist.
+   */
+  for (const part of parts) {
+    if (part.type !== "argument" || !part.required) {
+      continue;
     }
 
-    if (part.required && !args[part.name]) {
-      nextPart = part;
+    const value = args[part.name]?.trim();
+
+    if (!value) {
       complete = false;
+      nextPart = part;
       break;
     }
   }
 
-  if (nextPart?.type === "argument" && nextPart.valueType === "entity") {
-    complete = false;
-  }
+  /*
+   * If we're currently typing a keyword but haven't
+   * supplied its argument, expose that argument.
+   */
+  if (complete && remaining) {
+    const lastKeyword = foundKeywords[foundKeywords.length - 1];
 
-  if (complete) {
-    for (const part of parts) {
-      if (part.type !== "argument" || !part.required) {
-        continue;
-      }
+    if (lastKeyword) {
+      const argumentPart = parts[lastKeyword.partIndex + 1];
 
-      const value = args[part.name]?.trim() ?? "";
+      if (argumentPart?.type === "argument") {
+        const value = remaining.slice(lastKeyword.end).trim();
 
-      if (!value) {
-        complete = false;
-        nextPart = part;
-        break;
+        if (!value) {
+          complete = false;
+          nextPart = argumentPart;
+        }
       }
     }
   }

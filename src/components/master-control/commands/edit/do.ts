@@ -1,6 +1,6 @@
 import type { SubCommand } from "../types";
 
-export const updateDoTitle: SubCommand = {
+export const editDo: SubCommand = {
   name: "do",
   description: "Update a do title",
 
