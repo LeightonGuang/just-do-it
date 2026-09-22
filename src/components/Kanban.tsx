@@ -55,7 +55,7 @@ const Kanban = ({ doId }: { doId: string | null }) => {
                     key={doItem.id}
                     doItem={doItem}
                     className={twMerge(
-                      Number(doId) === doItem.id && "border border-black",
+                      Number(doId) === doItem.id && "border border-green-500",
                     )}
                   />
                 ))}

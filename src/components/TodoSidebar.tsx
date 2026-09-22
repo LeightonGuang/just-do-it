@@ -57,7 +57,7 @@ const TodoSidebarItem = ({ doItem }: { doItem: Do }) => {
 
   return (
     <a
-      href={`?project_id=${doItem.project_id}&dos_id=${doItem.id}`}
+      href={`?project_id=${doItem.project_id}&do_id=${doItem.id}`}
       className={twMerge(
         "min-w-0 bg-card p-1 hover:bg-card-hover",
         hasDueDate
