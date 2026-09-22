@@ -1,7 +1,7 @@
 import { moveDo } from "./move/do";
 import { createDo } from "./create/do";
 import { deleteDo } from "./delete/do";
-import { updateDoTitle } from "./update/do";
+import { updateDoTitle } from "./edit/do";
 import { createColumn } from "./create/column";
 import { createProject } from "./create/project";
 import { deleteProject } from "./delete/project";
@@ -25,8 +25,8 @@ export const COMMANDS: Command[] = [
     subCommands: [moveDo],
   },
   {
-    name: "/update",
-    description: "Update dos",
+    name: "/edit",
+    description: "Edit dos",
     subCommands: [updateDoTitle],
   },
 ];
