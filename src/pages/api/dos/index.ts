@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
-import { eq, like, and, isNotNull, asc } from "drizzle-orm";
+import { eq, like, and, asc } from "drizzle-orm";
 
 import { dos, columns } from "../../../db/schema";
 
@@ -143,24 +143,6 @@ export const PATCH: APIRoute = async ({ request }) => {
   if (body.project_id !== undefined) updateData.project_id = body.project_id;
 
   await db.update(dos).set(updateData).where(eq(dos.id, body.id));
-
-  return Response.json({ success: true });
-};
-
-export const DELETE: APIRoute = async ({ url }) => {
-  const db = drizzle(env.just_do_it);
-
-  const id = url.searchParams.get("id");
-
-  if (!id) return Response.json({ error: "ID is required" }, { status: 400 });
-
-  const taskId = Number(id);
-
-  if (!Number.isInteger(taskId)) {
-    return Response.json({ error: "Invalid ID" }, { status: 400 });
-  }
-
-  await db.delete(dos).where(eq(dos.id, taskId));
 
   return Response.json({ success: true });
 };

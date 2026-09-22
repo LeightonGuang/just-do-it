@@ -7,6 +7,14 @@ export const deleteDo: SubCommand = {
   parts: [
     {
       type: "argument",
+      name: "project",
+      placeholder: "Project Name",
+      valueType: "entity",
+      entityType: "project",
+      required: true,
+    },
+    {
+      type: "argument",
       name: "do",
       placeholder: "Do title",
       valueType: "entity",
@@ -15,20 +23,8 @@ export const deleteDo: SubCommand = {
     },
   ],
 
-  execute: async ({ args, entities, refetch }) => {
-    let doId: number | undefined = entities.do?.id;
-
-    if (!doId && args.do) {
-      const res = await fetch(
-        `/api/dos?title=${encodeURIComponent(args.do.trim())}`,
-      );
-      if (res.ok) {
-        const found = await res.json();
-        if (Array.isArray(found) && found.length > 0) {
-          doId = found[0].id;
-        }
-      }
-    }
+  execute: async ({ args, entities, projectId: currentProjectId, refetch }) => {
+    const doId: number = entities.do?.id;
 
     if (!doId) throw new Error(`Do "${args.do || ""}" not found`);
 
@@ -42,5 +38,7 @@ export const deleteDo: SubCommand = {
     }
 
     await refetch.dos();
+
+    if (currentProjectId) await refetch.kanban?.();
   },
 };

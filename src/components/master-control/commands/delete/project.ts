@@ -15,22 +15,10 @@ export const deleteProject: SubCommand = {
     },
   ],
 
-  execute: async ({ args, entities, refetch }) => {
-    let projectId: number | undefined = entities.project?.id;
+  execute: async ({ entities, refetch }) => {
+    const projectId: number = entities.project?.id;
 
-    if (!projectId && args.project) {
-      const res = await fetch(`/api/projects?name=${encodeURIComponent(args.project.trim())}`);
-      if (res.ok) {
-        const found = await res.json();
-        if (Array.isArray(found) && found.length > 0) {
-          projectId = found[0].id;
-        }
-      }
-    }
-
-    if (!projectId) {
-      throw new Error("Project is required");
-    }
+    if (!projectId) throw new Error("Project is required");
 
     const res = await fetch(`/api/projects?id=${projectId}`, {
       method: "DELETE",
