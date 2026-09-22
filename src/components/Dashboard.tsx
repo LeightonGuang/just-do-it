@@ -1,8 +1,12 @@
+import { useState } from "react";
+
 import Kanban from "./Kanban";
 import Sidebar from "./Sidebar";
 import Workspace from "./Workspace";
 import DailyQuote from "./DailyQuote";
 import { KanbanProvider } from "./contexts/KanbanContext";
+
+const DEFAULT_SIDEBAR_WIDTH = 256;
 
 const Dashboard = ({
   projectId,
@@ -11,19 +15,24 @@ const Dashboard = ({
   projectId: string | null;
   doId: string | null;
 }) => {
-  return (
-    <div className="flex">
-      <Sidebar />
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
 
-      <Workspace className="dot-grid flex size-full items-center justify-center">
-        {projectId ? (
-          <KanbanProvider projectId={projectId}>
-            <Kanban doId={doId} />
-          </KanbanProvider>
-        ) : (
-          <DailyQuote />
-        )}
-      </Workspace>
+  return (
+    <div
+      className="h-dvh w-full overflow-hidden"
+      style={
+        {
+          "--sidebar-width": `${sidebarWidth}px`,
+        } as React.CSSProperties
+      }
+    >
+      <Sidebar onWidthChange={setSidebarWidth} />
+
+      <KanbanProvider projectId={projectId}>
+        <Workspace className="dot-grid">
+          {projectId ? <Kanban doId={doId} /> : <DailyQuote />}
+        </Workspace>
+      </KanbanProvider>
     </div>
   );
 };

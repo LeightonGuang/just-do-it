@@ -8,7 +8,7 @@ const Kanban = ({ doId }: { doId: string | null }) => {
 
   if (loading) {
     return (
-      <section className="size-full min-h-screen border border-border p-8">
+      <section className="size-full min-h-screen p-8">
         <p className="text-text-muted">Loading...</p>
       </section>
     );
@@ -16,7 +16,7 @@ const Kanban = ({ doId }: { doId: string | null }) => {
 
   if (error) {
     return (
-      <section className="size-full min-h-screen border border-border p-8">
+      <section className="size-full min-h-screen p-8">
         <p className="text-danger">{error}</p>
       </section>
     );
@@ -24,14 +24,14 @@ const Kanban = ({ doId }: { doId: string | null }) => {
 
   if (!project) {
     return (
-      <section className="size-full min-h-screen border border-border p-8">
+      <section className="size-full min-h-screen p-8">
         <p className="text-text-muted">Project not found.</p>
       </section>
     );
   }
 
   return (
-    <section className="size-full min-h-screen border border-border p-8">
+    <section className="size-full min-h-screen p-8">
       <h1 className="mb-8 leading-4 font-medium text-text">{project.name}</h1>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-8">

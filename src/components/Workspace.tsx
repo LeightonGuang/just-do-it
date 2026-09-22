@@ -2,18 +2,32 @@ import { twMerge } from "tailwind-merge";
 
 import MasterControl from "./master-control/MasterControl";
 
-const Workspace = ({
-  children,
-  className,
-}: {
+type WorkspaceProps = {
   children: React.ReactNode;
   className?: string;
-}) => {
-  return (
-    <section className="relative min-h-dvh w-full">
-      <div className={twMerge("w-full", className)}>{children}</div>
+};
 
-      <div className="pointer-events-none sticky bottom-4 z-50 flex justify-center">
+const Workspace = ({ children, className }: WorkspaceProps) => {
+  return (
+    <section
+      className={twMerge(
+        "relative h-dvh overflow-x-hidden overflow-y-auto",
+        className,
+      )}
+      style={{
+        marginLeft: "var(--sidebar-width)",
+        width: "calc(100% - var(--sidebar-width))",
+      }}
+    >
+      <div className="min-h-full w-full pb-16">{children}</div>
+
+      <div
+        className="pointer-events-none fixed bottom-4 z-100 flex justify-center"
+        style={{
+          left: "var(--sidebar-width)",
+          width: "calc(100% - var(--sidebar-width))",
+        }}
+      >
         <div className="pointer-events-auto">
           <MasterControl />
         </div>

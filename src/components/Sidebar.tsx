@@ -10,13 +10,23 @@ const SNAP_THRESHOLD = 100;
 const DEFAULT_WIDTH = 256;
 const STORAGE_KEY = "sidebar-width";
 
-const Sidebar = ({ className }: { className?: string }) => {
+type SidebarProps = {
+  className?: string;
+  onWidthChange?: (width: number) => void;
+};
+
+const Sidebar = ({ className, onWidthChange }: SidebarProps) => {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isHydrated, setIsHydrated] = useState(false);
 
   const isDragging = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(DEFAULT_WIDTH);
+
+  const updateWidth = (nextWidth: number) => {
+    setWidth(nextWidth);
+    onWidthChange?.(nextWidth);
+  };
 
   // Load saved width from localStorage
   useEffect(() => {
@@ -26,7 +36,8 @@ const Sidebar = ({ className }: { className?: string }) => {
       const parsedWidth = Number(savedWidth);
 
       if (!Number.isNaN(parsedWidth)) {
-        setWidth(parsedWidth);
+        updateWidth(parsedWidth);
+        startWidth.current = parsedWidth;
       }
     }
 
@@ -50,11 +61,11 @@ const Sidebar = ({ className }: { className?: string }) => {
       // Currently collapsed
       if (startWidth.current === 0) {
         if (delta < SNAP_THRESHOLD) {
-          setWidth(0);
+          updateWidth(0);
           return;
         }
 
-        setWidth(MIN_WIDTH);
+        updateWidth(MIN_WIDTH);
 
         startX.current = event.clientX;
         startWidth.current = MIN_WIDTH;
@@ -62,9 +73,11 @@ const Sidebar = ({ className }: { className?: string }) => {
         return;
       }
 
-      // Dragging closed
+      /**
+       * Dragging closed.
+       */
       if (rawWidth < SNAP_THRESHOLD) {
-        setWidth(0);
+        updateWidth(0);
 
         startX.current = event.clientX;
         startWidth.current = 0;
@@ -72,8 +85,12 @@ const Sidebar = ({ className }: { className?: string }) => {
         return;
       }
 
-      // Normal resizing
-      setWidth(Math.min(Math.max(rawWidth, MIN_WIDTH), MAX_WIDTH));
+      /**
+       * Normal resizing.
+       */
+      const nextWidth = Math.min(Math.max(rawWidth, MIN_WIDTH), MAX_WIDTH);
+
+      updateWidth(nextWidth);
     };
 
     const handlePointerUp = () => {
@@ -111,7 +128,7 @@ const Sidebar = ({ className }: { className?: string }) => {
         visibility: isHydrated ? "visible" : "hidden",
       }}
       className={twMerge(
-        "relative h-dvh shrink-0 border-r border-border bg-sidebar",
+        "fixed inset-y-0 left-0 z-50 shrink-0 border-r border-border bg-sidebar",
         className,
       )}
     >
