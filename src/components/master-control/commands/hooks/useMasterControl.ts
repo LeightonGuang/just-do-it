@@ -68,10 +68,15 @@ const useMasterControl = (
       ? (argumentValues[parsedCommand.nextPart.name] ?? "")
       : "";
 
+  // Explicitly selected project takes priority.
+  // Otherwise fall back to the currently open project.
+  const entityProjectId = selectedEntities.project?.id ?? currentProjectId;
+
   const entitySuggestions = useEntitySuggestions({
     enabled: !!activeEntityType,
     entityType: activeEntityType,
     query: entityQuery,
+    projectId: activeEntityType === "do" ? entityProjectId : undefined,
   });
 
   const commandSuggestions = useCommandSuggestions({

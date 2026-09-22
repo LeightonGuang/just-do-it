@@ -7,6 +7,7 @@ type UseEntitySuggestionsOptions = {
   enabled: boolean;
   entityType?: EntityType;
   query: string;
+  projectId?: number;
 };
 
 export type EntitySuggestionsResult = {
@@ -19,6 +20,7 @@ const useEntitySuggestions = ({
   enabled,
   entityType,
   query,
+  projectId,
 }: UseEntitySuggestionsOptions): EntitySuggestionsResult => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [dos, setDos] = useState<Do[]>([]);
@@ -39,37 +41,83 @@ const useEntitySuggestions = ({
         const trimmedQuery = query.trim();
 
         if (entityType === "project") {
-          const url = trimmedQuery
-            ? `/api/projects?name=${encodeURIComponent(trimmedQuery)}`
+          const params = new URLSearchParams();
+
+          if (trimmedQuery) {
+            params.set("name", trimmedQuery);
+          }
+
+          const queryString = params.toString();
+
+          const url = queryString
+            ? `/api/projects?${queryString}`
             : "/api/projects";
-          const res = await fetch(url, { signal: controller.signal });
+
+          const res = await fetch(url, {
+            signal: controller.signal,
+          });
+
           if (res.ok) {
             const data: Project[] = await res.json();
             setProjects(data);
+          } else {
+            setProjects([]);
           }
         } else if (entityType === "do") {
-          const url = trimmedQuery
-            ? `/api/dos?title=${encodeURIComponent(trimmedQuery)}`
-            : "/api/dos";
-          const res = await fetch(url, { signal: controller.signal });
+          const params = new URLSearchParams();
+
+          if (trimmedQuery) {
+            params.set("title", trimmedQuery);
+          }
+
+          // Your API expects project_id, not projectId
+          if (projectId !== undefined) {
+            params.set("project_id", String(projectId));
+          }
+
+          const queryString = params.toString();
+
+          const url = queryString ? `/api/dos?${queryString}` : "/api/dos";
+
+          const res = await fetch(url, {
+            signal: controller.signal,
+          });
+
           if (res.ok) {
             const data: Do[] = await res.json();
             setDos(data);
+          } else {
+            setDos([]);
           }
         } else if (entityType === "column") {
-          const url = trimmedQuery
-            ? `/api/columns?name=${encodeURIComponent(trimmedQuery)}`
+          const params = new URLSearchParams();
+
+          if (trimmedQuery) {
+            params.set("name", trimmedQuery);
+          }
+
+          const queryString = params.toString();
+
+          const url = queryString
+            ? `/api/columns?${queryString}`
             : "/api/columns";
-          const res = await fetch(url, { signal: controller.signal });
+
+          const res = await fetch(url, {
+            signal: controller.signal,
+          });
+
           if (res.ok) {
             const data: Column[] = await res.json();
             setColumns(data);
+          } else {
+            setColumns([]);
           }
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
+
         console.error("Failed to fetch entity suggestions:", error);
       }
     }, 200);
@@ -78,7 +126,7 @@ const useEntitySuggestions = ({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [enabled, entityType, query]);
+  }, [enabled, entityType, query, projectId]);
 
   return { projects, dos, columns };
 };

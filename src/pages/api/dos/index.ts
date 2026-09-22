@@ -10,17 +10,7 @@ export const GET: APIRoute = async ({ url }) => {
 
   const title = url.searchParams.get("title");
   const projectId = url.searchParams.get("project_id");
-  const id = url.searchParams.get("id");
   const isSidebar = url.searchParams.get("sidebar") === "true";
-
-  if (id) {
-    const task = await db
-      .select()
-      .from(dos)
-      .where(eq(dos.id, Number(id)));
-
-    return Response.json(task[0] ?? null);
-  }
 
   if (isSidebar) {
     const sidebarDos = await db
