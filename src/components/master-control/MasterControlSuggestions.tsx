@@ -1,4 +1,5 @@
 import { twMerge } from "tailwind-merge";
+import { useEffect, useRef } from "react";
 
 import type { ArgumentPart, MasterControlSuggestion } from "./commands/types";
 
@@ -19,6 +20,16 @@ const MasterControlSuggestions = ({
   executing,
   onSelect,
 }: MasterControlSuggestionsProps) => {
+  const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    const selectedElement = suggestionRefs.current[selectedIndex];
+
+    selectedElement?.scrollIntoView({
+      block: "nearest",
+    });
+  }, [selectedIndex]);
+
   if (suggestions.length === 0 && !currentArgument) {
     return null;
   }
@@ -36,6 +47,9 @@ const MasterControlSuggestions = ({
             onClick={() => onSelect(suggestion)}
             onMouseDown={(event) => {
               event.preventDefault();
+            }}
+            ref={(element) => {
+              suggestionRefs.current[index] = element;
             }}
             className={twMerge(
               "flex w-full items-center gap-2 px-2 py-1.5 text-left transition-colors disabled:opacity-50",
