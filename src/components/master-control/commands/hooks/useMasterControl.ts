@@ -16,6 +16,7 @@ const isValidHexColor = (value: string) => {
 
 const useMasterControl = (
   inputRef: React.RefObject<HTMLInputElement | null>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
 ) => {
   const { fetchSidebarDos, fetchSidebarProjects } = useSidebar();
   const { projectId: currentProjectId, fetchKanban } = useKanban();
@@ -68,15 +69,29 @@ const useMasterControl = (
       ? (argumentValues[parsedCommand.nextPart.name] ?? "")
       : "";
 
-  // Explicitly selected project takes priority.
-  // Otherwise fall back to the currently open project.
-  const entityProjectId = selectedEntities.project?.id ?? currentProjectId;
+  const selectedProjectId = selectedEntities.project?.id;
+
+  const projectArgumentPart = argumentParts.find(
+    (part) =>
+      part.name === "project" &&
+      part.valueType === "entity" &&
+      part.entityType === "project",
+  );
+
+  const projectQuery = projectArgumentPart
+    ? (argumentValues[projectArgumentPart.name] ?? "")
+    : "";
+
+  const entityProjectId = selectedProjectId ?? currentProjectId;
 
   const entitySuggestions = useEntitySuggestions({
     enabled: !!activeEntityType,
     entityType: activeEntityType,
     query: entityQuery,
+
     projectId: activeEntityType === "do" ? entityProjectId : undefined,
+
+    projectQuery: activeEntityType === "do" ? projectQuery : undefined,
   });
 
   const commandSuggestions = useCommandSuggestions({
@@ -183,11 +198,25 @@ const useMasterControl = (
     setSuggestionsDismissed(false);
   }, []);
 
+  const handleInputBlur = useCallback(() => {
+    window.setTimeout(() => {
+      const activeElement = document.activeElement;
+
+      if (!containerRef.current?.contains(activeElement)) {
+        setSuggestionsDismissed(true);
+      }
+    }, 0);
+  }, [containerRef]);
+
   const validateArguments = useCallback(() => {
-    if (!selectedSubCommand?.parts) return null;
+    if (!selectedSubCommand?.parts) {
+      return null;
+    }
 
     for (const part of selectedSubCommand.parts) {
-      if (part.type !== "argument") continue;
+      if (part.type !== "argument") {
+        continue;
+      }
 
       const { name, valueType, placeholder, required } = part;
 
@@ -206,7 +235,9 @@ const useMasterControl = (
   }, [selectedSubCommand, argumentValues]);
 
   const handleExecute = useCallback(async () => {
-    if (!selectedSubCommand?.execute) return;
+    if (!selectedSubCommand?.execute) {
+      return;
+    }
 
     if (!parsedCommand.complete) {
       const nextPart = parsedCommand.nextPart;
@@ -307,12 +338,15 @@ const useMasterControl = (
     onMoveSuggestionUp: commandSuggestions.moveUp,
     onMoveSuggestionDown: commandSuggestions.moveDown,
     onSelectSuggestion: handleSelect,
+
     onDismissSuggestions: () => {
       setSuggestionsDismissed(true);
     },
+
     onReopenSuggestions: () => {
       setSuggestionsDismissed(false);
     },
+
     onReset: reset,
     onExecute: handleExecute,
   });
@@ -337,6 +371,7 @@ const useMasterControl = (
 
     handleSelect,
     handleInputChange,
+    handleInputBlur,
     handleInputKeyDown: navigation.handleKeyDown,
   };
 };

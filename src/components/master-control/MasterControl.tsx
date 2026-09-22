@@ -9,6 +9,8 @@ import MasterControlSuggestions from "./MasterControlSuggestions";
 const MasterControl = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const {
     inputValue,
     executing,
@@ -18,8 +20,9 @@ const MasterControl = () => {
     selectedSuggestionIndex,
     handleSelect,
     handleInputChange,
+    handleInputBlur,
     handleInputKeyDown,
-  } = useMasterControl(inputRef);
+  } = useMasterControl(inputRef, containerRef);
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
@@ -51,7 +54,10 @@ const MasterControl = () => {
   }, [handleInputChange]);
 
   return (
-    <div className="pointer-events-auto relative flex h-16 w-160 flex-col border border-border bg-card shadow-sm">
+    <div
+      ref={containerRef}
+      className="pointer-events-auto relative flex h-16 w-160 flex-col border border-border bg-card shadow-sm"
+    >
       {error && <MasterControlError error={error} />}
 
       <MasterControlSuggestions

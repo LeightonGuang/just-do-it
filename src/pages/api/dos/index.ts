@@ -9,7 +9,7 @@ export const GET: APIRoute = async ({ url }) => {
   const db = drizzle(env.just_do_it);
 
   const title = url.searchParams.get("title");
-  const projectId = url.searchParams.get("project_id");
+  const projectIdParam = url.searchParams.get("project_id");
   const isSidebar = url.searchParams.get("sidebar") === "true";
 
   if (isSidebar) {
@@ -24,9 +24,17 @@ export const GET: APIRoute = async ({ url }) => {
 
   const conditions = [];
 
-  if (title) conditions.push(like(dos.title, `%${title}%`));
+  if (title?.trim()) {
+    conditions.push(like(dos.title, `%${title.trim()}%`));
+  }
 
-  if (projectId) conditions.push(eq(dos.project_id, Number(projectId)));
+  if (projectIdParam) {
+    const projectId = Number(projectIdParam);
+
+    if (!Number.isNaN(projectId)) {
+      conditions.push(eq(dos.project_id, projectId));
+    }
+  }
 
   if (conditions.length > 0) {
     const tasks = await db

@@ -8,6 +8,7 @@ type UseEntitySuggestionsOptions = {
   entityType?: EntityType;
   query: string;
   projectId?: number;
+  projectQuery?: string;
 };
 
 export type EntitySuggestionsResult = {
@@ -21,6 +22,7 @@ const useEntitySuggestions = ({
   entityType,
   query,
   projectId,
+  projectQuery,
 }: UseEntitySuggestionsOptions): EntitySuggestionsResult => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [dos, setDos] = useState<Do[]>([]);
@@ -39,7 +41,11 @@ const useEntitySuggestions = ({
     const timeout = window.setTimeout(async () => {
       try {
         const trimmedQuery = query.trim();
+        const trimmedProjectQuery = projectQuery?.trim() ?? "";
 
+        /*
+         * PROJECT SUGGESTIONS
+         */
         if (entityType === "project") {
           const params = new URLSearchParams();
 
@@ -57,22 +63,54 @@ const useEntitySuggestions = ({
             signal: controller.signal,
           });
 
-          if (res.ok) {
-            const data: Project[] = await res.json();
-            setProjects(data);
-          } else {
+          if (!res.ok) {
             setProjects([]);
+            return;
           }
-        } else if (entityType === "do") {
+
+          const data: Project[] = await res.json();
+          setProjects(data);
+          return;
+        }
+
+        if (entityType === "do") {
+          let resolvedProjectId = projectId;
+
+          if (resolvedProjectId === undefined && trimmedProjectQuery) {
+            const projectParams = new URLSearchParams();
+            projectParams.set("name", trimmedProjectQuery);
+
+            const projectRes = await fetch(
+              `/api/projects?${projectParams.toString()}`,
+              {
+                signal: controller.signal,
+              },
+            );
+
+            if (projectRes.ok) {
+              const matchingProjects: Project[] = await projectRes.json();
+
+              /*
+               * Prefer an exact project-name match.
+               */
+              const exactMatch = matchingProjects.find(
+                (project) =>
+                  project.name.toLowerCase() ===
+                  trimmedProjectQuery.toLowerCase(),
+              );
+
+              resolvedProjectId = exactMatch?.id ?? matchingProjects[0]?.id;
+            }
+          }
+
           const params = new URLSearchParams();
 
           if (trimmedQuery) {
             params.set("title", trimmedQuery);
           }
 
-          // Your API expects project_id, not projectId
-          if (projectId !== undefined) {
-            params.set("project_id", String(projectId));
+          if (resolvedProjectId !== undefined) {
+            params.set("project_id", String(resolvedProjectId));
           }
 
           const queryString = params.toString();
@@ -83,13 +121,20 @@ const useEntitySuggestions = ({
             signal: controller.signal,
           });
 
-          if (res.ok) {
-            const data: Do[] = await res.json();
-            setDos(data);
-          } else {
+          if (!res.ok) {
             setDos([]);
+            return;
           }
-        } else if (entityType === "column") {
+
+          const data: Do[] = await res.json();
+          setDos(data);
+          return;
+        }
+
+        /*
+         * COLUMN SUGGESTIONS
+         */
+        if (entityType === "column") {
           const params = new URLSearchParams();
 
           if (trimmedQuery) {
@@ -106,12 +151,13 @@ const useEntitySuggestions = ({
             signal: controller.signal,
           });
 
-          if (res.ok) {
-            const data: Column[] = await res.json();
-            setColumns(data);
-          } else {
+          if (!res.ok) {
             setColumns([]);
+            return;
           }
+
+          const data: Column[] = await res.json();
+          setColumns(data);
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -126,9 +172,13 @@ const useEntitySuggestions = ({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [enabled, entityType, query, projectId]);
+  }, [enabled, entityType, query, projectId, projectQuery]);
 
-  return { projects, dos, columns };
+  return {
+    projects,
+    dos,
+    columns,
+  };
 };
 
 export default useEntitySuggestions;
