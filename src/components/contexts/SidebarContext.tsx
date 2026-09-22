@@ -39,7 +39,7 @@ export const SidebarProvider = ({
   }, []);
 
   const fetchSidebarDos = useCallback(async () => {
-    const res = await fetch("/api/dos");
+    const res = await fetch("/api/dos?sidebar=true");
 
     if (!res.ok) throw new Error("Failed to fetch tasks");
 

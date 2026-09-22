@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
-import { eq, like, and } from "drizzle-orm";
+import { eq, like, and, isNotNull, asc } from "drizzle-orm";
 
 import { dos, columns } from "../../../db/schema";
 
@@ -11,35 +11,44 @@ export const GET: APIRoute = async ({ url }) => {
   const title = url.searchParams.get("title");
   const projectId = url.searchParams.get("project_id");
   const id = url.searchParams.get("id");
+  const isSidebar = url.searchParams.get("sidebar") === "true";
 
   if (id) {
     const task = await db
       .select()
       .from(dos)
       .where(eq(dos.id, Number(id)));
+
     return Response.json(task[0] ?? null);
   }
 
-  let query = db.select().from(dos);
+  if (isSidebar) {
+    const sidebarDos = await db
+      .select()
+      .from(dos)
+      .orderBy(asc(dos.due_at))
+      .limit(5);
+
+    return Response.json(sidebarDos);
+  }
+
   const conditions = [];
 
-  if (title) {
-    conditions.push(like(dos.title, `%${title}%`));
-  }
+  if (title) conditions.push(like(dos.title, `%${title}%`));
 
-  if (projectId) {
-    conditions.push(eq(dos.project_id, Number(projectId)));
-  }
+  if (projectId) conditions.push(eq(dos.project_id, Number(projectId)));
 
   if (conditions.length > 0) {
     const tasks = await db
       .select()
       .from(dos)
       .where(and(...conditions));
+
     return Response.json(tasks);
   }
 
   const allTasks = await db.select().from(dos);
+
   return Response.json(allTasks);
 };
 
