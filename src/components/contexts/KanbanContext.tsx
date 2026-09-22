@@ -1,13 +1,17 @@
-import { createContext } from "react";
-import { useState, useEffect, useContext, useCallback } from "react";
+import { useState } from "react";
+import { createContext, useCallback, useContext, useEffect } from "react";
 
 import type { Column, Do, Project } from "../../db/schema";
 import type { KanbanResponse } from "../../pages/api/projects/[projectId]";
 
 type KanbanContextValue = {
+  projectId: string | null;
+
   project: Project | null;
   columns: Column[];
   dos: Do[];
+
+  fetchKanban: () => Promise<void>;
 
   loading: boolean;
   error: string;
@@ -26,12 +30,24 @@ export const KanbanProvider = ({
   const [columns, setColumns] = useState<Column[]>([]);
   const [dos, setDos] = useState<Do[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
 
   const fetchKanban = useCallback(async () => {
+    if (!projectId) {
+      setProject(null);
+      setColumns([]);
+      setDos([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await fetch(`/api/projects/${projectId}`);
+      setError("");
+
+      const response = await fetch(`/api/projects/${projectId}`, {
+        cache: "no-store",
+      });
 
       if (!response.ok) throw new Error("Failed to fetch Kanban");
 
@@ -45,7 +61,7 @@ export const KanbanProvider = ({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId]);
 
   useEffect(() => {
     fetchKanban();
@@ -54,9 +70,14 @@ export const KanbanProvider = ({
   return (
     <KanbanContext.Provider
       value={{
+        projectId,
+
         project,
         columns,
         dos,
+
+        fetchKanban,
+
         loading,
         error,
       }}

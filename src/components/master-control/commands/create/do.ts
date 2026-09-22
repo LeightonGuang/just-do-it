@@ -27,11 +27,10 @@ export const createDo: SubCommand = {
     },
   ],
 
-  execute: async ({ args, entities, refetch }) => {
+  execute: async ({ args, entities, projectId: currentProjectId, refetch }) => {
     let projectId: number | undefined = entities.project?.id;
 
     if (!projectId && args.project) {
-      // Find project by name if entity was typed instead of selected
       const res = await fetch(
         `/api/projects?name=${encodeURIComponent(args.project.trim())}`,
       );
@@ -44,7 +43,6 @@ export const createDo: SubCommand = {
     }
 
     if (!projectId) {
-      // Fallback to default (first) project if no project specified or found
       const res = await fetch("/api/projects");
       if (res.ok) {
         const projects = await res.json();
@@ -70,10 +68,16 @@ export const createDo: SubCommand = {
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+      };
       throw new Error(data.error ?? "Failed to create do");
     }
 
     await refetch.dos();
+
+    if (currentProjectId && String(projectId) === String(currentProjectId)) {
+      await refetch.kanban?.();
+    }
   },
 };

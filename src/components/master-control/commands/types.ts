@@ -31,9 +31,11 @@ export type SelectedEntity = {
 export type CommandContext = {
   args: Record<string, string>;
   entities: Record<string, SelectedEntity>;
+  projectId: string | null; // Currently open Kanban project, null when no project is open.
   refetch: {
     projects: () => Promise<void>;
     dos: () => Promise<void>;
+    kanban?: () => Promise<void>;
   };
 };
 

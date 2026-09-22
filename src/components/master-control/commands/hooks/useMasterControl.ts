@@ -5,6 +5,7 @@ import { parseCommand } from "../parser";
 import useInputNavigation from "./useInputNavigation";
 import useEntitySuggestions from "./useEntitySuggestions";
 import useCommandSuggestions from "./useCommandSuggestions";
+import { useKanban } from "../../../contexts/KanbanContext";
 import { useSidebar } from "../../../contexts/SidebarContext";
 
 import type { MasterControlSuggestion, SelectedEntity } from "../types";
@@ -17,6 +18,7 @@ const useMasterControl = (
   inputRef: React.RefObject<HTMLInputElement | null>,
 ) => {
   const { fetchSidebarDos, fetchSidebarProjects } = useSidebar();
+  const { projectId: currentProjectId, fetchKanban } = useKanban();
 
   const [inputValue, setInputValue] = useState("");
   const [selectedEntities, setSelectedEntities] = useState<
@@ -128,6 +130,7 @@ const useMasterControl = (
         }));
 
         setInputValue(`${inputValue.trim()} ${suggestion.project.name} `);
+
         setSuggestionsDismissed(false);
         return;
       }
@@ -144,6 +147,7 @@ const useMasterControl = (
         }));
 
         setInputValue(`${inputValue.trim()} ${suggestion.doItem.title} `);
+
         setSuggestionsDismissed(false);
         return;
       }
@@ -160,8 +164,8 @@ const useMasterControl = (
         }));
 
         setInputValue(`${inputValue.trim()} ${suggestion.column.name} `);
+
         setSuggestionsDismissed(false);
-        return;
       }
     },
     [inputValue],
@@ -181,6 +185,7 @@ const useMasterControl = (
       if (part.type !== "argument") continue;
 
       const { name, valueType, placeholder, required } = part;
+
       const value = argumentValues[name]?.trim() ?? "";
 
       if (required && !value) {
@@ -224,9 +229,11 @@ const useMasterControl = (
       await selectedSubCommand.execute({
         args: argumentValues,
         entities: selectedEntities,
+        projectId: currentProjectId,
         refetch: {
           projects: fetchSidebarProjects,
           dos: fetchSidebarDos,
+          kanban: fetchKanban,
         },
       });
 
@@ -246,6 +253,8 @@ const useMasterControl = (
     validateArguments,
     fetchSidebarProjects,
     fetchSidebarDos,
+    fetchKanban,
+    currentProjectId,
   ]);
 
   const reset = useCallback(() => {
@@ -289,6 +298,7 @@ const useMasterControl = (
     suggestions,
     selectedSuggestionIndex: commandSuggestions.selectedIndex,
     hasRawSuggestions: commandSuggestions.rawSuggestions.length > 0,
+
     onMoveSuggestionUp: commandSuggestions.moveUp,
     onMoveSuggestionDown: commandSuggestions.moveDown,
     onSelectSuggestion: handleSelect,
