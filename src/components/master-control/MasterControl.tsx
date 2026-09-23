@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 import MasterControlInput from "./MasterControlInput";
 import MasterControlHelper from "./MasterControlHelper";
@@ -20,38 +20,10 @@ const MasterControl = () => {
     selectedSuggestionIndex,
     handleSelect,
     handleInputChange,
+    handleCaretChange,
     handleInputBlur,
     handleInputKeyDown,
   } = useMasterControl(inputRef, containerRef);
-
-  useEffect(() => {
-    const handleGlobalKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-
-      if (
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable
-      ) {
-        return;
-      }
-
-      if (event.key !== "/") {
-        return;
-      }
-
-      event.preventDefault();
-
-      inputRef.current?.focus();
-      handleInputChange("/");
-    };
-
-    window.addEventListener("keydown", handleGlobalKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleGlobalKeyDown);
-    };
-  }, [handleInputChange]);
 
   return (
     <div
@@ -74,9 +46,11 @@ const MasterControl = () => {
           error={!!error}
           value={inputValue}
           disabled={executing}
+          onBlur={handleInputBlur}
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
           placeholder="/commands, search"
+          onCaretChange={handleCaretChange}
         />
       </div>
 

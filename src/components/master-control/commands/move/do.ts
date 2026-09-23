@@ -29,14 +29,17 @@ export const moveDo: SubCommand = {
 
   execute: async ({ args, entities, refetch }) => {
     let doId: number | undefined = entities.do?.id;
+
     let columnId: number | undefined = entities.column?.id;
 
     if (!doId && args.do) {
       const res = await fetch(
         `/api/dos?title=${encodeURIComponent(args.do.trim())}`,
       );
+
       if (res.ok) {
         const found = await res.json();
+
         if (Array.isArray(found) && found.length > 0) {
           doId = found[0].id;
         }
@@ -47,8 +50,10 @@ export const moveDo: SubCommand = {
       const res = await fetch(
         `/api/columns?name=${encodeURIComponent(args.column.trim())}`,
       );
+
       if (res.ok) {
         const found = await res.json();
+
         if (Array.isArray(found) && found.length > 0) {
           columnId = found[0].id;
         }
@@ -63,22 +68,28 @@ export const moveDo: SubCommand = {
       throw new Error(`Column "${args.column || ""}" not found`);
     }
 
-    const res = await fetch("/api/dos", {
+    const res = await fetch(`/api/dos/${doId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        id: doId,
-        column_id: columnId,
+        columnId,
       }),
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+      };
+
       throw new Error(data.error ?? "Failed to move do");
     }
 
     await refetch.dos();
+
+    if (refetch.kanban) {
+      await refetch.kanban();
+    }
   },
 };

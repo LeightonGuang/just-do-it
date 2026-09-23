@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+// hooks/useMasterControl.ts
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { COMMANDS } from "../registry";
 import { parseCommand } from "../parser";
@@ -22,6 +23,7 @@ const useMasterControl = (
   const { projectId: currentProjectId, fetchKanban } = useKanban();
 
   const [inputValue, setInputValue] = useState("");
+  const [caret, setCaret] = useState(0);
   const [selectedEntities, setSelectedEntities] = useState<
     Record<string, SelectedEntity>
   >({});
@@ -29,44 +31,54 @@ const useMasterControl = (
   const [error, setError] = useState<string | null>(null);
   const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
 
+  const pendingCaretRef = useRef<number | null>(null);
+
   const tokens = useMemo(() => {
     return inputValue.trim().split(/\s+/).filter(Boolean);
   }, [inputValue]);
 
   const root = tokens[0] ?? "";
-  const subCommand = tokens[1] ?? "";
+  const subCommandToken = tokens[1] ?? "";
 
   const rootCommand = useMemo(() => {
     return COMMANDS.find((item) => item.name === root);
   }, [root]);
 
   const selectedSubCommand = useMemo(() => {
-    if (!rootCommand || !subCommand) {
+    if (!rootCommand || !subCommandToken) {
       return undefined;
     }
 
-    return rootCommand.subCommands?.find((item) => item.name === subCommand);
-  }, [rootCommand, subCommand]);
+    return rootCommand.subCommands?.find(
+      (item) => item.name === subCommandToken,
+    );
+  }, [rootCommand, subCommandToken]);
 
   const parsedCommand = useMemo(() => {
-    return parseCommand(inputValue, selectedSubCommand, selectedEntities);
-  }, [inputValue, selectedSubCommand, selectedEntities]);
+    return parseCommand(
+      inputValue,
+      caret,
+      selectedSubCommand,
+      selectedEntities,
+    );
+  }, [inputValue, caret, selectedSubCommand, selectedEntities]);
 
   const argumentValues = parsedCommand.args;
+  const activePart = parsedCommand.activePart;
+  const activeToken = parsedCommand.activeToken;
+  const availableKeywords = parsedCommand.availableKeywords;
 
   const argumentParts =
     selectedSubCommand?.parts?.filter((part) => part.type === "argument") ?? [];
 
   const activeEntityType =
-    parsedCommand.nextPart?.type === "argument" &&
-    parsedCommand.nextPart.valueType === "entity"
-      ? parsedCommand.nextPart.entityType
+    activePart?.type === "argument" && activePart.valueType === "entity"
+      ? activePart.entityType
       : undefined;
 
   const entityQuery =
-    parsedCommand.nextPart?.type === "argument" &&
-    parsedCommand.nextPart.valueType === "entity"
-      ? (argumentValues[parsedCommand.nextPart.name] ?? "")
+    activePart?.type === "argument" && activePart.valueType === "entity"
+      ? (activeToken?.text ?? argumentValues[activePart.name] ?? "")
       : "";
 
   const selectedProjectId = selectedEntities.project?.id;
@@ -96,10 +108,13 @@ const useMasterControl = (
 
   const commandSuggestions = useCommandSuggestions({
     command: inputValue,
+    caret,
     rootCommand,
     selectedSubCommand,
     entitySuggestions,
-    nextPart: parsedCommand.nextPart,
+    activePart,
+    activeToken,
+    availableKeywords,
   });
 
   const suggestions = suggestionsDismissed
@@ -114,12 +129,35 @@ const useMasterControl = (
     ? argumentValues[currentArgument.name]
     : undefined;
 
+  // replaces whatever token the caret is in (or appends, if caret is past
+  // the end / on empty input), then moves the caret after the insertion
+  const applyAtCaret = useCallback(
+    (insertText: string) => {
+      const tok = activeToken;
+      const before = tok
+        ? inputValue.slice(0, tok.start)
+        : inputValue.slice(0, caret);
+      const after = tok ? inputValue.slice(tok.end) : inputValue.slice(caret);
+
+      const needsSpaceBefore = before.length > 0 && !before.endsWith(" ");
+      const glue = needsSpaceBefore ? " " : "";
+
+      const next = `${before}${glue}${insertText} ${after.trimStart()}`;
+      const newCaret = (before + glue + insertText).length + 1;
+
+      setInputValue(next);
+      pendingCaretRef.current = newCaret;
+    },
+    [inputValue, caret, activeToken],
+  );
+
   const handleSelect = useCallback(
     (suggestion: MasterControlSuggestion) => {
       setError(null);
 
       if (suggestion.type === "command") {
         setInputValue(`${suggestion.value} `);
+        pendingCaretRef.current = suggestion.value.length + 1;
         setSelectedEntities({});
         setSuggestionsDismissed(false);
         return;
@@ -127,13 +165,14 @@ const useMasterControl = (
 
       if (suggestion.type === "sub-command") {
         setInputValue(`${suggestion.value} `);
+        pendingCaretRef.current = suggestion.value.length + 1;
         setSelectedEntities({});
         setSuggestionsDismissed(false);
         return;
       }
 
       if (suggestion.type === "keyword") {
-        setInputValue(`${inputValue.trim()} ${suggestion.value} `);
+        applyAtCaret(suggestion.value);
         setSuggestionsDismissed(false);
         return;
       }
@@ -149,8 +188,7 @@ const useMasterControl = (
           },
         }));
 
-        setInputValue(`${inputValue.trim()} ${suggestion.project.name} `);
-
+        applyAtCaret(suggestion.project.name);
         setSuggestionsDismissed(false);
         return;
       }
@@ -166,8 +204,7 @@ const useMasterControl = (
           },
         }));
 
-        setInputValue(`${inputValue.trim()} ${suggestion.doItem.title} `);
-
+        applyAtCaret(suggestion.doItem.title);
         setSuggestionsDismissed(false);
         return;
       }
@@ -183,20 +220,36 @@ const useMasterControl = (
           },
         }));
 
-        setInputValue(`${inputValue.trim()} ${suggestion.column.name} `);
-
+        applyAtCaret(suggestion.column.name);
         setSuggestionsDismissed(false);
       }
     },
-    [inputValue],
+    [applyAtCaret],
   );
 
-  const handleInputChange = useCallback((value: string) => {
+  // input's onChange should call this with (value, selectionStart)
+  const handleInputChange = useCallback((value: string, nextCaret: number) => {
     setInputValue(value);
-    setSelectedEntities({});
+    setCaret(nextCaret);
     setError(null);
     setSuggestionsDismissed(false);
   }, []);
+
+  // input's onSelect (covers clicks + arrow-key caret moves) should call this
+  const handleCaretChange = useCallback((nextCaret: number) => {
+    setCaret(nextCaret);
+  }, []);
+
+  useEffect(() => {
+    if (pendingCaretRef.current === null) return;
+    const pos = pendingCaretRef.current;
+    pendingCaretRef.current = null;
+
+    requestAnimationFrame(() => {
+      inputRef.current?.setSelectionRange(pos, pos);
+      setCaret(pos);
+    });
+  }, [inputValue, inputRef]);
 
   const handleInputBlur = useCallback(() => {
     window.setTimeout(() => {
@@ -238,12 +291,12 @@ const useMasterControl = (
     }
 
     if (!parsedCommand.complete) {
-      const nextPart = parsedCommand.nextPart;
+      const part = activePart;
 
-      if (nextPart?.type === "keyword") {
-        setError(`Expected "${nextPart.value}"`);
-      } else if (nextPart?.type === "argument") {
-        setError(`${nextPart.placeholder || nextPart.name} is required`);
+      if (part?.type === "keyword") {
+        setError(`Expected "${part.value}"`);
+      } else if (part?.type === "argument") {
+        setError(`${part.placeholder || part.name} is required`);
       }
 
       return;
@@ -272,6 +325,7 @@ const useMasterControl = (
       });
 
       setInputValue("");
+      setCaret(0);
       setSelectedEntities({});
       setSuggestionsDismissed(false);
     } catch (err) {
@@ -282,6 +336,7 @@ const useMasterControl = (
   }, [
     selectedSubCommand,
     parsedCommand,
+    activePart,
     argumentValues,
     selectedEntities,
     validateArguments,
@@ -293,6 +348,7 @@ const useMasterControl = (
 
   const reset = useCallback(() => {
     setInputValue("");
+    setCaret(0);
     setSelectedEntities({});
     setError(null);
     setSuggestionsDismissed(false);
@@ -318,6 +374,7 @@ const useMasterControl = (
 
       inputRef.current?.focus();
       setInputValue("/");
+      setCaret(1);
       setSuggestionsDismissed(false);
     };
 
@@ -351,6 +408,7 @@ const useMasterControl = (
 
   return {
     inputValue,
+    caret,
     command: root,
     argumentValues,
     selectedEntities,
@@ -369,6 +427,7 @@ const useMasterControl = (
 
     handleSelect,
     handleInputChange,
+    handleCaretChange,
     handleInputBlur,
     handleInputKeyDown: navigation.handleKeyDown,
   };

@@ -1,7 +1,6 @@
 import { twMerge } from "tailwind-merge";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 
-import type { SubCommand } from "./commands/types";
 import type { ArgumentPart, MasterControlSuggestion } from "./commands/types";
 
 type MasterControlSuggestionsProps = {
@@ -11,8 +10,6 @@ type MasterControlSuggestionsProps = {
   selectedIndex: number;
   executing: boolean;
   onSelect: (suggestion: MasterControlSuggestion) => void;
-  selectedSubCommand?: SubCommand;
-  args?: Record<string, string>;
 };
 
 const MasterControlSuggestions = ({
@@ -22,8 +19,6 @@ const MasterControlSuggestions = ({
   selectedIndex,
   executing,
   onSelect,
-  selectedSubCommand,
-  args = {},
 }: MasterControlSuggestionsProps) => {
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -35,70 +30,13 @@ const MasterControlSuggestions = ({
     });
   }, [selectedIndex]);
 
-  const keywordSuggestions = useMemo(() => {
-    if (!selectedSubCommand) {
-      return [];
-    }
-
-    const result: MasterControlSuggestion[] = [];
-
-    for (let index = 0; index < selectedSubCommand.parts.length; index++) {
-      const part = selectedSubCommand.parts[index];
-
-      if (part.type !== "keyword") {
-        continue;
-      }
-
-      const argument = selectedSubCommand.parts[index + 1];
-
-      if (!argument || argument.type !== "argument") {
-        continue;
-      }
-
-      if (args[argument.name]) {
-        continue;
-      }
-
-      result.push({
-        type: "keyword",
-        value: part.value,
-        label: part.value,
-      });
-    }
-
-    return result;
-  }, [selectedSubCommand, args]);
-
-  const allSuggestions = useMemo(() => {
-    const existingKeywordValues = new Set(
-      suggestions
-        .filter(
-          (
-            suggestion,
-          ): suggestion is Extract<
-            MasterControlSuggestion,
-            { type: "keyword" }
-          > => suggestion.type === "keyword",
-        )
-        .map((suggestion) => suggestion.value),
-    );
-
-    const newKeywordSuggestions = keywordSuggestions.filter(
-      (suggestion) =>
-        suggestion.type !== "keyword" ||
-        !existingKeywordValues.has(suggestion.value),
-    );
-
-    return [...suggestions, ...newKeywordSuggestions];
-  }, [suggestions, keywordSuggestions]);
-
-  if (allSuggestions.length === 0 && !currentArgument) {
+  if (suggestions.length === 0 && !currentArgument) {
     return null;
   }
 
   return (
     <div className="absolute bottom-full left-0 z-40 flex max-h-60 w-max min-w-48 flex-col gap-1 overflow-y-auto border border-border bg-card p-1 shadow-lg">
-      {allSuggestions.map((suggestion, index) => {
+      {suggestions.map((suggestion, index) => {
         const selected = index === selectedIndex;
 
         return (

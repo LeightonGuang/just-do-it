@@ -1,295 +1,227 @@
+// parser.ts
+import { tokenize, type Token } from "./tokenize";
 import type { SubCommand, CommandPart, SelectedEntity } from "./types";
+
+type KeywordPart = Extract<CommandPart, { type: "keyword" }>;
+type ArgumentPart = Extract<CommandPart, { type: "argument" }>;
 
 export type ParsedCommand = {
   args: Record<string, string>;
   entities: Record<string, SelectedEntity>;
   complete: boolean;
-  nextPart: CommandPart | null;
+  activePart: CommandPart | null;
+  activeToken: Token | null;
+  availableKeywords: KeywordPart[]; // populated when >1 keyword could come next
 };
 
-const escapeRegex = (value: string) => {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-};
+const caretIn = (caret: number, tok?: Token) =>
+  !!tok && caret >= tok.start && caret <= tok.end;
 
-export const parseCommand = (
-  inputValue: string,
-  selectedSubCommand?: SubCommand,
-  selectedEntities: Record<string, SelectedEntity> = {},
-): ParsedCommand => {
-  if (!selectedSubCommand?.parts) {
-    return {
-      args: {},
-      entities: selectedEntities,
-      complete: false,
-      nextPart: null,
-    };
-  }
-
-  const trimmedInput = inputValue.trim();
-  const tokens = trimmedInput.split(/\s+/).filter(Boolean);
-  const parts = selectedSubCommand.parts;
-
-  if (tokens.length < 2) {
-    return {
-      args: {},
-      entities: selectedEntities,
-      complete: false,
-      nextPart: parts[0] ?? null,
-    };
-  }
-
-  const rootAndSubLen = tokens[0].length + 1 + tokens[1].length;
-
-  let remainingText = trimmedInput.slice(rootAndSubLen).trimStart();
-
-  const args: Record<string, string> = {};
-
-  let nextPart: CommandPart | null = null;
-  let complete = true;
-
-  const findNextKeyword = (text: string, startIndex: number) => {
-    let earliest:
-      | {
-          index: number;
-          partIndex: number;
-        }
-      | undefined;
-
-    for (let i = startIndex; i < parts.length; i++) {
-      const candidate = parts[i];
-
-      if (candidate.type !== "keyword") {
-        continue;
-      }
-
-      const regex = new RegExp(`\\b${escapeRegex(candidate.value)}\\b`, "i");
-
-      const match = regex.exec(text);
-
-      if (!match || match.index === undefined) {
-        continue;
-      }
-
-      if (!earliest || match.index < earliest.index) {
-        earliest = {
-          index: match.index,
-          partIndex: i,
-        };
-      }
+function getFlexPairs(flexParts: CommandPart[]) {
+  const pairs: { keyword: KeywordPart; argument: ArgumentPart }[] = [];
+  for (let i = 0; i < flexParts.length; i++) {
+    const p = flexParts[i];
+    const next = flexParts[i + 1];
+    if (p.type === "keyword" && next?.type === "argument") {
+      pairs.push({ keyword: p, argument: next });
     }
+  }
+  return pairs;
+}
 
-    return earliest;
+export function parseCommand(
+  input: string,
+  caret: number,
+  subCommand: SubCommand | undefined,
+  selectedEntities: Record<string, SelectedEntity> = {},
+): ParsedCommand {
+  const empty: ParsedCommand = {
+    args: {},
+    entities: selectedEntities,
+    complete: false,
+    activePart: null,
+    activeToken: null,
+    availableKeywords: [],
   };
 
-  for (let idx = 0; idx < parts.length; idx++) {
-    const part = parts[idx];
+  if (!subCommand?.parts?.length) return empty;
+
+  const tokens = tokenize(input);
+  const parts = subCommand.parts;
+
+  // everything from the first *optional* keyword onward is unordered
+  const splitIdx = parts.findIndex((p) => p.type === "keyword" && p.optional);
+  const leadingParts = splitIdx === -1 ? parts : parts.slice(0, splitIdx);
+  const flexParts = splitIdx === -1 ? [] : parts.slice(splitIdx);
+
+  let ti = Math.min(2, tokens.length); // skip "/edit" + "project"
+  const args: Record<string, string> = {};
+  let activePart: CommandPart | null = null;
+  let activeToken: Token | null = null;
+  let complete = true;
+
+  // ---------- Phase 1: leading, strictly ordered ----------
+  for (let pi = 0; pi < leadingParts.length; pi++) {
+    const part = leadingParts[pi];
+    const tok = tokens[ti];
 
     if (part.type === "keyword") {
-      const currentText = remainingText.trimStart();
-
-      const keywordRegex = new RegExp(
-        `^${escapeRegex(part.value)}(?:\\s|$)`,
-        "i",
-      );
-
-      if (keywordRegex.test(currentText)) {
-        remainingText = currentText.slice(part.value.length).trimStart();
-
+      if (tok && tok.text.toLowerCase() === part.value.toLowerCase()) {
+        ti++;
         continue;
       }
-
-      if (part.optional) {
-        continue;
+      if (!activePart) {
+        activePart = part;
+        activeToken = tok ?? null;
       }
-
-      nextPart = part;
       complete = false;
       break;
     }
 
-    if (part.type !== "argument") {
-      continue;
+    // argument
+    const entity = selectedEntities[part.name];
+    if (part.valueType === "entity" && entity?.label) {
+      const label = entity.label.trim();
+      const labelTokens = label.split(/\s+/).filter(Boolean);
+      const slice = tokens.slice(ti, ti + labelTokens.length);
+      const covered = slice.map((t) => t.text).join(" ");
+
+      if (covered.toLowerCase() === label.toLowerCase()) {
+        args[part.name] = label;
+        const hit = slice.find((t) => caretIn(caret, t));
+        if (hit) {
+          activePart = part;
+          activeToken = hit;
+        }
+        ti += labelTokens.length;
+        continue;
+      }
     }
 
-    if (part.valueType === "entity" && part.entityType) {
-      const currentText = remainingText.trimStart();
-
-      const selectedEntity = selectedEntities[part.name];
-
-      if (selectedEntity) {
-        const label = selectedEntity.label;
-
-        const entityRegex = new RegExp(`^${escapeRegex(label)}(?:\\s|$)`, "i");
-
-        if (entityRegex.test(currentText)) {
-          args[part.name] = label;
-
-          remainingText = currentText.slice(label.length).trimStart();
-
-          continue;
-        }
+    if (!tok) {
+      if (!activePart) {
+        activePart = part;
+        activeToken = null;
       }
-
-      if (!currentText) {
-        if (part.required) {
-          nextPart = part;
-          complete = false;
-          break;
-        }
-
-        continue;
-      }
-
-      const nextKeyword = findNextKeyword(currentText, idx + 1);
-
-      if (nextKeyword) {
-        const entityValue = currentText.slice(0, nextKeyword.index).trim();
-
-        if (entityValue) {
-          args[part.name] = entityValue;
-        }
-
-        remainingText = currentText.slice(nextKeyword.index).trimStart();
-
-        idx = nextKeyword.partIndex - 1;
-
-        continue;
-      }
-
-      const spaceIndex = currentText.indexOf(" ");
-
-      if (spaceIndex === -1) {
-        args[part.name] = currentText;
-
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
-      args[part.name] = currentText.slice(0, spaceIndex).trim();
-
-      remainingText = currentText.slice(spaceIndex).trimStart();
-
-      continue;
+      if (part.required) complete = false;
+      break;
     }
 
     if (part.greedy) {
-      const currentText = remainingText.trimStart();
+      const nextKw = leadingParts
+        .slice(pi + 1)
+        .find((p): p is KeywordPart => p.type === "keyword");
+      const stopAt = nextKw
+        ? tokens.findIndex(
+            (t, i) =>
+              i >= ti && t.text.toLowerCase() === nextKw.value.toLowerCase(),
+          )
+        : -1;
+      const endTi = stopAt === -1 ? tokens.length : stopAt;
+      const slice = tokens.slice(ti, endTi);
 
-      if (!currentText) {
-        if (part.required) {
-          nextPart = part;
-          complete = false;
-          break;
-        }
-
-        continue;
+      args[part.name] = slice.map((t) => t.text).join(" ");
+      const hit = slice.find((t) => caretIn(caret, t));
+      if (hit) {
+        activePart = part;
+        activeToken = hit;
       }
-
-      const nextKeyword = findNextKeyword(currentText, idx + 1);
-
-      if (nextKeyword) {
-        const value = currentText.slice(0, nextKeyword.index).trim();
-
-        if (value) {
-          args[part.name] = value;
-        }
-
-        remainingText = currentText.slice(nextKeyword.index).trimStart();
-
-        idx = nextKeyword.partIndex - 1;
-
-        continue;
-      }
-
-      args[part.name] = currentText;
-      remainingText = "";
-
+      ti = endTi;
+      if (!args[part.name] && part.required) complete = false;
       continue;
     }
 
-    if (part.valueType === "colour") {
-      const currentText = remainingText.trimStart();
-
-      const colorMatch = currentText.match(
-        /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/,
-      );
-
-      if (colorMatch && colorMatch.index !== undefined) {
-        args[part.name] = colorMatch[0];
-
-        remainingText = currentText
-          .slice(colorMatch.index + colorMatch[0].length)
-          .trimStart();
-
-        continue;
-      }
-
-      if (part.required) {
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
-      continue;
+    args[part.name] = tok.text;
+    if (caretIn(caret, tok)) {
+      activePart = part;
+      activeToken = tok;
     }
-
-    const currentText = remainingText.trimStart();
-
-    if (!currentText) {
-      if (part.required) {
-        nextPart = part;
-        complete = false;
-        break;
-      }
-
-      continue;
-    }
-
-    const nextKeyword = findNextKeyword(currentText, idx + 1);
-
-    if (nextKeyword) {
-      const value = currentText.slice(0, nextKeyword.index).trim();
-
-      if (value) {
-        args[part.name] = value;
-      }
-
-      remainingText = currentText.slice(nextKeyword.index).trimStart();
-
-      idx = nextKeyword.partIndex - 1;
-
-      continue;
-    }
-
-    args[part.name] = currentText;
-    remainingText = "";
+    ti++;
   }
 
-  if (complete) {
-    for (const part of parts) {
-      if (part.type !== "argument" || !part.required) {
-        continue;
-      }
-
-      const value = args[part.name]?.trim() ?? "";
-
-      if (!value) {
-        complete = false;
-        nextPart = part;
-        break;
-      }
-    }
+  // required leading part unresolved — stop here, don't enter flex phase
+  if (activePart || !complete) {
+    return {
+      args,
+      entities: selectedEntities,
+      complete,
+      activePart,
+      activeToken,
+      availableKeywords: [],
+    };
   }
 
-  if (nextPart?.type === "argument" && nextPart.valueType === "entity") {
-    complete = false;
+  // ---------- Phase 2: flex — unordered keyword/argument pairs ----------
+  const pairs = getFlexPairs(flexParts);
+  const usedKeywords = new Set<string>();
+
+  type Occ = { pair: (typeof pairs)[number]; tokenIndex: number };
+  const occurrences: Occ[] = [];
+
+  for (let idx = ti; idx < tokens.length; idx++) {
+    const t = tokens[idx];
+    const pair = pairs.find(
+      (p) =>
+        !usedKeywords.has(p.keyword.value) &&
+        p.keyword.value.toLowerCase() === t.text.toLowerCase(),
+    );
+    if (pair) {
+      occurrences.push({ pair, tokenIndex: idx });
+      usedKeywords.add(pair.keyword.value);
+    }
+  }
+  occurrences.sort((a, b) => a.tokenIndex - b.tokenIndex);
+
+  let availableKeywords: KeywordPart[] = [];
+
+  const firstOccIdx = occurrences[0]?.tokenIndex ?? tokens.length;
+  const leadingFlexTokens = tokens.slice(ti, firstOccIdx);
+  const hit = leadingFlexTokens.find((t) => caretIn(caret, t));
+  const caretAtGapEnd =
+    ti >= tokens.length && caret >= (tokens[ti - 1]?.end ?? 0);
+
+  if (hit || (leadingFlexTokens.length === 0 && caretAtGapEnd)) {
+    const query = (hit?.text ?? "").toLowerCase();
+    availableKeywords = pairs
+      .filter((p) => !usedKeywords.has(p.keyword.value))
+      .map((p) => p.keyword)
+      .filter((k) => k.value.toLowerCase().startsWith(query));
+    activeToken = hit ?? null;
+  } else if (leadingFlexTokens.length > 0) {
+    complete = false; // text that doesn't match any known keyword
+  }
+
+  for (let oi = 0; oi < occurrences.length; oi++) {
+    const { pair, tokenIndex } = occurrences[oi];
+    const segStart = tokenIndex + 1;
+    const segEnd = occurrences[oi + 1]?.tokenIndex ?? tokens.length;
+    const slice = tokens.slice(segStart, segEnd);
+    const value = slice.map((t) => t.text).join(" ");
+
+    if (value) args[pair.argument.name] = value;
+
+    const segHit = slice.find((t) => caretIn(caret, t));
+    const gapCaret =
+      slice.length === 0 &&
+      caret >= (tokens[tokenIndex]?.end ?? 0) &&
+      caret <= (tokens[segEnd]?.start ?? input.length);
+
+    if (segHit || gapCaret) {
+      activePart = pair.argument;
+      activeToken = segHit ?? null;
+    }
+
+    if (pair.argument.required && !args[pair.argument.name]?.trim()) {
+      complete = false;
+    }
   }
 
   return {
     args,
     entities: selectedEntities,
     complete,
-    nextPart,
+    activePart,
+    activeToken,
+    availableKeywords,
   };
-};
+}

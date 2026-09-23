@@ -9,6 +9,7 @@ type UseEntitySuggestionsOptions = {
   query: string;
   projectId?: number;
   projectQuery?: string;
+  entityProjectId?: number;
 };
 
 export type EntitySuggestionsResult = {
@@ -23,6 +24,7 @@ const useEntitySuggestions = ({
   query,
   projectId,
   projectQuery,
+  entityProjectId,
 }: UseEntitySuggestionsOptions): EntitySuggestionsResult => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [dos, setDos] = useState<Do[]>([]);
@@ -43,9 +45,6 @@ const useEntitySuggestions = ({
         const trimmedQuery = query.trim();
         const trimmedProjectQuery = projectQuery?.trim() ?? "";
 
-        /*
-         * PROJECT SUGGESTIONS
-         */
         if (entityType === "project") {
           const params = new URLSearchParams();
 
@@ -69,7 +68,11 @@ const useEntitySuggestions = ({
           }
 
           const data: Project[] = await res.json();
+
           setProjects(data);
+          setDos([]);
+          setColumns([]);
+
           return;
         }
 
@@ -78,6 +81,7 @@ const useEntitySuggestions = ({
 
           if (resolvedProjectId === undefined && trimmedProjectQuery) {
             const projectParams = new URLSearchParams();
+
             projectParams.set("name", trimmedProjectQuery);
 
             const projectRes = await fetch(
@@ -90,9 +94,6 @@ const useEntitySuggestions = ({
             if (projectRes.ok) {
               const matchingProjects: Project[] = await projectRes.json();
 
-              /*
-               * Prefer an exact project-name match.
-               */
               const exactMatch = matchingProjects.find(
                 (project) =>
                   project.name.toLowerCase() ===
@@ -127,18 +128,23 @@ const useEntitySuggestions = ({
           }
 
           const data: Do[] = await res.json();
+
           setDos(data);
+          setProjects([]);
+          setColumns([]);
+
           return;
         }
 
-        /*
-         * COLUMN SUGGESTIONS
-         */
         if (entityType === "column") {
           const params = new URLSearchParams();
 
           if (trimmedQuery) {
             params.set("name", trimmedQuery);
+          }
+
+          if (entityProjectId !== undefined) {
+            params.set("project_id", String(entityProjectId));
           }
 
           const queryString = params.toString();
@@ -157,7 +163,12 @@ const useEntitySuggestions = ({
           }
 
           const data: Column[] = await res.json();
+
           setColumns(data);
+          setProjects([]);
+          setDos([]);
+
+          return;
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -166,13 +177,13 @@ const useEntitySuggestions = ({
 
         console.error("Failed to fetch entity suggestions:", error);
       }
-    }, 200);
+    }, 150);
 
     return () => {
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [enabled, entityType, query, projectId, projectQuery]);
+  }, [enabled, entityType, query, projectId, projectQuery, entityProjectId]);
 
   return {
     projects,

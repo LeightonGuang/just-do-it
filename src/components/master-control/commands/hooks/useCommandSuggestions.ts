@@ -1,33 +1,37 @@
+// hooks/useCommandSuggestions.ts
 import { useEffect, useMemo, useState } from "react";
 
+import { tokenize, type Token } from "../tokenize";
 import { COMMANDS as COMMANDS_LIST } from "../registry";
 
-import type { MasterControlSuggestion } from "../types";
-import type { CommandPart, Command, SubCommand } from "../types";
+import type { SubCommand } from "../types";
+import type { CommandPart, MasterControlSuggestion, Command } from "../types";
 
 import type { EntitySuggestionsResult } from "./useEntitySuggestions";
 
+type KeywordPart = Extract<CommandPart, { type: "keyword" }>;
+
 type UseCommandSuggestionsOptions = {
   command: string;
+  caret: number;
   rootCommand: Command | undefined;
   selectedSubCommand: SubCommand | undefined;
   entitySuggestions: EntitySuggestionsResult;
-  nextPart?: CommandPart | null;
-  args?: Record<string, string>;
+  activePart?: CommandPart | null;
+  activeToken?: Token | null;
+  availableKeywords?: KeywordPart[];
   resetSelectionKey?: number;
-};
-
-const escapeRegex = (value: string) => {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
 const useCommandSuggestions = ({
   command,
+  caret,
   rootCommand,
   selectedSubCommand,
   entitySuggestions,
-  nextPart,
-  args = {},
+  activePart,
+  activeToken,
+  availableKeywords,
   resetSelectionKey,
 }: UseCommandSuggestionsOptions) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -40,224 +44,144 @@ const useCommandSuggestions = ({
     suggestions: MasterControlSuggestion[];
     currentArgument?: Extract<CommandPart, { type: "argument" }>;
   }>(() => {
-    const trimmed = command.trimStart();
+    if (!command.trimStart().startsWith("/")) {
+      return { suggestions: [], currentArgument: undefined };
+    }
 
-    if (!trimmed.startsWith("/")) {
+    const tokens = tokenize(command);
+    const activeIdx = tokens.findIndex(
+      (t) => caret >= t.start && caret <= t.end,
+    );
+
+    // --- caret is in the root token, or nothing's been typed yet ---
+    if (!rootCommand || activeIdx === 0 || tokens.length === 0) {
+      const query = (tokens[0]?.text ?? "").replace(/^\//, "").toLowerCase();
+
       return {
-        suggestions: [],
+        suggestions: COMMANDS_LIST.filter((item) =>
+          item.name.slice(1).toLowerCase().startsWith(query),
+        ).map((item) => ({
+          type: "command" as const,
+          value: item.name,
+          label: item.name,
+          description: item.description,
+        })),
         currentArgument: undefined,
       };
     }
 
-    const tokens = trimmed.split(/\s+/).filter(Boolean);
-
-    if (!rootCommand || (tokens.length <= 1 && !trimmed.endsWith(" "))) {
-      const query = trimmed.slice(1).toLowerCase();
-
-      const suggestions: MasterControlSuggestion[] = COMMANDS_LIST.filter(
-        (item) => item.name.slice(1).toLowerCase().startsWith(query),
-      ).map((item) => ({
-        type: "command" as const,
-        value: item.name,
-        label: item.name,
-        description: item.description,
-      }));
-
-      return {
-        suggestions,
-        currentArgument: undefined,
-      };
-    }
-
+    // --- caret is in the sub-command token ---
     if (!selectedSubCommand) {
-      const subQuery = tokens.length > 1 ? tokens[1].toLowerCase() : "";
-
-      const suggestions: MasterControlSuggestion[] = (
-        rootCommand.subCommands || []
-      )
-        .filter((sub) => sub.name.toLowerCase().startsWith(subQuery))
-        .map((sub) => ({
-          type: "sub-command" as const,
-          value: `${rootCommand.name} ${sub.name}`,
-          label: sub.name,
-          description: sub.description,
-        }));
+      const query = (tokens[1]?.text ?? "").toLowerCase();
 
       return {
-        suggestions,
+        suggestions: (rootCommand.subCommands ?? [])
+          .filter((sub) => sub.name.toLowerCase().startsWith(query))
+          .map((sub) => ({
+            type: "sub-command" as const,
+            value: `${rootCommand.name} ${sub.name}`,
+            label: sub.name,
+            description: sub.description,
+          })),
         currentArgument: undefined,
       };
     }
 
-    const lastToken = tokens[tokens.length - 1] ?? "";
-
-    const hasTrailingSpace = /\s$/.test(command);
-
-    const keywordParts = selectedSubCommand.parts.filter(
-      (part): part is Extract<CommandPart, { type: "keyword" }> =>
-        part.type === "keyword",
-    );
-
-    const usedKeywords = new Set(
-      keywordParts
-        .filter((part) => {
-          const regex = new RegExp(
-            `(?:^|\\s)${escapeRegex(part.value)}(?:\\s|$)`,
-            "i",
-          );
-
-          return regex.test(trimmed);
-        })
-        .map((part) => part.value.toLowerCase()),
-    );
-
-    const keywordQuery = hasTrailingSpace ? "" : lastToken.toLowerCase();
-
-    const isKeywordQuery =
-      !hasTrailingSpace &&
-      keywordParts.some((part) => {
-        if (usedKeywords.has(part.value.toLowerCase())) {
-          return false;
-        }
-
-        return part.value.toLowerCase().startsWith(keywordQuery);
-      });
-
-    if (isKeywordQuery) {
-      const keywordSuggestions: MasterControlSuggestion[] = keywordParts
-        .filter((part) => {
-          const value = part.value.toLowerCase();
-
-          if (usedKeywords.has(value)) {
-            return false;
-          }
-
-          return value.startsWith(keywordQuery);
-        })
-        .map((part) => ({
+    // --- unordered flex-phase keywords (e.g. "name"/"colour" in any order) ---
+    if (availableKeywords && availableKeywords.length > 0) {
+      return {
+        suggestions: availableKeywords.map((kw) => ({
           type: "keyword" as const,
-          value: part.value,
-          label: part.value,
-          description: `Keyword: ${part.value}`,
-        }));
-
-      return {
-        suggestions: keywordSuggestions,
+          value: kw.value,
+          label: kw.value,
+          description: `Keyword: ${kw.value}`,
+        })),
         currentArgument: undefined,
       };
     }
 
-    const keywordSuggestions: MasterControlSuggestion[] = keywordParts
-      .filter((part) => {
-        const value = part.value.toLowerCase();
+    // --- caret is on a required/leading keyword part ---
+    if (activePart?.type === "keyword") {
+      const keyword = activePart.value;
+      const query = (activeToken?.text ?? "").toLowerCase();
 
-        return !usedKeywords.has(value);
-      })
-      .filter((part) => {
-        const partIndex = selectedSubCommand.parts.indexOf(part);
-
-        const argument = selectedSubCommand.parts[partIndex + 1];
-
-        if (!argument || argument.type !== "argument") {
-          return false;
-        }
-
-        return !args[argument.name];
-      })
-      .map((part) => ({
-        type: "keyword" as const,
-        value: part.value,
-        label: part.value,
-        description: `Keyword: ${part.value}`,
-      }));
-
-    if (nextPart?.type === "keyword") {
-      const keywordAlreadyUsed = usedKeywords.has(nextPart.value.toLowerCase());
-
-      if (!keywordAlreadyUsed) {
+      if (!query || keyword.toLowerCase().startsWith(query)) {
         return {
           suggestions: [
             {
               type: "keyword",
-              value: nextPart.value,
-              label: nextPart.value,
-              description: `Keyword: ${nextPart.value}`,
+              value: keyword,
+              label: keyword,
+              description: `Keyword: ${keyword}`,
             },
           ],
           currentArgument: undefined,
         };
       }
+
+      return { suggestions: [], currentArgument: undefined };
     }
 
+    // --- caret is on an entity argument ---
     if (
-      nextPart?.type === "argument" &&
-      nextPart.valueType === "entity" &&
-      nextPart.entityType
+      activePart?.type === "argument" &&
+      activePart.valueType === "entity" &&
+      activePart.entityType
     ) {
-      if (nextPart.entityType === "project") {
+      if (activePart.entityType === "project") {
         return {
           suggestions: entitySuggestions.projects.map((project) => ({
             type: "project" as const,
             project,
           })),
-          currentArgument: nextPart,
+          currentArgument: activePart,
         };
       }
 
-      if (nextPart.entityType === "do") {
+      if (activePart.entityType === "do") {
         return {
           suggestions: entitySuggestions.dos.map((doItem) => ({
             type: "do" as const,
             doItem,
           })),
-          currentArgument: nextPart,
+          currentArgument: activePart,
         };
       }
 
-      if (nextPart.entityType === "column") {
+      if (activePart.entityType === "column") {
         return {
           suggestions: entitySuggestions.columns.map((column) => ({
             type: "column" as const,
             column,
           })),
-          currentArgument: nextPart,
+          currentArgument: activePart,
         };
       }
     }
 
-    if (keywordSuggestions.length > 0) {
-      return {
-        suggestions: keywordSuggestions,
-        currentArgument: nextPart?.type === "argument" ? nextPart : undefined,
-      };
-    }
-
     return {
       suggestions: [],
-      currentArgument: nextPart?.type === "argument" ? nextPart : undefined,
+      currentArgument: activePart?.type === "argument" ? activePart : undefined,
     };
   }, [
     command,
+    caret,
     rootCommand,
     selectedSubCommand,
     entitySuggestions,
-    nextPart,
-    args,
+    activePart,
+    activeToken,
+    availableKeywords,
   ]);
 
-  const moveUp = () => {
-    setSelectedIndex((current) => Math.max(current - 1, 0));
-  };
+  const moveUp = () => setSelectedIndex((c) => Math.max(c - 1, 0));
 
-  const moveDown = () => {
-    setSelectedIndex((current) =>
-      Math.min(current + 1, Math.max(result.suggestions.length - 1, 0)),
+  const moveDown = () =>
+    setSelectedIndex((c) =>
+      Math.min(c + 1, Math.max(result.suggestions.length - 1, 0)),
     );
-  };
 
-  const reset = () => {
-    setSelectedIndex(0);
-  };
+  const reset = () => setSelectedIndex(0);
 
   return {
     suggestions: result.suggestions,
