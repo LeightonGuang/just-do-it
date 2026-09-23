@@ -20,11 +20,12 @@ export const deleteDo: SubCommand = {
       valueType: "entity",
       entityType: "do",
       required: true,
+      greedy: true,
     },
   ],
 
   execute: async ({ args, entities, projectId: currentProjectId, refetch }) => {
-    const doId: number = entities.do?.id;
+    const doId: number | undefined = entities.do?.id;
 
     if (!doId) throw new Error(`Do "${args.do || ""}" not found`);
 
@@ -33,7 +34,10 @@ export const deleteDo: SubCommand = {
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+      };
+
       throw new Error(data.error ?? "Failed to delete do");
     }
 
