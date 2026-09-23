@@ -25,6 +25,19 @@ export const createDo: SubCommand = {
       entityType: "project",
       required: true,
     },
+    {
+      type: "keyword",
+      value: "description",
+      optional: true,
+    },
+    {
+      type: "argument",
+      name: "description",
+      placeholder: "Description",
+      valueType: "text",
+      required: false,
+      greedy: true,
+    },
   ],
 
   execute: async ({ args, entities, projectId: currentProjectId, refetch }) => {
@@ -63,6 +76,7 @@ export const createDo: SubCommand = {
       },
       body: JSON.stringify({
         title: args.title,
+        description: args.description?.trim() || null,
         project_id: projectId,
       }),
     });

@@ -24,16 +24,13 @@ export const GET: APIRoute = async ({ url }) => {
 
   const conditions = [];
 
-  if (title?.trim()) {
-    conditions.push(like(dos.title, `%${title.trim()}%`));
-  }
+  if (title?.trim()) conditions.push(like(dos.title, `%${title.trim()}%`));
 
   if (projectIdParam) {
     const projectId = Number(projectIdParam);
 
-    if (!Number.isNaN(projectId)) {
+    if (!Number.isNaN(projectId))
       conditions.push(eq(dos.project_id, projectId));
-    }
   }
 
   if (conditions.length > 0) {
@@ -50,6 +47,7 @@ export const GET: APIRoute = async ({ url }) => {
   return Response.json(allTasks);
 };
 
+// POST /api/dos - create a do
 export const POST: APIRoute = async ({ request }) => {
   const db = drizzle(env.just_do_it);
 
@@ -62,14 +60,13 @@ export const POST: APIRoute = async ({ request }) => {
 
   const title = body.title?.trim();
   const projectId = body.project_id;
+  const description = body.description?.trim() || null;
 
-  if (!title) {
+  if (!title)
     return Response.json({ error: "Title is required" }, { status: 400 });
-  }
 
-  if (!projectId) {
+  if (!projectId)
     return Response.json({ error: "Project is required" }, { status: 400 });
-  }
 
   let columnId = body.column_id;
 
@@ -91,6 +88,7 @@ export const POST: APIRoute = async ({ request }) => {
           position: 0,
         })
         .returning();
+
       columnId = insertedCol[0]?.id;
     }
   }
@@ -103,19 +101,23 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const now = new Date();
+
   const inserted = await db
     .insert(dos)
     .values({
       title,
+      description,
       project_id: projectId,
       column_id: columnId,
-      description: body.description ?? null,
       created_at: now,
       updated_at: now,
     })
     .returning();
 
-  return Response.json({ success: true, task: inserted[0] });
+  return Response.json({
+    success: true,
+    task: inserted[0],
+  });
 };
 
 export const PATCH: APIRoute = async ({ request }) => {
@@ -124,6 +126,7 @@ export const PATCH: APIRoute = async ({ request }) => {
   const body = (await request.json()) as {
     id?: number;
     title?: string;
+    description?: string | null;
     column_id?: number;
     project_id?: number;
   };
@@ -136,9 +139,21 @@ export const PATCH: APIRoute = async ({ request }) => {
     updated_at: new Date(),
   };
 
-  if (body.title !== undefined) updateData.title = body.title.trim();
-  if (body.column_id !== undefined) updateData.column_id = body.column_id;
-  if (body.project_id !== undefined) updateData.project_id = body.project_id;
+  if (body.title !== undefined) {
+    updateData.title = body.title.trim();
+  }
+
+  if (body.description !== undefined) {
+    updateData.description = body.description?.trim() || null;
+  }
+
+  if (body.column_id !== undefined) {
+    updateData.column_id = body.column_id;
+  }
+
+  if (body.project_id !== undefined) {
+    updateData.project_id = body.project_id;
+  }
 
   await db.update(dos).set(updateData).where(eq(dos.id, body.id));
 
