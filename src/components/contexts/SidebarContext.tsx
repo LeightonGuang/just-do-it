@@ -3,7 +3,14 @@ import { createContext, useCallback, useContext, useEffect } from "react";
 
 import type { Project, Do } from "../../db/schema";
 
-export type SidebarDo = Do & {
+export type SidebarDo = Omit<
+  Do,
+  "start_at" | "end_at" | "created_at" | "updated_at"
+> & {
+  start_at: string | null;
+  end_at: string | null;
+  created_at: string;
+  updated_at: string;
   project_colour: string;
 };
 

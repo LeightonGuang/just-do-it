@@ -35,7 +35,7 @@ const DoSidebar = ({ className }: { className?: string }) => {
 export default DoSidebar;
 
 const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
-  const hasDueDate = doItem.end_at !== null;
+  const hasEndDate = doItem.end_at !== null;
 
   const [countdown, setCountdown] = useState<Countdown>(() =>
     getCountdown(doItem.end_at),
@@ -43,6 +43,8 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
 
   useEffect(() => {
     if (!doItem.end_at) return;
+
+    setCountdown(getCountdown(doItem.end_at));
 
     const interval = setInterval(() => {
       setCountdown(getCountdown(doItem.end_at));
@@ -56,7 +58,7 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
       href={`?project_id=${doItem.project_id}&do_id=${doItem.id}`}
       className={twMerge(
         "min-w-0 bg-card p-1 hover:bg-card-hover",
-        hasDueDate
+        hasEndDate
           ? "grid grid-cols-[minmax(0,1fr)_3ch_1ch_1ch_2ch_1ch_2ch] items-start"
           : "flex items-start",
         countdown.due && "bg-danger-background",
@@ -73,7 +75,7 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
         </span>
       </div>
 
-      {hasDueDate && (
+      {hasEndDate && (
         <>
           <span className="min-w-[3ch] text-right text-[10px] text-text-muted tabular-nums">
             {!countdown.due && countdown.days > 0 ? `${countdown.days}d,` : ""}
@@ -108,8 +110,8 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
   );
 };
 
-const getCountdown = (dueAt: Date | null): Countdown => {
-  if (!dueAt) {
+const getCountdown = (endAt: Date | string | null): Countdown => {
+  if (!endAt) {
     return {
       days: 0,
       hours: 0,
@@ -119,7 +121,19 @@ const getCountdown = (dueAt: Date | null): Countdown => {
     };
   }
 
-  const diff = dueAt.getTime() - Date.now();
+  const endDate = endAt instanceof Date ? endAt : new Date(endAt);
+
+  if (Number.isNaN(endDate.getTime())) {
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      due: false,
+    };
+  }
+
+  const diff = endDate.getTime() - Date.now();
 
   if (diff <= 0) {
     return {
