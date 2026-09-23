@@ -48,19 +48,21 @@ const DailyQuote = () => {
   }, []);
 
   return (
-    <a
-      target="_blank"
-      title="Zen Quotes"
-      href="https://zenquotes.io/"
-      className="flex h-max max-w-3xl items-center gap-2 bg-card p-1 md:w-max"
-    >
-      <img className="size-10 rounded-full" src={quote?.i} alt={quote?.a} />
+    <div className="flex h-dvh items-center justify-center">
+      <a
+        target="_blank"
+        title="Zen Quotes"
+        href="https://zenquotes.io/"
+        className="flex h-max max-w-3xl items-center gap-2 bg-card p-1 md:w-max"
+      >
+        <img className="size-10 rounded-full" src={quote?.i} alt={quote?.a} />
 
-      <div className="flex flex-col">
-        <span className="font-medium italic">{quote?.q}</span>
-        <span>-{quote?.a}</span>
-      </div>
-    </a>
+        <div className="flex flex-col">
+          <span className="font-medium italic">{quote?.q}</span>
+          <span>-{quote?.a}</span>
+        </div>
+      </a>
+    </div>
   );
 };
 
