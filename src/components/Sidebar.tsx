@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { useState, useRef, useEffect } from "react";
 
-import TodoSidebar from "./TodoSidebar";
+import DoSidebar from "./DoSidebar";
 import ProjectsSidebar from "./ProjectsSidebar";
 
 const MIN_WIDTH = 150;
@@ -138,14 +138,14 @@ const Sidebar = ({ className, onWidthChange }: SidebarProps) => {
           isCollapsed && "pointer-events-none invisible",
         )}
       >
-        <h1 className="text-orange-500 p-2 text-lg font-medium whitespace-nowrap uppercase">
+        <h1 className="p-2 text-lg font-medium whitespace-nowrap text-orange-500 uppercase">
           <a href="/" className="hover:underline">
             Just Do it
           </a>
         </h1>
 
         <div className="flex flex-col">
-          <TodoSidebar />
+          <DoSidebar />
           <ProjectsSidebar />
         </div>
       </div>

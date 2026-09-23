@@ -11,7 +11,7 @@ type Countdown = {
   due: boolean;
 };
 
-const TodoSidebar = ({ className }: { className?: string }) => {
+const DoSidebar = ({ className }: { className?: string }) => {
   const { sidebarDos } = useSidebar();
 
   return (
@@ -21,20 +21,20 @@ const TodoSidebar = ({ className }: { className?: string }) => {
         className,
       )}
     >
-      <h2 className="text-sm">Todos</h2>
+      <h2 className="text-sm">Dos</h2>
 
       <div className="flex min-w-0 flex-col gap-y-1">
         {sidebarDos.map((doItem) => (
-          <TodoSidebarItem key={doItem.id} doItem={doItem} />
+          <DoSidebarItem key={doItem.id} doItem={doItem} />
         ))}
       </div>
     </div>
   );
 };
 
-export default TodoSidebar;
+export default DoSidebar;
 
-const TodoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
+const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
   const hasDueDate = doItem.end_at !== null;
 
   const [countdown, setCountdown] = useState<Countdown>(() =>
