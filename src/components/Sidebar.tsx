@@ -139,7 +139,9 @@ const Sidebar = ({ className, onWidthChange }: SidebarProps) => {
         )}
       >
         <h1 className="p-2 text-lg font-medium whitespace-nowrap uppercase">
-          Just Do it
+          <a href="/" className="hover:underline">
+            Just Do it
+          </a>
         </h1>
 
         <div className="flex flex-col">
