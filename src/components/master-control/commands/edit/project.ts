@@ -39,6 +39,7 @@ export const editProject: SubCommand = {
       placeholder: "New colour",
       valueType: "colour",
       required: false,
+      greedy: false,
     },
   ],
 

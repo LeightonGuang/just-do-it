@@ -16,7 +16,7 @@ export const parseCommand = (
   selectedSubCommand?: SubCommand,
   selectedEntities: Record<string, SelectedEntity> = {},
 ): ParsedCommand => {
-  if (!selectedSubCommand) {
+  if (!selectedSubCommand?.parts) {
     return {
       args: {},
       entities: selectedEntities,
@@ -25,10 +25,9 @@ export const parseCommand = (
     };
   }
 
+  const trimmedInput = inputValue.trim();
+  const tokens = trimmedInput.split(/\s+/).filter(Boolean);
   const parts = selectedSubCommand.parts;
-  const input = inputValue.trim();
-
-  const tokens = input.split(/\s+/).filter(Boolean);
 
   if (tokens.length < 2) {
     return {
@@ -39,198 +38,252 @@ export const parseCommand = (
     };
   }
 
-  /*
-   * Remove:
-   *
-   * /edit project
-   *
-   * leaving:
-   *
-   * This name New colour #ffffff
-   */
-  const commandPrefix = `${tokens[0]} ${tokens[1]}`;
+  const rootAndSubLen = tokens[0].length + 1 + tokens[1].length;
 
-  let remaining = input.slice(commandPrefix.length).trim();
+  let remainingText = trimmedInput.slice(rootAndSubLen).trimStart();
 
   const args: Record<string, string> = {};
 
-  /*
-   * Find all keywords that exist in this command.
-   */
-  const keywordParts = parts
-    .map((part, index) => ({
-      part,
-      index,
-    }))
-    .filter(
-      (
-        item,
-      ): item is {
-        part: Extract<CommandPart, { type: "keyword" }>;
-        index: number;
-      } => item.part.type === "keyword",
-    );
-
-  /*
-   * Find the positions of keywords in the input.
-   */
-  const foundKeywords: {
-    partIndex: number;
-    keyword: string;
-    index: number;
-    end: number;
-  }[] = [];
-
-  for (const { part, index: partIndex } of keywordParts) {
-    const regex = new RegExp(`\\b${escapeRegex(part.value)}\\b`, "gi");
-
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(remaining)) !== null) {
-      if (match.index === undefined) continue;
-
-      foundKeywords.push({
-        partIndex,
-        keyword: part.value,
-        index: match.index,
-        end: match.index + match[0].length,
-      });
-    }
-  }
-
-  /*
-   * Sort keywords by where they occur in the input.
-   */
-  foundKeywords.sort((a, b) => a.index - b.index);
-
-  /*
-   * Parse the first required entity.
-   *
-   * Everything before the first keyword belongs to the
-   * project argument.
-   */
-  const projectPartIndex = parts.findIndex(
-    (part) => part.type === "argument" && part.valueType === "entity",
-  );
-
-  if (projectPartIndex !== -1) {
-    const firstKeyword = foundKeywords[0];
-
-    if (firstKeyword) {
-      const projectValue = remaining.slice(0, firstKeyword.index).trim();
-
-      if (projectValue) {
-        args[
-          parts[projectPartIndex].type === "argument"
-            ? parts[projectPartIndex].name
-            : "project"
-        ] = projectValue;
-      }
-    } else if (remaining) {
-      const selectedProject = selectedEntities.project;
-
-      if (selectedProject) {
-        args.project = selectedProject.label;
-      } else {
-        /*
-         * Project entity is normally one value.
-         */
-        const spaceIndex = remaining.indexOf(" ");
-
-        if (spaceIndex === -1) {
-          args.project = remaining;
-        } else {
-          args.project = remaining.slice(0, spaceIndex).trim();
-        }
-      }
-    }
-  }
-
-  /*
-   * Parse each keyword's argument.
-   *
-   * Example:
-   *
-   * name New colour #fff
-   *
-   * becomes:
-   *
-   * name   -> New
-   * colour -> #fff
-   */
-  for (let i = 0; i < foundKeywords.length; i++) {
-    const current = foundKeywords[i];
-
-    const keywordPart = parts[current.partIndex];
-
-    if (keywordPart.type !== "keyword") continue;
-
-    const argumentPart = parts[current.partIndex + 1];
-
-    if (!argumentPart || argumentPart.type !== "argument") continue;
-
-    const valueStart = current.end;
-
-    const valueEnd = foundKeywords[i + 1]?.index ?? remaining.length;
-
-    const value = remaining.slice(valueStart, valueEnd).trim();
-
-    if (value) {
-      /*
-       * Colour arguments should only receive the colour.
-       */
-      if (argumentPart.valueType === "colour") {
-        const colourMatch = value.match(/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/);
-
-        if (colourMatch) args[argumentPart.name] = colourMatch[0];
-      } else {
-        args[argumentPart.name] = value;
-      }
-    }
-  }
-
-  /*
-   * Work out whether the command is complete.
-   */
-  let complete = true;
   let nextPart: CommandPart | null = null;
+  let complete = true;
 
-  /*
-   * Required arguments must exist.
-   */
-  for (const part of parts) {
-    if (part.type !== "argument" || !part.required) {
+  const findNextKeyword = (text: string, startIndex: number) => {
+    let earliest:
+      | {
+          index: number;
+          partIndex: number;
+        }
+      | undefined;
+
+    for (let i = startIndex; i < parts.length; i++) {
+      const candidate = parts[i];
+
+      if (candidate.type !== "keyword") {
+        continue;
+      }
+
+      const regex = new RegExp(`\\b${escapeRegex(candidate.value)}\\b`, "i");
+
+      const match = regex.exec(text);
+
+      if (!match || match.index === undefined) {
+        continue;
+      }
+
+      if (!earliest || match.index < earliest.index) {
+        earliest = {
+          index: match.index,
+          partIndex: i,
+        };
+      }
+    }
+
+    return earliest;
+  };
+
+  for (let idx = 0; idx < parts.length; idx++) {
+    const part = parts[idx];
+
+    if (part.type === "keyword") {
+      const currentText = remainingText.trimStart();
+
+      const keywordRegex = new RegExp(
+        `^${escapeRegex(part.value)}(?:\\s|$)`,
+        "i",
+      );
+
+      if (keywordRegex.test(currentText)) {
+        remainingText = currentText.slice(part.value.length).trimStart();
+
+        continue;
+      }
+
+      if (part.optional) {
+        continue;
+      }
+
+      nextPart = part;
+      complete = false;
+      break;
+    }
+
+    if (part.type !== "argument") {
       continue;
     }
 
-    const value = args[part.name]?.trim();
+    if (part.valueType === "entity" && part.entityType) {
+      const currentText = remainingText.trimStart();
 
-    if (!value) {
-      complete = false;
-      nextPart = part;
-      break;
+      const selectedEntity = selectedEntities[part.name];
+
+      if (selectedEntity) {
+        const label = selectedEntity.label;
+
+        const entityRegex = new RegExp(`^${escapeRegex(label)}(?:\\s|$)`, "i");
+
+        if (entityRegex.test(currentText)) {
+          args[part.name] = label;
+
+          remainingText = currentText.slice(label.length).trimStart();
+
+          continue;
+        }
+      }
+
+      if (!currentText) {
+        if (part.required) {
+          nextPart = part;
+          complete = false;
+          break;
+        }
+
+        continue;
+      }
+
+      const nextKeyword = findNextKeyword(currentText, idx + 1);
+
+      if (nextKeyword) {
+        const entityValue = currentText.slice(0, nextKeyword.index).trim();
+
+        if (entityValue) {
+          args[part.name] = entityValue;
+        }
+
+        remainingText = currentText.slice(nextKeyword.index).trimStart();
+
+        idx = nextKeyword.partIndex - 1;
+
+        continue;
+      }
+
+      const spaceIndex = currentText.indexOf(" ");
+
+      if (spaceIndex === -1) {
+        args[part.name] = currentText;
+
+        nextPart = part;
+        complete = false;
+        break;
+      }
+
+      args[part.name] = currentText.slice(0, spaceIndex).trim();
+
+      remainingText = currentText.slice(spaceIndex).trimStart();
+
+      continue;
+    }
+
+    if (part.greedy) {
+      const currentText = remainingText.trimStart();
+
+      if (!currentText) {
+        if (part.required) {
+          nextPart = part;
+          complete = false;
+          break;
+        }
+
+        continue;
+      }
+
+      const nextKeyword = findNextKeyword(currentText, idx + 1);
+
+      if (nextKeyword) {
+        const value = currentText.slice(0, nextKeyword.index).trim();
+
+        if (value) {
+          args[part.name] = value;
+        }
+
+        remainingText = currentText.slice(nextKeyword.index).trimStart();
+
+        idx = nextKeyword.partIndex - 1;
+
+        continue;
+      }
+
+      args[part.name] = currentText;
+      remainingText = "";
+
+      continue;
+    }
+
+    if (part.valueType === "colour") {
+      const currentText = remainingText.trimStart();
+
+      const colorMatch = currentText.match(
+        /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/,
+      );
+
+      if (colorMatch && colorMatch.index !== undefined) {
+        args[part.name] = colorMatch[0];
+
+        remainingText = currentText
+          .slice(colorMatch.index + colorMatch[0].length)
+          .trimStart();
+
+        continue;
+      }
+
+      if (part.required) {
+        nextPart = part;
+        complete = false;
+        break;
+      }
+
+      continue;
+    }
+
+    const currentText = remainingText.trimStart();
+
+    if (!currentText) {
+      if (part.required) {
+        nextPart = part;
+        complete = false;
+        break;
+      }
+
+      continue;
+    }
+
+    const nextKeyword = findNextKeyword(currentText, idx + 1);
+
+    if (nextKeyword) {
+      const value = currentText.slice(0, nextKeyword.index).trim();
+
+      if (value) {
+        args[part.name] = value;
+      }
+
+      remainingText = currentText.slice(nextKeyword.index).trimStart();
+
+      idx = nextKeyword.partIndex - 1;
+
+      continue;
+    }
+
+    args[part.name] = currentText;
+    remainingText = "";
+  }
+
+  if (complete) {
+    for (const part of parts) {
+      if (part.type !== "argument" || !part.required) {
+        continue;
+      }
+
+      const value = args[part.name]?.trim() ?? "";
+
+      if (!value) {
+        complete = false;
+        nextPart = part;
+        break;
+      }
     }
   }
 
-  /*
-   * If we're currently typing a keyword but haven't
-   * supplied its argument, expose that argument.
-   */
-  if (complete && remaining) {
-    const lastKeyword = foundKeywords[foundKeywords.length - 1];
-
-    if (lastKeyword) {
-      const argumentPart = parts[lastKeyword.partIndex + 1];
-
-      if (argumentPart?.type === "argument") {
-        const value = remaining.slice(lastKeyword.end).trim();
-
-        if (!value) {
-          complete = false;
-          nextPart = argumentPart;
-        }
-      }
-    }
+  if (nextPart?.type === "argument" && nextPart.valueType === "entity") {
+    complete = false;
   }
 
   return {
