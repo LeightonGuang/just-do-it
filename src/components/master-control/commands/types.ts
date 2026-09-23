@@ -1,5 +1,15 @@
 import type { Project, Do, Column } from "../../../db/schema";
 
+export type ApiDo = Omit<
+  Do,
+  "start_at" | "end_at" | "created_at" | "updated_at"
+> & {
+  start_at: string | null;
+  end_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type EntityType = "project" | "do" | "column";
 
 export type ArgumentValueType =
@@ -19,7 +29,7 @@ export type ArgumentPart = {
   valueType: ArgumentValueType;
   entityType?: EntityType;
   required?: boolean;
-  /** Whether this argument consumes multiple values, and only take the remaining values.  */
+  /** Whether this argument consumes multiple values, and only takes the remaining values. */
   greedy?: boolean;
 };
 
@@ -35,8 +45,10 @@ export type SelectedEntity = {
 export type CommandContext = {
   args: Record<string, string>;
   entities: Record<string, SelectedEntity>;
-  /** Currently opened Kanban project, null when no project is open.  */
+
+  /** Currently opened Kanban project, null when no project is open. */
   projectId: string | null;
+
   refetch: {
     projects: () => Promise<void>;
     dos: () => Promise<void>;
@@ -60,11 +72,35 @@ export type Command = {
 };
 
 export type MasterControlSuggestion =
-  | { type: "command"; value: string; label: string; description: string }
-  | { type: "sub-command"; value: string; label: string; description: string }
-  | { type: "keyword"; value: string; label: string; description?: string }
-  | { type: "project"; project: Project }
-  | { type: "do"; doItem: Do }
-  | { type: "column"; column: Column };
+  | {
+      type: "command";
+      value: string;
+      label: string;
+      description: string;
+    }
+  | {
+      type: "sub-command";
+      value: string;
+      label: string;
+      description: string;
+    }
+  | {
+      type: "keyword";
+      value: string;
+      label: string;
+      description?: string;
+    }
+  | {
+      type: "project";
+      project: Project;
+    }
+  | {
+      type: "do";
+      doItem: ApiDo;
+    }
+  | {
+      type: "column";
+      column: Column;
+    };
 
 export type MasterControlSelectedEntity = SelectedEntity;

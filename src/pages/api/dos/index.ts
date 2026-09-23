@@ -3,6 +3,7 @@ import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 import { eq, like, and, asc } from "drizzle-orm";
 
+import { parseDate } from "../../../../lib/date";
 import { dos, columns, projects } from "../../../db/schema";
 
 export const GET: APIRoute = async ({ url }) => {
@@ -68,29 +69,51 @@ export const POST: APIRoute = async ({ request }) => {
     project_id?: number;
     column_id?: number;
     description?: string;
-    start_at?: string | number | null;
-    end_at?: string | number | null;
+    start_at?: string | null;
+    end_at?: string | null;
   };
 
   const title = body.title?.trim();
   const projectId = body.project_id;
   const description = body.description?.trim() || null;
 
-  if (!title)
+  if (!title) {
     return Response.json({ error: "Title is required" }, { status: 400 });
+  }
 
-  if (!projectId)
+  if (!projectId) {
     return Response.json({ error: "Project is required" }, { status: 400 });
+  }
 
-  const startAt = body.start_at ? new Date(body.start_at) : null;
+  const startAt =
+    typeof body.start_at === "string" && body.start_at.trim()
+      ? parseDate(body.start_at)
+      : null;
 
-  const endAt = body.end_at ? new Date(body.end_at) : null;
+  const endAt =
+    typeof body.end_at === "string" && body.end_at.trim()
+      ? parseDate(body.end_at)
+      : null;
 
-  if (startAt && Number.isNaN(startAt.getTime()))
-    return Response.json({ error: "Invalid start_at" }, { status: 400 });
+  if (body.start_at && !startAt) {
+    return Response.json(
+      {
+        error:
+          "Invalid start date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
+      },
+      { status: 400 },
+    );
+  }
 
-  if (endAt && Number.isNaN(endAt.getTime()))
-    return Response.json({ error: "Invalid end_at" }, { status: 400 });
+  if (body.end_at && !endAt) {
+    return Response.json(
+      {
+        error:
+          "Invalid end date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
+      },
+      { status: 400 },
+    );
+  }
 
   if (startAt && endAt && startAt > endAt) {
     return Response.json(
@@ -101,7 +124,6 @@ export const POST: APIRoute = async ({ request }) => {
 
   let columnId = body.column_id;
 
-  // If column_id is not specified, find or create default column for project
   if (!columnId) {
     const existingCols = await db
       .select()

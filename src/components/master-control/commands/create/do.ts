@@ -38,6 +38,30 @@ export const createDo: SubCommand = {
       required: false,
       greedy: true,
     },
+    {
+      type: "keyword",
+      value: "start",
+      optional: true,
+    },
+    {
+      type: "argument",
+      name: "start_at",
+      placeholder: "Start [dd-mm-yyyy hh:mm]",
+      valueType: "text",
+      required: false,
+    },
+    {
+      type: "keyword",
+      value: "end",
+      optional: true,
+    },
+    {
+      type: "argument",
+      name: "end_at",
+      placeholder: "End [dd-mm-yyyy hh:mm]",
+      valueType: "text",
+      required: false,
+    },
   ],
 
   execute: async ({ args, entities, projectId: currentProjectId, refetch }) => {
@@ -78,6 +102,8 @@ export const createDo: SubCommand = {
         title: args.title,
         description: args.description?.trim() || null,
         project_id: projectId,
+        start_at: args.start_at?.trim() || null,
+        end_at: args.end_at?.trim() || null,
       }),
     });
 
