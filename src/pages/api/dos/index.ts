@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 import { eq, like, and, asc } from "drizzle-orm";
 
-import { dos, columns } from "../../../db/schema";
+import { dos, columns, projects } from "../../../db/schema";
 
 export const GET: APIRoute = async ({ url }) => {
   const db = drizzle(env.just_do_it);
@@ -14,8 +14,20 @@ export const GET: APIRoute = async ({ url }) => {
 
   if (isSidebar) {
     const sidebarDos = await db
-      .select()
+      .select({
+        id: dos.id,
+        title: dos.title,
+        description: dos.description,
+        start_at: dos.start_at,
+        end_at: dos.end_at,
+        created_at: dos.created_at,
+        updated_at: dos.updated_at,
+        project_id: dos.project_id,
+        column_id: dos.column_id,
+        project_colour: projects.colour,
+      })
       .from(dos)
+      .innerJoin(projects, eq(dos.project_id, projects.id))
       .orderBy(asc(dos.end_at))
       .limit(5);
 
@@ -56,6 +68,8 @@ export const POST: APIRoute = async ({ request }) => {
     project_id?: number;
     column_id?: number;
     description?: string;
+    start_at?: string | number | null;
+    end_at?: string | number | null;
   };
 
   const title = body.title?.trim();
@@ -67,6 +81,23 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!projectId)
     return Response.json({ error: "Project is required" }, { status: 400 });
+
+  const startAt = body.start_at ? new Date(body.start_at) : null;
+
+  const endAt = body.end_at ? new Date(body.end_at) : null;
+
+  if (startAt && Number.isNaN(startAt.getTime()))
+    return Response.json({ error: "Invalid start_at" }, { status: 400 });
+
+  if (endAt && Number.isNaN(endAt.getTime()))
+    return Response.json({ error: "Invalid end_at" }, { status: 400 });
+
+  if (startAt && endAt && startAt > endAt) {
+    return Response.json(
+      { error: "Start time must be before end time" },
+      { status: 400 },
+    );
+  }
 
   let columnId = body.column_id;
 
@@ -109,6 +140,8 @@ export const POST: APIRoute = async ({ request }) => {
       description,
       project_id: projectId,
       column_id: columnId,
+      start_at: startAt,
+      end_at: endAt,
       created_at: now,
       updated_at: now,
     })

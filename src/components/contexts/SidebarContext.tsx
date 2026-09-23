@@ -3,9 +3,13 @@ import { createContext, useCallback, useContext, useEffect } from "react";
 
 import type { Project, Do } from "../../db/schema";
 
+export type SidebarDo = Do & {
+  project_colour: string;
+};
+
 type SidebarContextValue = {
   sidebarProjects: Project[];
-  sidebarDos: Do[];
+  sidebarDos: SidebarDo[];
 
   loading: boolean;
   error: string;
@@ -24,7 +28,7 @@ export const SidebarProvider = ({
   children: React.ReactNode;
 }) => {
   const [sidebarProjects, setSidebarProjects] = useState<Project[]>([]);
-  const [sidebarDos, setSidebarDos] = useState<Do[]>([]);
+  const [sidebarDos, setSidebarDos] = useState<SidebarDo[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +47,7 @@ export const SidebarProvider = ({
 
     if (!res.ok) throw new Error("Failed to fetch tasks");
 
-    const data: Do[] = await res.json();
+    const data: SidebarDo[] = await res.json();
     setSidebarDos(data);
   }, []);
 

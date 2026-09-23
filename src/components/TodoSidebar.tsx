@@ -1,9 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
-import { useSidebar } from "./contexts/SidebarContext";
-
-import type { Do } from "../db/schema";
+import { useSidebar, type SidebarDo } from "./contexts/SidebarContext";
 
 type Countdown = {
   days: number;
@@ -36,7 +34,7 @@ const TodoSidebar = ({ className }: { className?: string }) => {
 
 export default TodoSidebar;
 
-const TodoSidebarItem = ({ doItem }: { doItem: Do }) => {
+const TodoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
   const hasDueDate = doItem.end_at !== null;
 
   const [countdown, setCountdown] = useState<Countdown>(() =>
@@ -66,7 +64,7 @@ const TodoSidebarItem = ({ doItem }: { doItem: Do }) => {
     >
       <div className="flex min-w-0 flex-1 items-start gap-1 pr-1">
         <div
-          // style={{ backgroundColor: doItem.project_colour }}
+          style={{ backgroundColor: doItem.project_colour }}
           className="mt-1 size-2 shrink-0 rounded-full border border-border"
         />
 
