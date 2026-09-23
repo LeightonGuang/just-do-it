@@ -138,7 +138,7 @@ const Sidebar = ({ className, onWidthChange }: SidebarProps) => {
           isCollapsed && "pointer-events-none invisible",
         )}
       >
-        <h1 className="p-2 text-lg font-medium whitespace-nowrap uppercase">
+        <h1 className="text-orange-500 p-2 text-lg font-medium whitespace-nowrap uppercase">
           <a href="/" className="hover:underline">
             Just Do it
           </a>

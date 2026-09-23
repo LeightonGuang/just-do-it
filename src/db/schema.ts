@@ -23,15 +23,21 @@ export type Column = typeof columns.$inferSelect;
 
 export const dos = sqliteTable("dos", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+
   column_id: integer("column_id")
     .notNull()
     .references(() => columns.id),
+
   project_id: integer("project_id")
     .notNull()
     .references(() => projects.id),
+
   title: text("title").notNull(),
   description: text("description"),
-  due_at: integer("due_at", { mode: "timestamp_ms" }),
+
+  start_at: integer("start_at", { mode: "timestamp_ms" }),
+  end_at: integer("end_at", { mode: "timestamp_ms" }),
+
   created_at: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updated_at: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });

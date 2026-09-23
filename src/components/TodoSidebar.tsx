@@ -37,23 +37,21 @@ const TodoSidebar = ({ className }: { className?: string }) => {
 export default TodoSidebar;
 
 const TodoSidebarItem = ({ doItem }: { doItem: Do }) => {
-  const hasDueDate = doItem.due_at !== null;
+  const hasDueDate = doItem.end_at !== null;
 
   const [countdown, setCountdown] = useState<Countdown>(() =>
-    getCountdown(doItem.due_at),
+    getCountdown(doItem.end_at),
   );
 
   useEffect(() => {
-    if (!doItem.due_at) {
-      return;
-    }
+    if (!doItem.end_at) return;
 
     const interval = setInterval(() => {
-      setCountdown(getCountdown(doItem.due_at));
+      setCountdown(getCountdown(doItem.end_at));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [doItem.due_at]);
+  }, [doItem.end_at]);
 
   return (
     <a
@@ -72,7 +70,7 @@ const TodoSidebarItem = ({ doItem }: { doItem: Do }) => {
           className="mt-1 size-2 shrink-0 rounded-full border border-border"
         />
 
-        <span className="min-w-0 flex-1 text-xs break-words">
+        <span className="min-w-0 flex-1 text-xs wrap-break-word">
           {doItem.title}
         </span>
       </div>

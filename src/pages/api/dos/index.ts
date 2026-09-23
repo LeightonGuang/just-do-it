@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ url }) => {
     const sidebarDos = await db
       .select()
       .from(dos)
-      .orderBy(asc(dos.due_at))
+      .orderBy(asc(dos.end_at))
       .limit(5);
 
     return Response.json(sidebarDos);
