@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
-import { useSidebar, type SidebarDo } from "./contexts/SidebarContext";
+import { useSidebar, type SidebarDo } from "../contexts/SidebarContext";
 
 type Countdown = {
   days: number;

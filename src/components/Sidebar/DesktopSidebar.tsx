@@ -10,12 +10,12 @@ const SNAP_THRESHOLD = 100;
 const DEFAULT_WIDTH = 256;
 const STORAGE_KEY = "sidebar-width";
 
-type SidebarProps = {
+type DesktopSidebarProps = {
   className?: string;
   onWidthChange?: (width: number) => void;
 };
 
-const Sidebar = ({ className, onWidthChange }: SidebarProps) => {
+const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -177,4 +177,4 @@ const Sidebar = ({ className, onWidthChange }: SidebarProps) => {
   );
 };
 
-export default Sidebar;
+export default DesktopSidebar;

@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 
-import { type Project } from "../db/schema";
-import { useSidebar } from "./contexts/SidebarContext";
+import type { Project } from "../../db/schema";
+import { useSidebar } from "../contexts/SidebarContext";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
   const { sidebarProjects } = useSidebar();
