@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 
+import { Plus, Trash, TrashOff } from "lucide-react";
+
+import { twMerge } from "tailwind-merge";
+
 import type { Project } from "../../db/schema";
 
 const ProjectPage = () => {
@@ -96,10 +100,9 @@ const ProjectPage = () => {
   };
 
   return (
-    <main>
+    <main className="dot-grid min-h-dvh p-4">
       <h1>Projects</h1>
-
-      <form onSubmit={handleSubmit} className="flex items-start gap-2">
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <div className="flex flex-col">
           <input
             type="text"
@@ -110,7 +113,7 @@ const ProjectPage = () => {
               setName(event.target.value);
               setError("");
             }}
-            className={`border px-2 py-1 ${
+            className={`border bg-input px-2 py-1 ${
               error ? "border-red-500" : "border-gray-300"
             }`}
           />
@@ -123,22 +126,22 @@ const ProjectPage = () => {
           value={colour}
           disabled={loading}
           aria-label="Project colour"
-          className="h-9 w-9 cursor-pointer"
+          className="h-8 w-8 cursor-pointer"
           onChange={(event) => setColour(event.target.value)}
         />
 
         <button
           type="submit"
-          className="border px-2 py-1"
           disabled={loading || !name.trim()}
+          className="aspect-square border p-1"
         >
-          {loading ? "Adding..." : "Add"}
+          {loading ? "Adding..." : <Plus className="size-4" />}
         </button>
       </form>
 
       <div className="mt-4 flex flex-col gap-2">
         {projects.map((project) => (
-          <div key={project.id} className="flex items-center gap-2">
+          <div key={project.id} className="flex items-center gap-2 bg-card p-2">
             <span
               className="h-4 w-4 rounded-full"
               style={{ backgroundColor: project.colour }}
@@ -152,9 +155,16 @@ const ProjectPage = () => {
               type="button"
               disabled={deletingId === project.id}
               onClick={() => handleDelete(project.id)}
-              className="ml-auto border border-danger-border px-2 py-1 text-danger"
+              className={twMerge(
+                "ml-auto aspect-square border border-danger-border px-2 py-1 text-danger",
+                deletingId === project.id && "cursor-not-allowed! opacity-50",
+              )}
             >
-              {deletingId === project.id ? "Deleting..." : "Delete"}
+              {deletingId === project.id ? (
+                <TrashOff className="size-4" />
+              ) : (
+                <Trash className="size-4" />
+              )}
             </button>
           </div>
         ))}
