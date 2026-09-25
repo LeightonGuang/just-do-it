@@ -4,7 +4,7 @@ import DoSidebar from "./DoSidebar";
 import DailyQuote from "../DailyQuote";
 import ProjectsSidebar from "./ProjectsSidebar";
 
-const MobileSIdebar = ({ className }: { className?: string }) => {
+const MobileSidebar = ({ className }: { className?: string }) => {
   return (
     <aside className={twMerge("w-full mb-4", className)}>
       <DoSidebar />
@@ -14,4 +14,4 @@ const MobileSIdebar = ({ className }: { className?: string }) => {
   );
 };
 
-export default MobileSIdebar;
+export default MobileSidebar;
