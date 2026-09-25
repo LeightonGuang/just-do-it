@@ -3,12 +3,18 @@ import { twMerge } from "tailwind-merge";
 import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts/KanbanContext";
 
-const Kanban = ({ doId }: { doId: string | null }) => {
+const Kanban = ({
+  doId,
+  className,
+}: {
+  doId: string | null;
+  className?: string;
+}) => {
   const { loading, error, project, columns, dos } = useKanban();
 
   if (loading) {
     return (
-      <section className="size-full min-h-screen p-8">
+      <section className="min-h-dvh p-8">
         <p className="text-text-muted">Loading...</p>
       </section>
     );
@@ -16,15 +22,17 @@ const Kanban = ({ doId }: { doId: string | null }) => {
 
   if (error) {
     return (
-      <section className="size-full min-h-screen p-8">
+      <section className="min-h-dvh p-8">
         <p className="text-danger">{error}</p>
       </section>
     );
   }
 
-  if (project) {
-    return (
-      <section className="dot-grid min-h-full p-4 md:p-8">
+  if (!project) return null;
+
+  return (
+    <section className={twMerge("p-4 md:p-8", className)}>
+      <div className="dot-grid">
         <h1 className="leading-4 font-medium text-text">{project.name}</h1>
 
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 md:mt-8 md:gap-8">
@@ -57,9 +65,9 @@ const Kanban = ({ doId }: { doId: string | null }) => {
             );
           })}
         </div>
-      </section>
-    );
-  }
+      </div>
+    </section>
+  );
 };
 
 export default Kanban;
