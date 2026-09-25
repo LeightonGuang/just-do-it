@@ -63,7 +63,7 @@ const DailyQuote = ({ className }: { className?: string }) => {
 
       <div className="flex flex-col">
         <span className="font-medium italic">{quote?.q}</span>
-        <span>-{quote?.a}</span>
+        <span className="text-text-muted">-{quote?.a}</span>
       </div>
     </a>
   );
