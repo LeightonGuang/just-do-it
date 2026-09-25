@@ -1,13 +1,11 @@
-// hooks/useCommandSuggestions.ts
 import { useEffect, useMemo, useState } from "react";
 
 import { tokenize, type Token } from "../tokenize";
 import { COMMANDS as COMMANDS_LIST } from "../registry";
 
-import type { SubCommand } from "../types";
-import type { CommandPart, MasterControlSuggestion, Command } from "../types";
-
+import type { ApiDo, SubCommand } from "../types";
 import type { EntitySuggestionsResult } from "./useEntitySuggestions";
+import type { CommandPart, MasterControlSuggestion, Command } from "../types";
 
 type KeywordPart = Extract<CommandPart, { type: "keyword" }>;
 
@@ -21,6 +19,28 @@ type UseCommandSuggestionsOptions = {
   activeToken?: Token | null;
   availableKeywords?: KeywordPart[];
   resetSelectionKey?: number;
+};
+
+const toDateString = (value: string | Date | null): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return value;
+};
+
+const toApiDo = (doItem: EntitySuggestionsResult["dos"][number]): ApiDo => {
+  return {
+    ...doItem,
+    start_at: toDateString(doItem.start_at),
+    end_at: toDateString(doItem.end_at),
+    created_at: toDateString(doItem.created_at) ?? "",
+    updated_at: toDateString(doItem.updated_at) ?? "",
+  };
 };
 
 const useCommandSuggestions = ({
@@ -45,15 +65,18 @@ const useCommandSuggestions = ({
     currentArgument?: Extract<CommandPart, { type: "argument" }>;
   }>(() => {
     if (!command.trimStart().startsWith("/")) {
-      return { suggestions: [], currentArgument: undefined };
+      return {
+        suggestions: [],
+        currentArgument: undefined,
+      };
     }
 
     const tokens = tokenize(command);
+
     const activeIdx = tokens.findIndex(
-      (t) => caret >= t.start && caret <= t.end,
+      (token) => caret >= token.start && caret <= token.end,
     );
 
-    // --- caret is in the root token, or nothing's been typed yet ---
     if (!rootCommand || activeIdx === 0 || tokens.length === 0) {
       const query = (tokens[0]?.text ?? "").replace(/^\//, "").toLowerCase();
 
@@ -70,7 +93,6 @@ const useCommandSuggestions = ({
       };
     }
 
-    // --- caret is in the sub-command token ---
     if (!selectedSubCommand) {
       const query = (tokens[1]?.text ?? "").toLowerCase();
 
@@ -87,20 +109,18 @@ const useCommandSuggestions = ({
       };
     }
 
-    // --- unordered flex-phase keywords (e.g. "name"/"colour" in any order) ---
     if (availableKeywords && availableKeywords.length > 0) {
       return {
-        suggestions: availableKeywords.map((kw) => ({
+        suggestions: availableKeywords.map((keyword) => ({
           type: "keyword" as const,
-          value: kw.value,
-          label: kw.value,
-          description: `Keyword: ${kw.value}`,
+          value: keyword.value,
+          label: keyword.value,
+          description: `Keyword: ${keyword.value}`,
         })),
         currentArgument: undefined,
       };
     }
 
-    // --- caret is on a required/leading keyword part ---
     if (activePart?.type === "keyword") {
       const keyword = activePart.value;
       const query = (activeToken?.text ?? "").toLowerCase();
@@ -119,10 +139,12 @@ const useCommandSuggestions = ({
         };
       }
 
-      return { suggestions: [], currentArgument: undefined };
+      return {
+        suggestions: [],
+        currentArgument: undefined,
+      };
     }
 
-    // --- caret is on an entity argument ---
     if (
       activePart?.type === "argument" &&
       activePart.valueType === "entity" &&
@@ -142,7 +164,7 @@ const useCommandSuggestions = ({
         return {
           suggestions: entitySuggestions.dos.map((doItem) => ({
             type: "do" as const,
-            doItem,
+            doItem: toApiDo(doItem),
           })),
           currentArgument: activePart,
         };
@@ -174,14 +196,41 @@ const useCommandSuggestions = ({
     availableKeywords,
   ]);
 
-  const moveUp = () => setSelectedIndex((c) => Math.max(c - 1, 0));
+  const moveUp = () => {
+    setSelectedIndex((current) => {
+      const lastIndex = result.suggestions.length - 1;
 
-  const moveDown = () =>
-    setSelectedIndex((c) =>
-      Math.min(c + 1, Math.max(result.suggestions.length - 1, 0)),
-    );
+      if (lastIndex < 0) return 0;
 
-  const reset = () => setSelectedIndex(0);
+      return current <= 0 ? lastIndex : current - 1;
+    });
+  };
+
+  const moveDown = () => {
+    setSelectedIndex((current) => {
+      const lastIndex = result.suggestions.length - 1;
+
+      if (lastIndex < 0) return 0;
+
+      return current >= lastIndex ? 0 : current + 1;
+    });
+  };
+
+  const reset = () => {
+    setSelectedIndex(0);
+  };
+
+  useEffect(() => {
+    setSelectedIndex((current) => {
+      const lastIndex = result.suggestions.length - 1;
+
+      if (lastIndex < 0) {
+        return 0;
+      }
+
+      return Math.min(current, lastIndex);
+    });
+  }, [result.suggestions.length]);
 
   return {
     suggestions: result.suggestions,

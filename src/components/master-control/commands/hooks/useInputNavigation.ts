@@ -5,7 +5,6 @@ import type { MasterControlSuggestion } from "../types";
 type UseInputNavigationOptions = {
   suggestions: MasterControlSuggestion[];
   selectedSuggestionIndex: number;
-
   hasRawSuggestions: boolean;
 
   onMoveSuggestionUp: () => void;
@@ -14,7 +13,6 @@ type UseInputNavigationOptions = {
 
   onDismissSuggestions: () => void;
   onReopenSuggestions: () => void;
-
   onReset: () => void;
   onExecute: () => void;
 };
@@ -22,16 +20,12 @@ type UseInputNavigationOptions = {
 const useInputNavigation = ({
   suggestions,
   selectedSuggestionIndex,
-
   hasRawSuggestions,
-
   onMoveSuggestionUp,
   onMoveSuggestionDown,
   onSelectSuggestion,
-
   onDismissSuggestions,
   onReopenSuggestions,
-
   onReset,
   onExecute,
 }: UseInputNavigationOptions) => {
