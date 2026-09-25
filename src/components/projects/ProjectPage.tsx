@@ -62,11 +62,23 @@ const ProjectPage = () => {
   };
 
   const handleDelete = async (id: number) => {
+    const project = projects.find((project) => project.id === id);
+
+    if (!project) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${project.name}"? All to-dos associated with this project will be deleted. This cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
     setDeletingId(id);
     setError("");
 
     try {
-      const res = await fetch(`/api/projects?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/projects?id=${id}`, {
+        method: "DELETE",
+      });
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
@@ -132,7 +144,9 @@ const ProjectPage = () => {
               style={{ backgroundColor: project.colour }}
             />
 
-            <span>{project.name}</span>
+            <a className="hover:underline" href={`/?project_id=${project.id}`}>
+              {project.name}
+            </a>
 
             <button
               type="button"
