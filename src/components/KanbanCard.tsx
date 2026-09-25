@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import type { Do } from "../db/schema";
 import type { ApiDo } from "./master-control/commands/types";
 
 type Countdown = {
@@ -15,7 +16,7 @@ const KanbanCard = ({
   doItem,
 }: {
   className?: string;
-  doItem: ApiDo;
+  doItem: ApiDo | Do;
 }) => {
   const [countdown, setCountdown] = useState<Countdown>(() =>
     getCountdown(doItem.end_at),
@@ -107,10 +108,10 @@ const KanbanCard = ({
   );
 };
 
-const formatDate = (value: string | null) => {
+const formatDate = (value: string | Date | null) => {
   if (!value) return "";
 
-  const date = new Date(value);
+  const date = typeof value === "string" ? new Date(value) : value;
 
   if (Number.isNaN(date.getTime())) {
     return "";
@@ -150,7 +151,7 @@ const formatCountdown = (countdown: Countdown) => {
   return parts.join(" ");
 };
 
-const getCountdown = (endAt: string | null): Countdown => {
+const getCountdown = (endAt: string | Date | null): Countdown => {
   if (!endAt) {
     return {
       days: 0,
@@ -161,7 +162,7 @@ const getCountdown = (endAt: string | null): Countdown => {
     };
   }
 
-  const endDate = new Date(endAt);
+  const endDate = typeof endAt === "string" ? new Date(endAt) : endAt;
 
   if (Number.isNaN(endDate.getTime())) {
     return {

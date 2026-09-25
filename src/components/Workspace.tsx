@@ -10,14 +10,14 @@ type WorkspaceProps = {
 const Workspace = ({ children, className }: WorkspaceProps) => {
   return (
     <section
-      className={twMerge(
-        "relative h-dvh overflow-x-hidden overflow-y-auto",
-        className,
-      )}
       style={{
         marginLeft: "var(--sidebar-width)",
         width: "calc(100% - var(--sidebar-width))",
       }}
+      className={twMerge(
+        "dot-grid relative h-dvh overflow-x-hidden overflow-y-auto",
+        className,
+      )}
     >
       <div className="min-h-full w-full pb-16">{children}</div>
 
@@ -28,7 +28,7 @@ const Workspace = ({ children, className }: WorkspaceProps) => {
           width: "calc(100% - var(--sidebar-width))",
         }}
       >
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto hidden md:block">
           <MasterControl />
         </div>
       </div>

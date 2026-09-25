@@ -1,9 +1,7 @@
 import { useState } from "react";
 
-import Kanban from "./Kanban";
-import Workspace from "./Workspace";
-import DailyQuote from "./DailyQuote";
-import DesktopSidebar from "./Sidebar/DesktopSidebar";
+import MobileDashboard from "./MobileDashboard";
+import DesktopDashboard from "./DesktopDashboard";
 import { KanbanProvider } from "./contexts/KanbanContext";
 
 const DEFAULT_SIDEBAR_WIDTH = 256;
@@ -18,30 +16,21 @@ const Dashboard = ({
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
 
   return (
-    <>
+    <KanbanProvider projectId={projectId}>
       {/* Mobile */}
-      <div className="md:hidden">
-        <KanbanProvider projectId={projectId}>Mobile</KanbanProvider>
-      </div>
+      <MobileDashboard
+        doId={doId}
+        projectId={projectId}
+        className="md:hidden"
+      />
 
       {/* Desktop */}
-      <div
-        className="hidden h-dvh w-full overflow-hidden md:block"
-        style={
-          {
-            "--sidebar-width": `${sidebarWidth}px`,
-          } as React.CSSProperties
-        }
-      >
-        <DesktopSidebar onWidthChange={setSidebarWidth} />
-
-        <KanbanProvider projectId={projectId}>
-          <Workspace className="dot-grid">
-            {projectId ? <Kanban doId={doId} /> : <DailyQuote />}
-          </Workspace>
-        </KanbanProvider>
-      </div>
-    </>
+      <DesktopDashboard
+        doId={doId}
+        projectId={projectId}
+        className="hidden md:block"
+      />
+    </KanbanProvider>
   );
 };
 
