@@ -21,7 +21,11 @@ const DoSidebar = ({ className }: { className?: string }) => {
         className,
       )}
     >
-      <h2 className="text-sm">Dos</h2>
+      <h2 className="text-sm">
+        <a className="hover:underline" href="/dos">
+          Dos
+        </a>
+      </h2>
 
       <div className="flex min-w-0 flex-col gap-y-1">
         {sidebarDos.map((doItem) => (
