@@ -56,15 +56,9 @@ const KanbanCard = ({
           {/* Dates */}
           <div className="flex min-w-0 items-center gap-2 text-xs">
             {hasStart && (
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span className="size-1.5 shrink-0 rounded-full bg-text-muted" />
-
-                <span className="shrink-0 text-text-muted">Start</span>
-
-                <span className="truncate text-text">
-                  {formatDate(doItem.start_at)}
-                </span>
-              </div>
+              <span className="flex min-w-0 items-center gap-1.5 truncate text-text">
+                {formatDate(doItem.start_at)}
+              </span>
             )}
 
             {hasStart && hasEnd && (
@@ -72,19 +66,9 @@ const KanbanCard = ({
             )}
 
             {hasEnd && (
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span
-                  className={`size-1.5 shrink-0 rounded-full ${
-                    countdown.due ? "bg-danger" : "bg-text-muted"
-                  }`}
-                />
-
-                <span className="shrink-0 text-text-muted">End</span>
-
-                <span className="truncate text-text">
-                  {formatDate(doItem.end_at)}
-                </span>
-              </div>
+              <span className="flex min-w-0 items-center gap-1.5 truncate text-text">
+                {formatDate(doItem.end_at)}
+              </span>
             )}
           </div>
 

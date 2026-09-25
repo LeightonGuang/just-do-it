@@ -9,7 +9,7 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
   return (
     <div
       className={twMerge(
-        "flex flex-col gap-1 border-t border-border p-2",
+        "flex flex-col gap-1 border-t border-border p-4 md:p-2",
         className,
       )}
     >
@@ -36,7 +36,7 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
     <a
       style={{ color: project.colour }}
       href={`/?project_id=${project.id}`}
-      className="bg-card p-1 text-xs hover:bg-card-hover"
+      className="bg-card p-2 text-xs hover:bg-card-hover md:p-1"
     >
       {project.name}
     </a>

@@ -6,10 +6,10 @@ import ProjectsSidebar from "./ProjectsSidebar";
 
 const MobileSidebar = ({ className }: { className?: string }) => {
   return (
-    <aside className={twMerge("w-full mb-4", className)}>
+    <aside className={twMerge("mb-4 w-full", className)}>
+      <DailyQuote className="m-4 md:mx-0" />
       <DoSidebar />
       <ProjectsSidebar />
-      <DailyQuote className="mx-4 md:mx-0" />
     </aside>
   );
 };

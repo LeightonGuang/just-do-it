@@ -17,7 +17,7 @@ const DoSidebar = ({ className }: { className?: string }) => {
   return (
     <div
       className={twMerge(
-        "flex min-w-0 flex-col gap-1 border-t border-border p-2",
+        "flex min-w-0 flex-col gap-1 border-t border-border p-4 md:p-2",
         className,
       )}
     >
@@ -57,7 +57,7 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
     <a
       href={`?project_id=${doItem.project_id}&do_id=${doItem.id}`}
       className={twMerge(
-        "min-w-0 bg-card p-1 hover:bg-card-hover",
+        "min-w-0 bg-card p-2 hover:bg-card-hover md:p-1",
         hasEndDate
           ? "grid grid-cols-[minmax(0,1fr)_3ch_1ch_1ch_2ch_1ch_2ch] items-start"
           : "flex items-start",
