@@ -1,8 +1,7 @@
-import React from "react";
 import { twMerge } from "tailwind-merge";
 
 import Kanban from "./Kanban";
-import MobileSIdebar from "./Sidebar/MobileSIdebar";
+import MobileSidebar from "./Sidebar/MobileSidebar";
 
 const MobileDashboard = ({
   className,
@@ -15,7 +14,7 @@ const MobileDashboard = ({
 }) => {
   return (
     <div className={twMerge("", className)}>
-      <MobileSIdebar />
+      <MobileSidebar />
 
       <Kanban doId={doId} />
     </div>
