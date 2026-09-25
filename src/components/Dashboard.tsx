@@ -12,7 +12,7 @@ const Dashboard = ({
   return (
     <KanbanProvider projectId={projectId}>
       {/* Mobile */}
-      <MobileDashboard doId={doId} className="md:hidden" />
+      <MobileDashboard doId={doId} projectId={projectId} className="md:hidden" />
 
       {/* Desktop */}
       <DesktopDashboard
