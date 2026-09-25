@@ -278,7 +278,7 @@ const useMasterControl = (
       if (required && !value) return `${placeholder || name} is required`;
 
       if (value && valueType === "colour" && !isValidHexColur(value)) {
-        return `${name} must be a valid hex color (e.g. #ff0000)`;
+        return `${name} must be a valid hex colour (e.g. #ff0000)`;
       }
     }
 
