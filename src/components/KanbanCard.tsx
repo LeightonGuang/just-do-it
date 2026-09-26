@@ -97,21 +97,17 @@ const formatDate = (value: string | Date | null) => {
 
   const date = typeof value === "string" ? new Date(value) : value;
 
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
+  if (Number.isNaN(date.getTime())) return "";
 
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = String(date.getFullYear()).slice(-2);
 
-  const dateString = `${day}-${month}-${year}`;
+  const dateString = `${day}/${month}/${year}`;
 
   const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
 
-  if (!hasTime) {
-    return dateString;
-  }
+  if (!hasTime) return dateString;
 
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
