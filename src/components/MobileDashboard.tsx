@@ -5,7 +5,7 @@ import Kanban from "./Kanban";
 import MobileSidebar from "./Sidebar/MobileSidebar";
 
 const TOP_GAP = 64;
-const SNAP_DISTANCE = 0.15;
+const SNAP_DISTANCE = 0.1;
 const SNAP_DURATION = 750;
 
 const MobileDashboard = ({
@@ -181,9 +181,9 @@ const MobileDashboard = ({
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-            className="absolute top-0 left-1/2 z-60 flex h-10 w-20 -translate-x-1/2 -translate-y-full cursor-grab touch-none items-center justify-center rounded-t-xl border-x border-t border-border bg-sidebar shadow-[0_-2px_6px_-1px_rgba(0,0,0,0.1)] select-none active:cursor-grabbing"
+            className="absolute top-0 left-1/2 z-60 flex h-8 w-20 -translate-x-1/2 -translate-y-full cursor-grab touch-none items-center justify-center rounded-t-xs border-x border-t border-border bg-sidebar shadow-[0_-2px_6px_-1px_rgba(0,0,0,0.1)] select-none active:cursor-grabbing"
           >
-            <span className="h-1.5 w-12 rounded-full bg-text-muted" />
+            <span className="h-1.5 w-12 rounded-xs bg-text-muted" />
           </button>
         )}
       </div>
