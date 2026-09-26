@@ -1,6 +1,8 @@
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
+import { ArrowRight } from "lucide-react";
+
 import { useSidebar, type SidebarDo } from "../contexts/SidebarContext";
 
 type Countdown = {
@@ -21,11 +23,15 @@ const DoSidebar = ({ className }: { className?: string }) => {
         className,
       )}
     >
-      <h2 className="text-sm">
-        <a className="hover:underline" href="/dos">
-          Dos
+      <div className="items-center1 flex justify-between">
+        <h2 className="text-sm">Dos</h2>
+        <a
+          href="/dos"
+          className="flex items-center gap-1 text-[0.625rem] leading-0 text-text-muted hover:underline"
+        >
+          view all <ArrowRight className="size-2" />
         </a>
-      </h2>
+      </div>
 
       <div className="flex min-w-0 flex-col gap-y-1">
         {sidebarDos.map((doItem) => (
@@ -68,15 +74,18 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
         countdown.due && "bg-danger-background",
       )}
     >
-      <div className="flex min-w-0 flex-1 items-start gap-1 pr-1">
-        <div
-          style={{ backgroundColor: doItem.project_colour }}
-          className="mt-1 size-2 shrink-0 rounded-full border border-border"
-        />
-
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-2 pr-1">
         <span className="min-w-0 flex-1 text-xs wrap-break-word">
           {doItem.title}
         </span>
+
+        <div className="flex items-center gap-2">
+          <div
+            style={{ backgroundColor: doItem.project_colour }}
+            className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border"
+          />
+          <p className="text-[0.625rem] text-text-muted leading-none">project</p>
+        </div>
       </div>
 
       {hasEndDate && (

@@ -1,7 +1,9 @@
 import { twMerge } from "tailwind-merge";
+import { ArrowRight } from "lucide-react";
+
+import { useSidebar } from "../contexts/SidebarContext";
 
 import type { Project } from "../../db/schema";
-import { useSidebar } from "../contexts/SidebarContext";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
   const { sidebarProjects } = useSidebar();
@@ -13,11 +15,15 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
         className,
       )}
     >
-      <h2 className="text-sm">
-        <a className="hover:underline" href="/projects">
-          Projects
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm">Projects</h2>
+        <a
+          href="/projects"
+          className="flex items-center gap-1 text-[0.625rem] leading-0 text-text-muted hover:underline"
+        >
+          view all <ArrowRight className="size-2" />
         </a>
-      </h2>
+      </div>
 
       {sidebarProjects.map((project) => (
         <ProjectSidebarItem
@@ -34,11 +40,14 @@ export default ProjectsSidebar;
 const ProjectSidebarItem = ({ project }: { project: Project }) => {
   return (
     <a
-      style={{ color: project.colour }}
       href={`/?project_id=${project.id}`}
-      className="bg-card p-2 text-xs hover:bg-card-hover md:p-1"
+      className="flex items-center gap-2 bg-card p-2 text-xs hover:bg-card-hover md:p-1"
     >
-      {project.name}
+      <div
+        style={{ backgroundColor: project.colour }}
+        className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border"
+      />
+      <p>{project.name}</p>
     </a>
   );
 };
