@@ -128,7 +128,7 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
         visibility: isHydrated ? "visible" : "hidden",
       }}
       className={twMerge(
-        "fixed inset-y-0 left-0 z-50 shrink-0 border-r border-border bg-sidebar",
+        "fixed inset-y-0 left-0 z-50 shrink-0 border-r-2 border-border bg-sidebar",
         className,
       )}
     >
