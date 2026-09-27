@@ -5,7 +5,7 @@ import DoSidebar from "./DoSidebar";
 import ProjectsSidebar from "./ProjectsSidebar";
 
 const MIN_WIDTH = 150;
-const MAX_WIDTH = 300;
+const MAX_WIDTH = 400;
 const SNAP_THRESHOLD = 100;
 const DEFAULT_WIDTH = 256;
 const STORAGE_KEY = "sidebar-width";
@@ -161,6 +161,7 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
         type="button"
         onPointerUp={handlePointerUp}
         onPointerDown={handlePointerDown}
+        title={isCollapsed ? "Open sidebar" : ""}
         style={{
           left: isCollapsed ? "0px" : `${width}px`,
         }}
@@ -170,14 +171,8 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
           "touch-none",
           "cursor-grab! active:cursor-grabbing!",
           !isCollapsed && "h-dvh w-2 hover:bg-text/20",
-          isCollapsed && [
-            "flex h-16 w-5 items-center justify-center",
-            "rounded-r-md",
-            "border border-l-0 border-border",
-            "bg-text/10",
-            "shadow-sm",
-            "hover:bg-text/20",
-          ],
+          isCollapsed &&
+            "flex h-16 w-5 items-center justify-center rounded-r-md border border-l-0 border-border bg-text/10 shadow-sm hover:bg-text/20",
         )}
       >
         {isCollapsed && (
