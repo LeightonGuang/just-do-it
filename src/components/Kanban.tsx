@@ -119,7 +119,10 @@ const Kanban = ({
   return (
     <section className={twMerge("relative min-h-dvh", className)}>
       <div className="dot-grid min-h-dvh p-4 md:p-8 md:pb-24">
-        <h1 className="leading-4 font-medium text-text">{project.name}</h1>
+        <h1 className="flex items-center gap-4 leading-4 font-medium text-xl text-text">
+          <div className="size-4" style={{ backgroundColor: project.colour }} />
+          {project.name}
+        </h1>
 
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
           {columns.map((column) => {
