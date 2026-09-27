@@ -52,19 +52,12 @@ const useInputNavigation = ({
             return;
           }
 
-          case "Tab":
-          case "Enter": {
+          case "Tab": {
             const suggestion = suggestions[selectedSuggestionIndex];
 
             if (suggestion) {
               event.preventDefault();
               selectSuggestion(suggestion);
-              return;
-            }
-
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void onExecute();
             }
 
             return;
@@ -73,6 +66,12 @@ const useInputNavigation = ({
           case "Escape": {
             event.preventDefault();
             onDismissSuggestions();
+            return;
+          }
+
+          case "Enter": {
+            event.preventDefault();
+            void onExecute();
             return;
           }
         }
