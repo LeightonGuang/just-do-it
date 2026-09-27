@@ -27,13 +27,15 @@ const KanbanCard = ({
       return;
     }
 
-    setCountdown(getCountdown(doItem.end_at));
-
-    const interval = setInterval(() => {
+    const updateCountdown = () => {
       setCountdown(getCountdown(doItem.end_at));
-    }, 1000);
+    };
 
-    return () => clearInterval(interval);
+    updateCountdown();
+
+    const interval = window.setInterval(updateCountdown, 1000);
+
+    return () => window.clearInterval(interval);
   }, [doItem.end_at]);
 
   const hasStart = Boolean(doItem.start_at);
@@ -41,22 +43,33 @@ const KanbanCard = ({
 
   return (
     <div
-      className={`border border-border bg-do p-3 transition-colors hover:cursor-grab hover:bg-do-hover active:cursor-grabbing ${className ?? ""}`}
+      className={[
+        "border border-border bg-do p-3",
+        "transition-colors",
+        "hover:bg-do-hover",
+        "hover:cursor-grab",
+        "active:cursor-grabbing",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
+      {/* Title */}
       <p className="text-sm font-medium text-text">{doItem.title}</p>
 
+      {/* Description */}
       {doItem.description && (
         <p className="mt-1 text-xs leading-relaxed text-text-muted">
           {doItem.description}
         </p>
       )}
 
+      {/* Dates */}
       {(hasStart || hasEnd) && (
         <div className="mt-3 border-t border-border pt-2">
-          {/* Dates */}
-          <div className="flex min-w-0 items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
             {hasStart && (
-              <span className="flex min-w-0 items-center gap-1.5 truncate text-text">
+              <span className="truncate text-text">
                 {formatDate(doItem.start_at)}
               </span>
             )}
@@ -66,7 +79,7 @@ const KanbanCard = ({
             )}
 
             {hasEnd && (
-              <span className="flex min-w-0 items-center gap-1.5 truncate text-text">
+              <span className="truncate text-text">
                 {formatDate(doItem.end_at)}
               </span>
             )}
@@ -75,7 +88,7 @@ const KanbanCard = ({
           {/* Countdown */}
           {hasEnd && (
             <div
-              className={`mt-1.5 flex justify-end text-xs tabular-nums ${
+              className={`mt-1.5 text-right text-xs tabular-nums ${
                 countdown.due ? "text-danger" : "text-text-muted"
               }`}
             >
@@ -92,12 +105,14 @@ const KanbanCard = ({
   );
 };
 
-const formatDate = (value: string | Date | null) => {
+const formatDate = (value: string | Date | null | undefined) => {
   if (!value) return "";
 
   const date = typeof value === "string" ? new Date(value) : value;
 
-  if (Number.isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
 
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -107,7 +122,9 @@ const formatDate = (value: string | Date | null) => {
 
   const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
 
-  if (!hasTime) return dateString;
+  if (!hasTime) {
+    return dateString;
+  }
 
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
@@ -131,7 +148,7 @@ const formatCountdown = (countdown: Countdown) => {
   return parts.join(" ");
 };
 
-const getCountdown = (endAt: string | Date | null): Countdown => {
+const getCountdown = (endAt: string | Date | null | undefined): Countdown => {
   if (!endAt) {
     return {
       days: 0,

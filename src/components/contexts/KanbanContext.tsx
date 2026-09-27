@@ -12,6 +12,7 @@ type KanbanContextValue = {
   dos: Do[];
 
   fetchKanban: () => Promise<void>;
+  moveDo: (doId: number, columnId: number) => Promise<void>;
 
   loading: boolean;
   error: string;
@@ -49,7 +50,9 @@ export const KanbanProvider = ({
         cache: "no-store",
       });
 
-      if (!response.ok) throw new Error("Failed to fetch Kanban");
+      if (!response.ok) {
+        throw new Error("Failed to fetch Kanban");
+      }
 
       const data: KanbanResponse = await response.json();
 
@@ -62,6 +65,51 @@ export const KanbanProvider = ({
       setLoading(false);
     }
   }, [projectId]);
+
+  const moveDo = useCallback(
+    async (doId: number, columnId: number) => {
+      if (!projectId) return;
+
+      const previousDos = dos;
+
+      // Optimistically move the card immediately.
+      setDos((currentDos) =>
+        currentDos.map((doItem) =>
+          doItem.id === doId
+            ? {
+                ...doItem,
+                column_id: columnId,
+              }
+            : doItem,
+        ),
+      );
+
+      try {
+        const response = await fetch("/api/dos", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: doId,
+            column_id: columnId,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = (await response.json()) as {
+            error?: string;
+          };
+
+          throw new Error(data.error || "Failed to move card");
+        }
+      } catch (error) {
+        setDos(previousDos);
+        throw error;
+      }
+    },
+    [projectId, dos],
+  );
 
   useEffect(() => {
     fetchKanban();
@@ -77,6 +125,7 @@ export const KanbanProvider = ({
         dos,
 
         fetchKanban,
+        moveDo,
 
         loading,
         error,
