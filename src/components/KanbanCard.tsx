@@ -69,7 +69,7 @@ const KanbanCard = ({
 
       {/* Description */}
       {doItem.description && (
-        <p className="mt-1 text-xs leading-relaxed text-text-muted">
+        <p className="mt-1 line-clamp-3 text-xs leading-snug text-text-muted">
           {doItem.description}
         </p>
       )}
