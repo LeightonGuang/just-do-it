@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { twMerge } from "tailwind-merge";
+import { MoreHorizontal, Plus } from "lucide-react";
 
 import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts/KanbanContext";
@@ -17,9 +18,8 @@ const Kanban = ({
   const [draggedDoId, setDraggedDoId] = useState<number | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
   const [movingDoId, setMovingDoId] = useState<number | null>(null);
-
-  // Card currently being edited.
   const [editingDoId, setEditingDoId] = useState<number | null>(null);
+  const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
 
   const handleDragStart = (
     event: React.DragEvent<HTMLDivElement>,
@@ -88,7 +88,6 @@ const Kanban = ({
   };
 
   const handleEdit = (id: number) => {
-    // Don't open the drawer if the card is currently being dragged.
     if (draggedDoId !== null) return;
 
     setEditingDoId(id);
@@ -119,12 +118,28 @@ const Kanban = ({
   return (
     <section className={twMerge("relative min-h-dvh", className)}>
       <div className="dot-grid min-h-dvh p-4 md:p-8 md:pb-24">
-        <h1 className="flex items-center gap-4 leading-4 font-medium text-xl text-text">
-          <div className="size-4" style={{ backgroundColor: project.colour }} />
-          {project.name}
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="flex items-center gap-4 text-xl leading-4 font-medium text-text">
+            <div
+              className="size-4 shrink-0"
+              style={{ backgroundColor: project.colour }}
+            />
+            {project.name}
+          </h1>
 
-        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
+          <button
+            type="button"
+            onClick={() => {
+              // Open add column drawer/modal
+            }}
+            className="flex items-center gap-1.5 border border-border bg-card px-2.5 py-1.5 text-xs text-text-muted transition-colors hover:bg-background hover:text-text"
+          >
+            <Plus className="size-3.5" />
+            <span>Add column</span>
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
           {columns.map((column) => {
             const columnDos = dos.filter(
               (doItem) => doItem.column_id === column.id,
@@ -139,7 +154,7 @@ const Kanban = ({
                 onDrop={(event) => handleDrop(event, column.id)}
                 onDragOver={(event) => handleDragOver(event, column.id)}
                 className={twMerge(
-                  "border border-border bg-card p-2 transition-colors",
+                  "min-w-0 border border-border bg-card p-2 transition-colors",
                   isDragOver && "border-green-500 bg-green-500/5",
                 )}
               >
@@ -148,9 +163,20 @@ const Kanban = ({
                     {column.name}
                   </h2>
 
-                  <span className="text-xs text-text-muted tabular-nums">
-                    {columnDos.length} {columnDos.length === 1 ? "do" : "dos"}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-text-muted tabular-nums">
+                      {columnDos.length} {columnDos.length === 1 ? "do" : "dos"}
+                    </span>
+
+                    <button
+                      type="button"
+                      aria-label={`Edit ${column.name}`}
+                      onClick={() => setEditingColumnId(column.id)}
+                      className="flex size-7 items-center justify-center text-text-muted transition-colors hover:bg-background hover:text-text"
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <div
@@ -161,7 +187,6 @@ const Kanban = ({
                 >
                   {columnDos.map((doItem) => {
                     const isDragging = draggedDoId === doItem.id;
-
                     const isMoving = movingDoId === doItem.id;
 
                     return (
@@ -209,8 +234,9 @@ const Kanban = ({
         </div>
       </div>
 
-      {/* Edit drawer */}
       <KanbanEditDrawer doId={editingDoId} onClose={handleCloseEditor} />
+
+      {editingColumnId !== null && <div>{/* Column editor goes here */}</div>}
     </section>
   );
 };
