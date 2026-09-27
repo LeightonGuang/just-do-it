@@ -140,9 +140,15 @@ const Kanban = ({
                   isDragOver && "border-green-500 bg-green-500/5",
                 )}
               >
-                <h2 className="leading-8 font-semibold text-text">
-                  {column.name}
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="leading-8 font-semibold text-text">
+                    {column.name}
+                  </h2>
+
+                  <span className="text-xs text-text-muted tabular-nums">
+                    {columnDos.length} {columnDos.length === 1 ? "do" : "dos"}
+                  </span>
+                </div>
 
                 <div
                   className={twMerge(
