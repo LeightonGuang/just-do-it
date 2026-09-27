@@ -157,7 +157,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       setDeleting(true);
       setError("");
 
-      const response = await fetch(`/api/dos?id=${doItem.id}`, {
+      const response = await fetch(`/api/dos/${doItem.id}`, {
         method: "DELETE",
       });
 
