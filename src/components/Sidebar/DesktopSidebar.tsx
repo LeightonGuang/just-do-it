@@ -18,17 +18,18 @@ type DesktopSidebarProps = {
 const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const isDragging = useRef(false);
+  const draggingRef = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(DEFAULT_WIDTH);
+  const draggedDistance = useRef(0);
 
   const updateWidth = (nextWidth: number) => {
     setWidth(nextWidth);
     onWidthChange?.(nextWidth);
   };
 
-  // Load saved width from localStorage
   useEffect(() => {
     const savedWidth = localStorage.getItem(STORAGE_KEY);
 
@@ -44,7 +45,6 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
     setIsHydrated(true);
   }, []);
 
-  // Save width whenever it changes
   useEffect(() => {
     if (!isHydrated) return;
 
@@ -53,48 +53,29 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
-      if (!isDragging.current) return;
+      if (!draggingRef.current) return;
 
       const delta = event.clientX - startX.current;
+
+      draggedDistance.current = Math.abs(delta);
+
       const rawWidth = startWidth.current + delta;
 
-      // Currently collapsed
-      if (startWidth.current === 0) {
-        if (delta < SNAP_THRESHOLD) {
-          updateWidth(0);
-          return;
-        }
-
-        updateWidth(MIN_WIDTH);
-
-        startX.current = event.clientX;
-        startWidth.current = MIN_WIDTH;
-
-        return;
-      }
-
-      /**
-       * Dragging closed.
-       */
       if (rawWidth < SNAP_THRESHOLD) {
         updateWidth(0);
-
-        startX.current = event.clientX;
-        startWidth.current = 0;
-
         return;
       }
 
-      /**
-       * Normal resizing.
-       */
       const nextWidth = Math.min(Math.max(rawWidth, MIN_WIDTH), MAX_WIDTH);
 
       updateWidth(nextWidth);
     };
 
     const handlePointerUp = () => {
-      isDragging.current = false;
+      if (!draggingRef.current) return;
+
+      draggingRef.current = false;
+      setIsDragging(false);
 
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
@@ -110,13 +91,38 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
   }, []);
 
   const handlePointerDown = (event: React.PointerEvent) => {
-    isDragging.current = true;
+    draggingRef.current = true;
+    setIsDragging(true);
 
     startX.current = event.clientX;
     startWidth.current = width;
+    draggedDistance.current = 0;
 
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
+
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent) => {
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+    const wasClick = draggedDistance.current < 5;
+
+    draggingRef.current = false;
+    setIsDragging(false);
+
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+
+    if (!wasClick) return;
+
+    if (width === 0) {
+      updateWidth(DEFAULT_WIDTH);
+      return;
+    }
+
+    updateWidth(0);
   };
 
   const isCollapsed = width === 0;
@@ -129,6 +135,7 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
       }}
       className={twMerge(
         "fixed inset-y-0 left-0 z-50 shrink-0 border-r-2 border-border bg-sidebar",
+        !isDragging && "transition-[width] duration-300 ease-out",
         className,
       )}
     >
@@ -150,17 +157,19 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
         </div>
       </div>
 
-      {/* Drag handle */}
-      <div
+      <button
+        type="button"
+        onPointerUp={handlePointerUp}
         onPointerDown={handlePointerDown}
         style={{
           left: isCollapsed ? "0px" : `${width}px`,
         }}
+        aria-label={isCollapsed ? "Open sidebar" : "Resize sidebar"}
         className={twMerge(
-          "fixed top-1/2 z-50 -translate-y-1/2 hover:cursor-grab active:cursor-grabbing",
-
+          "fixed top-1/2 z-50 -translate-y-1/2",
+          "touch-none",
+          "cursor-grab! active:cursor-grabbing!",
           !isCollapsed && "h-dvh w-2 hover:bg-text/20",
-
           isCollapsed && [
             "flex h-16 w-5 items-center justify-center",
             "rounded-r-md",
@@ -171,8 +180,10 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
           ],
         )}
       >
-        {isCollapsed && <div className="h-8 w-1 rounded-full bg-text/60" />}
-      </div>
+        {isCollapsed && (
+          <div className="h-8 w-1 rounded-full bg-text/60 transition-colors" />
+        )}
+      </button>
     </aside>
   );
 };
