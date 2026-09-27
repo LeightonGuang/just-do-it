@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 
 import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts/KanbanContext";
+import KanbanEditDrawer from "./projects/KanbanEditDrawer";
 
 const Kanban = ({
   doId,
@@ -16,6 +17,9 @@ const Kanban = ({
   const [draggedDoId, setDraggedDoId] = useState<number | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
   const [movingDoId, setMovingDoId] = useState<number | null>(null);
+
+  // Card currently being edited.
+  const [editingDoId, setEditingDoId] = useState<number | null>(null);
 
   const handleDragStart = (
     event: React.DragEvent<HTMLDivElement>,
@@ -46,8 +50,6 @@ const Kanban = ({
   };
 
   const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
-    // Don't remove the highlight when moving between
-    // children inside the same column.
     if (event.currentTarget.contains(event.relatedTarget as Node)) {
       return;
     }
@@ -72,7 +74,6 @@ const Kanban = ({
 
     if (!doItem) return;
 
-    // Already in this column.
     if (doItem.column_id === columnId) return;
 
     try {
@@ -84,6 +85,17 @@ const Kanban = ({
     } finally {
       setMovingDoId(null);
     }
+  };
+
+  const handleEdit = (id: number) => {
+    // Don't open the drawer if the card is currently being dragged.
+    if (draggedDoId !== null) return;
+
+    setEditingDoId(id);
+  };
+
+  const handleCloseEditor = () => {
+    setEditingDoId(null);
   };
 
   if (loading) {
@@ -105,7 +117,7 @@ const Kanban = ({
   if (!project) return null;
 
   return (
-    <section className={twMerge("", className)}>
+    <section className={twMerge("relative min-h-dvh", className)}>
       <div className="dot-grid min-h-dvh p-4 md:p-8 md:pb-24">
         <h1 className="leading-4 font-medium text-text">{project.name}</h1>
 
@@ -159,6 +171,7 @@ const Kanban = ({
                       >
                         <KanbanCard
                           doItem={doItem}
+                          onClick={() => handleEdit(doItem.id)}
                           className={twMerge(
                             Number(doId) === doItem.id &&
                               "border border-green-500",
@@ -171,7 +184,7 @@ const Kanban = ({
                   {columnDos.length === 0 && (
                     <div
                       className={twMerge(
-                        "flex min-h-20 items-center justify-center rounded",
+                        "flex min-h-20 items-center justify-center",
                         "text-sm text-text-muted",
                         isDragOver &&
                           "border border-dashed border-green-500 text-green-500",
@@ -186,6 +199,9 @@ const Kanban = ({
           })}
         </div>
       </div>
+
+      {/* Edit drawer */}
+      <KanbanEditDrawer doId={editingDoId} onClose={handleCloseEditor} />
     </section>
   );
 };

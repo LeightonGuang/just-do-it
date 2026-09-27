@@ -14,9 +14,11 @@ type Countdown = {
 const KanbanCard = ({
   className,
   doItem,
+  onClick,
 }: {
   className?: string;
   doItem: ApiDo | Do;
+  onClick: () => void;
 }) => {
   const [countdown, setCountdown] = useState<Countdown>(() =>
     getCountdown(doItem.end_at),
@@ -55,7 +57,15 @@ const KanbanCard = ({
         .join(" ")}
     >
       {/* Title */}
-      <p className="text-sm font-medium text-text">{doItem.title}</p>
+      <p
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick();
+        }}
+        className="text-sm font-medium text-text hover:cursor-pointer hover:underline"
+      >
+        {doItem.title}
+      </p>
 
       {/* Description */}
       {doItem.description && (

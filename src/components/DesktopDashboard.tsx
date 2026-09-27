@@ -35,7 +35,7 @@ const DesktopDashboard = ({
         {projectId ? (
           <Kanban doId={doId} />
         ) : (
-          <div className="flex h-dvh items-center justify-center dot-grid">
+          <div className="dot-grid flex h-dvh items-center justify-center">
             <DailyQuote />
           </div>
         )}

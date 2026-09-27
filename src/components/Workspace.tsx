@@ -22,7 +22,7 @@ const Workspace = ({ children, className }: WorkspaceProps) => {
       <div className="min-h-full w-full">{children}</div>
 
       <div
-        className="pointer-events-none fixed bottom-4 z-100 flex justify-center"
+        className="pointer-events-none fixed bottom-4 z-30 flex justify-center"
         style={{
           left: "var(--sidebar-width)",
           width: "calc(100% - var(--sidebar-width))",
