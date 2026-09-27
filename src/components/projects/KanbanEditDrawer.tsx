@@ -17,6 +17,14 @@ type DateTimeFieldProps = {
   onChange: (value: string) => void;
 };
 
+type FormValues = {
+  title: string;
+  description: string;
+  columnId: string;
+  startAt: string;
+  endAt: string;
+};
+
 const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
   const { dos, columns, projectId, fetchKanban } = useKanban();
 
@@ -28,6 +36,14 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
 
+  const [initialValues, setInitialValues] = useState<FormValues>({
+    title: "",
+    description: "",
+    columnId: "",
+    startAt: "",
+    endAt: "",
+  });
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
@@ -36,20 +52,39 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
 
   useEffect(() => {
     if (!doItem) {
+      const emptyValues: FormValues = {
+        title: "",
+        description: "",
+        columnId: "",
+        startAt: "",
+        endAt: "",
+      };
+
       setTitle("");
       setDescription("");
       setColumnId("");
       setStartAt("");
       setEndAt("");
+      setInitialValues(emptyValues);
       setError("");
+
       return;
     }
 
-    setTitle(doItem.title ?? "");
-    setDescription(doItem.description ?? "");
-    setColumnId(String(doItem.column_id ?? ""));
-    setStartAt(toDatetimeLocal(doItem.start_at));
-    setEndAt(toDatetimeLocal(doItem.end_at));
+    const values: FormValues = {
+      title: doItem.title ?? "",
+      description: doItem.description ?? "",
+      columnId: String(doItem.column_id ?? ""),
+      startAt: toDatetimeLocal(doItem.start_at),
+      endAt: toDatetimeLocal(doItem.end_at),
+    };
+
+    setTitle(values.title);
+    setDescription(values.description);
+    setColumnId(values.columnId);
+    setStartAt(values.startAt);
+    setEndAt(values.endAt);
+    setInitialValues(values);
     setError("");
   }, [doItem]);
 
@@ -81,10 +116,25 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
     };
   }, [isOpen]);
 
+  const currentValues: FormValues = {
+    title,
+    description,
+    columnId,
+    startAt,
+    endAt,
+  };
+
+  const hasChanges =
+    currentValues.title !== initialValues.title ||
+    currentValues.description !== initialValues.description ||
+    currentValues.columnId !== initialValues.columnId ||
+    currentValues.startAt !== initialValues.startAt ||
+    currentValues.endAt !== initialValues.endAt;
+
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!doItem) return;
+    if (!doItem || !hasChanges) return;
 
     const trimmedTitle = title.trim();
 
@@ -336,8 +386,8 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
 
                 <button
                   type="submit"
-                  disabled={saving || deleting}
-                  className="bg-text px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!hasChanges || saving || deleting}
+                  className="bg-text px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed! disabled:opacity-40"
                 >
                   {saving ? "Saving..." : "Save changes"}
                 </button>
@@ -373,7 +423,7 @@ const DateTimeField = ({ id, label, value, onChange }: DateTimeFieldProps) => {
           type="button"
           disabled={!value}
           onClick={() => onChange("")}
-          className="shrink-0 border border-danger-border px-3 text-xs text-danger transition-colors hover:bg-danger hover:text-white disabled:cursor-not-allowed! disabled:text-text disabled:opacity-40 disabled:hover:bg-transparent"
+          className="shrink-0 border border-danger-border px-3 text-xs text-danger transition-colors hover:bg-danger hover:text-white disabled:cursor-not-allowed disabled:text-text disabled:opacity-40 disabled:hover:bg-transparent"
         >
           Clear
         </button>
@@ -407,7 +457,9 @@ const formatDateForApi = (value: string) => {
 
   if (!year || !month || !day) return "";
 
-  if (!timePart) return `${Number(day)}-${Number(month)}-${Number(year)}`;
+  if (!timePart) {
+    return `${Number(day)}-${Number(month)}-${Number(year)}`;
+  }
 
   return `${Number(day)}-${Number(month)}-${Number(year)} ${timePart}`;
 };
