@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
-import { eq, like, and, asc } from "drizzle-orm";
+import { eq, like, and, asc, isNull } from "drizzle-orm";
 
 import { parseDate } from "../../../../lib/date";
 import { dos, columns, projects } from "../../../db/schema";
@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ url }) => {
       })
       .from(dos)
       .innerJoin(projects, eq(dos.project_id, projects.id))
-      .orderBy(asc(dos.end_at))
+      .orderBy(asc(isNull(dos.end_at)), asc(dos.end_at))
       .limit(5);
 
     return Response.json(sidebarDos);
