@@ -184,10 +184,50 @@ export const PATCH: APIRoute = async ({ request }) => {
     description?: string | null;
     column_id?: number;
     project_id?: number;
+    start_at?: string | null;
+    end_at?: string | null;
   };
 
-  if (!body.id) {
+  if (!body.id)
     return Response.json({ error: "ID is required" }, { status: 400 });
+
+  const startAt =
+    typeof body.start_at === "string" && body.start_at.trim()
+      ? parseDate(body.start_at)
+      : null;
+
+  const endAt =
+    typeof body.end_at === "string" && body.end_at.trim()
+      ? parseDate(body.end_at)
+      : null;
+
+  if (body.start_at && !startAt) {
+    return Response.json(
+      {
+        error:
+          "Invalid start date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (body.end_at && !endAt) {
+    return Response.json(
+      {
+        error:
+          "Invalid end date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (startAt && endAt && startAt > endAt) {
+    return Response.json(
+      {
+        error: "Start time must be before end time",
+      },
+      { status: 400 },
+    );
   }
 
   const updateData: Record<string, unknown> = {
@@ -195,7 +235,12 @@ export const PATCH: APIRoute = async ({ request }) => {
   };
 
   if (body.title !== undefined) {
-    updateData.title = body.title.trim();
+    const title = body.title.trim();
+
+    if (!title)
+      return Response.json({ error: "Title is required" }, { status: 400 });
+
+    updateData.title = title;
   }
 
   if (body.description !== undefined) {
@@ -210,7 +255,17 @@ export const PATCH: APIRoute = async ({ request }) => {
     updateData.project_id = body.project_id;
   }
 
+  if (body.start_at !== undefined) {
+    updateData.start_at = startAt;
+  }
+
+  if (body.end_at !== undefined) {
+    updateData.end_at = endAt;
+  }
+
   await db.update(dos).set(updateData).where(eq(dos.id, body.id));
 
-  return Response.json({ success: true });
+  return Response.json({
+    success: true,
+  });
 };
