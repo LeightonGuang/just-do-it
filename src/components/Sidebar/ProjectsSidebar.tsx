@@ -6,7 +6,7 @@ import { useSidebar } from "./contexts/SidebarContext";
 import type { Project } from "../../db/schema";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
-  const { sidebarProjects } = useSidebar();
+  const { sidebarProjects, loading } = useSidebar();
 
   return (
     <div
@@ -17,6 +17,7 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
     >
       <div className="flex items-center justify-between">
         <h2 className="text-sm">Projects</h2>
+
         <a
           href="/projects"
           className="flex items-center gap-1 text-[0.625rem] leading-0 text-text-muted hover:underline"
@@ -25,12 +26,22 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
         </a>
       </div>
 
-      {sidebarProjects.map((project) => (
-        <ProjectSidebarItem
-          project={project}
-          key={`${project.name}-${project.id}`}
-        />
-      ))}
+      {loading ? (
+        <>
+          <ProjectSidebarSkeleton />
+          <ProjectSidebarSkeleton />
+          <ProjectSidebarSkeleton />
+          <ProjectSidebarSkeleton />
+          <ProjectSidebarSkeleton />
+        </>
+      ) : (
+        sidebarProjects.map((project) => (
+          <ProjectSidebarItem
+            project={project}
+            key={`${project.name}-${project.id}`}
+          />
+        ))
+      )}
     </div>
   );
 };
@@ -49,5 +60,14 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
       />
       <p>{project.name}</p>
     </a>
+  );
+};
+
+const ProjectSidebarSkeleton = () => {
+  return (
+    <div className="flex items-center gap-2 bg-card p-2 md:p-1">
+      <div className="size-3 shrink-0 animate-pulse rounded-xs bg-border" />
+      <div className="h-3 w-24 animate-pulse rounded-sm bg-border" />
+    </div>
   );
 };
