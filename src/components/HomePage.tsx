@@ -1,5 +1,5 @@
 import Dashboard from "./Dashboard";
-import { SidebarProvider } from "./contexts/SidebarContext";
+import { SidebarProvider } from "./Sidebar/contexts/SidebarContext";
 
 const HomePage = ({
   projectId,

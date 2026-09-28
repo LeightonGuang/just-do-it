@@ -34,14 +34,6 @@ const Kanban = ({
     handleEditColumn,
   } = useKanbanBoard();
 
-  if (loading) {
-    return (
-      <section className="min-h-dvh p-8">
-        <p className="text-text-muted">Loading...</p>
-      </section>
-    );
-  }
-
   if (error) {
     return (
       <section className="min-h-dvh p-8">

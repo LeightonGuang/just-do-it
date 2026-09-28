@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { ArrowRight } from "lucide-react";
 
-import { useSidebar, type SidebarDo } from "../contexts/SidebarContext";
+import { useSidebar, type SidebarDo } from "./contexts/SidebarContext";
 
 type Countdown = {
   days: number;
@@ -14,7 +14,7 @@ type Countdown = {
 };
 
 const DoSidebar = ({ className }: { className?: string }) => {
-  const { sidebarDos } = useSidebar();
+  const { sidebarDos, loading } = useSidebar();
 
   return (
     <div
@@ -25,6 +25,7 @@ const DoSidebar = ({ className }: { className?: string }) => {
     >
       <div className="items-center1 flex justify-between">
         <h2 className="text-sm">Dos</h2>
+
         <a
           href="/dos"
           className="flex items-center gap-1 text-[0.625rem] leading-0 text-text-muted hover:underline"
@@ -34,9 +35,19 @@ const DoSidebar = ({ className }: { className?: string }) => {
       </div>
 
       <div className="flex min-w-0 flex-col gap-y-1">
-        {sidebarDos.map((doItem) => (
-          <DoSidebarItem key={doItem.id} doItem={doItem} />
-        ))}
+        {loading ? (
+          <>
+            <DoSidebarSkeleton />
+            <DoSidebarSkeleton />
+            <DoSidebarSkeleton />
+            <DoSidebarSkeleton />
+            <DoSidebarSkeleton />
+          </>
+        ) : (
+          sidebarDos.map((doItem) => (
+            <DoSidebarItem key={doItem.id} doItem={doItem} />
+          ))
+        )}
       </div>
     </div>
   );
@@ -84,7 +95,9 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
             style={{ backgroundColor: doItem.project_colour }}
             className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border"
           />
-          <p className="text-[0.625rem] text-text-muted leading-none">project</p>
+          <p className="text-[0.625rem] leading-none text-text-muted">
+            project
+          </p>
         </div>
       </div>
 
@@ -120,6 +133,19 @@ const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
         </>
       )}
     </a>
+  );
+};
+
+const DoSidebarSkeleton = () => {
+  return (
+    <div className="flex min-w-0 flex-col gap-2 bg-card p-2 md:p-1">
+      <div className="h-3 w-3/4 animate-pulse rounded-sm bg-border" />
+
+      <div className="flex items-center gap-2">
+        <div className="size-2.5 shrink-0 animate-pulse rounded-xs bg-border" />
+        <div className="h-2 w-12 animate-pulse rounded-sm bg-border" />
+      </div>
+    </div>
   );
 };
 

@@ -6,9 +6,9 @@ import { parseCommand } from "../parser";
 import useInputNavigation from "./useInputNavigation";
 import useEntitySuggestions from "./useEntitySuggestions";
 import useCommandSuggestions from "./useCommandSuggestions";
-import { useSidebar } from "../../../contexts/SidebarContext";
-
 import { useKanban } from "../../../kanban/contexts/KanbanContext";
+import { useSidebar } from "../../../Sidebar/contexts/SidebarContext";
+
 import type { MasterControlSuggestion, SelectedEntity } from "../types";
 
 const isValidHexColur = (value: string) => {
@@ -45,9 +45,7 @@ const useMasterControl = (
   }, [root]);
 
   const selectedSubCommand = useMemo(() => {
-    if (!rootCommand || !subCommandToken) {
-      return undefined;
-    }
+    if (!rootCommand || !subCommandToken) return undefined;
 
     return rootCommand.subCommands?.find(
       (item) => item.name === subCommandToken,

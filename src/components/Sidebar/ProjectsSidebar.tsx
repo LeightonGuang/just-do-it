@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { ArrowRight } from "lucide-react";
 
-import { useSidebar } from "../contexts/SidebarContext";
+import { useSidebar } from "./contexts/SidebarContext";
 
 import type { Project } from "../../db/schema";
 
