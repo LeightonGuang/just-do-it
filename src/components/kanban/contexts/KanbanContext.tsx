@@ -13,6 +13,8 @@ type KanbanContextValue = {
 
   fetchKanban: () => Promise<void>;
   moveDo: (doId: number, columnId: number) => Promise<void>;
+  editColumn: (columnId: number, name: string) => Promise<void>;
+  deleteColumn: (columnId: number) => Promise<void>;
 
   loading: boolean;
   error: string;
@@ -50,7 +52,9 @@ export const KanbanProvider = ({
         cache: "no-store",
       });
 
-      if (!response.ok) throw new Error("Failed to fetch Kanban");
+      if (!response.ok) {
+        throw new Error("Failed to fetch Kanban");
+      }
 
       const data: KanbanResponse = await response.json();
 
@@ -70,7 +74,6 @@ export const KanbanProvider = ({
 
       const previousDos = dos;
 
-      // Optimistically move the card immediately.
       setDos((currentDos) =>
         currentDos.map((doItem) =>
           doItem.id === doId
@@ -109,6 +112,58 @@ export const KanbanProvider = ({
     [projectId, dos],
   );
 
+  const editColumn = useCallback(async (columnId: number, name: string) => {
+    const response = await fetch(`/api/columns/${columnId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as {
+        error?: string;
+      };
+
+      throw new Error(data.error || "Failed to edit column");
+    }
+
+    const data = (await response.json()) as {
+      column: Column;
+    };
+
+    setColumns((currentColumns) =>
+      currentColumns.map((column) =>
+        column.id === columnId ? data.column : column,
+      ),
+    );
+  }, []);
+
+  const deleteColumn = useCallback(async (columnId: number) => {
+    const response = await fetch(`/api/columns/${columnId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as {
+        error?: string;
+      };
+
+      throw new Error(data.error || "Failed to delete column");
+    }
+
+    setColumns((currentColumns) =>
+      currentColumns.filter((column) => column.id !== columnId),
+    );
+
+    setDos((currentDos) =>
+      currentDos.filter((doItem) => doItem.column_id !== columnId),
+    );
+  }, []);
+
   useEffect(() => {
     fetchKanban();
   }, [fetchKanban]);
@@ -124,6 +179,8 @@ export const KanbanProvider = ({
 
         fetchKanban,
         moveDo,
+        editColumn,
+        deleteColumn,
 
         loading,
         error,
@@ -137,8 +194,9 @@ export const KanbanProvider = ({
 export const useKanban = () => {
   const context = useContext(KanbanContext);
 
-  if (!context)
+  if (!context) {
     throw new Error("useKanban must be used inside a KanbanProvider");
+  }
 
   return context;
 };

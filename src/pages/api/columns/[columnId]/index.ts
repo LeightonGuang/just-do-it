@@ -3,7 +3,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
-import { columns } from "../../../../db/schema";
+import { columns, dos } from "../../../../db/schema";
 
 export const PATCH: APIRoute = async ({ params, request }) => {
   const db = drizzle(env.just_do_it);
@@ -71,5 +71,35 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   return Response.json({
     success: true,
     column: updated[0],
+  });
+};
+
+export const DELETE: APIRoute = async ({ params }) => {
+  const db = drizzle(env.just_do_it);
+
+  const columnId = Number(params.columnId);
+
+  if (!Number.isInteger(columnId)) {
+    return Response.json({ error: "Invalid column ID" }, { status: 400 });
+  }
+
+  const existing = await db
+    .select()
+    .from(columns)
+    .where(eq(columns.id, columnId))
+    .get();
+
+  if (!existing) {
+    return Response.json({ error: "Column not found" }, { status: 404 });
+  }
+
+  // Delete cards belonging to the column first.
+  await db.delete(dos).where(eq(dos.column_id, columnId));
+
+  // Then delete the column.
+  await db.delete(columns).where(eq(columns.id, columnId));
+
+  return Response.json({
+    success: true,
   });
 };

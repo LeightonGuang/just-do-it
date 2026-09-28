@@ -2,9 +2,8 @@ import { useState } from "react";
 
 import { useKanban } from "../contexts/KanbanContext";
 
-
 export const useKanbanBoard = () => {
-  const { dos, moveDo } = useKanban();
+  const { dos, moveDo, editColumn, deleteColumn } = useKanban();
 
   const [draggedDoId, setDraggedDoId] = useState<number | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
@@ -78,13 +77,13 @@ export const useKanbanBoard = () => {
     }
   };
 
-  const handleEdit = (id: number) => {
+  const handleEditDo = (id: number) => {
     if (draggedDoId !== null) return;
 
     setEditingDoId(id);
   };
 
-  const handleCloseEditor = () => {
+  const handleCloseDoEditor = () => {
     setEditingDoId(null);
   };
 
@@ -94,6 +93,30 @@ export const useKanbanBoard = () => {
 
   const handleCloseColumnEditor = () => {
     setEditingColumnId(null);
+  };
+
+  const handleSaveColumn = async (id: number, name: string) => {
+    try {
+      await editColumn(id, name);
+      setEditingColumnId(null);
+    } catch (error) {
+      console.error("Failed to edit column:", error);
+      throw error;
+    }
+  };
+
+  const handleDeleteColumn = async (id: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this column? All cards in this column will also be deleted.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteColumn(id);
+    } catch (error) {
+      console.error("Failed to delete column:", error);
+    }
   };
 
   return {
@@ -110,10 +133,13 @@ export const useKanbanBoard = () => {
     handleDragLeave,
     handleDrop,
 
-    handleEdit,
-    handleCloseEditor,
+    handleEditDo,
+    handleCloseDoEditor,
 
     handleEditColumn,
     handleCloseColumnEditor,
+    handleSaveColumn,
+
+    handleDeleteColumn,
   };
 };
