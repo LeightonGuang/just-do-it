@@ -28,12 +28,15 @@ export const dos = sqliteTable("dos", {
     .notNull()
     .references(() => columns.id),
 
+  // TODO: remove project id in the future, might be redundant
   project_id: integer("project_id")
     .notNull()
     .references(() => projects.id),
 
   title: text("title").notNull(),
   description: text("description"),
+
+  position: integer("position").notNull(),
 
   start_at: integer("start_at", { mode: "timestamp_ms" }),
   end_at: integer("end_at", { mode: "timestamp_ms" }),
