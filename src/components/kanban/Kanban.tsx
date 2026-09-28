@@ -1,7 +1,7 @@
+import { Plus } from "lucide-react";
 import { twMerge } from "tailwind-merge";
-import { MoreHorizontal, Plus } from "lucide-react";
 
-import KanbanCard from "./KanbanCard";
+import KanbanColumn from "./KanbanColumn";
 import { useKanban } from "./contexts/KanbanContext";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import KanbanEditDrawer from "../projects/KanbanEditDrawer";
@@ -13,7 +13,7 @@ const Kanban = ({
   doId: string | null;
   className?: string;
 }) => {
-  const { loading, error, project, columns, dos } = useKanban();
+  const { error, project, columns, dos } = useKanban();
 
   const {
     draggedDoId,
@@ -69,97 +69,24 @@ const Kanban = ({
         </div>
 
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
-          {columns.map((column) => {
-            const columnDos = dos.filter(
-              (doItem) => doItem.column_id === column.id,
-            );
-
-            const isDragOver = dragOverColumnId === column.id;
-
-            return (
-              <article
-                key={column.id}
-                onDragLeave={handleDragLeave}
-                onDrop={(event) => handleDrop(event, column.id)}
-                onDragOver={(event) => handleDragOver(event, column.id)}
-                className={twMerge(
-                  "min-w-0 border border-border bg-card p-2 transition-colors",
-                  isDragOver && "border-green-500 bg-green-500/5",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <h2 className="leading-8 font-semibold text-text">
-                    {column.name}
-                  </h2>
-
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-text-muted tabular-nums">
-                      {columnDos.length} {columnDos.length === 1 ? "do" : "dos"}
-                    </span>
-
-                    <button
-                      type="button"
-                      aria-label={`Edit ${column.name}`}
-                      onClick={() => handleEditColumn(column.id)}
-                      className="flex size-7 items-center justify-center text-text-muted transition-colors hover:bg-background hover:text-text"
-                    >
-                      <MoreHorizontal className="size-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  className={twMerge(
-                    "mt-4 flex min-h-20 flex-col gap-2 rounded",
-                    isDragOver && "bg-green-500/5",
-                  )}
-                >
-                  {columnDos.map((doItem) => {
-                    const isDragging = draggedDoId === doItem.id;
-                    const isMoving = movingDoId === doItem.id;
-
-                    return (
-                      <div
-                        key={doItem.id}
-                        draggable={!isMoving}
-                        onDragEnd={handleDragEnd}
-                        onDragStart={(event) =>
-                          handleDragStart(event, doItem.id)
-                        }
-                        className={twMerge(
-                          "cursor-grab transition-opacity active:cursor-grabbing",
-                          isDragging && "opacity-40",
-                          isMoving && "pointer-events-none opacity-50",
-                        )}
-                      >
-                        <KanbanCard
-                          doItem={doItem}
-                          onClick={() => handleEdit(doItem.id)}
-                          className={twMerge(
-                            Number(doId) === doItem.id &&
-                              "border border-green-500",
-                          )}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  {columnDos.length === 0 && (
-                    <div
-                      className={twMerge(
-                        "flex min-h-20 items-center justify-center",
-                        "text-sm text-text-muted",
-                        isDragOver &&
-                          "border border-dashed border-green-500 text-green-500",
-                      )}
-                    >
-                      {isDragOver ? "Drop here" : "No cards"}
-                    </div>
-                  )}
-                </div>
-              </article>
-            );
-          })}
+          {columns.map((column) => (
+            <KanbanColumn
+              dos={dos}
+              doId={doId}
+              key={column.id}
+              column={column}
+              onDrop={handleDrop}
+              onEditDo={handleEdit}
+              movingDoId={movingDoId}
+              draggedDoId={draggedDoId}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDragStart={handleDragStart}
+              onDragLeave={handleDragLeave}
+              onEditColumn={handleEditColumn}
+              dragOverColumnId={dragOverColumnId}
+            />
+          ))}
         </div>
       </div>
 
