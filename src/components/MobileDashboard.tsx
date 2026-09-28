@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { useEffect, useRef, useState } from "react";
 
-import Kanban from "./Kanban";
+import Kanban from "./kanban/Kanban";
 import MobileSidebar from "./Sidebar/MobileSidebar";
 
 const TOP_GAP = 64;

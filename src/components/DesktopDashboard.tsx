@@ -2,8 +2,8 @@ import React, { useState } from "react";
 
 import { twMerge } from "tailwind-merge";
 
-import Kanban from "./Kanban";
 import Workspace from "./Workspace";
+import Kanban from "./kanban/Kanban";
 import DailyQuote from "./DailyQuote";
 import DesktopSidebar from "./Sidebar/DesktopSidebar";
 

@@ -4,7 +4,7 @@ import { MoreHorizontal, Plus } from "lucide-react";
 import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts/KanbanContext";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
-import KanbanEditDrawer from "./projects/KanbanEditDrawer";
+import KanbanEditDrawer from "../projects/KanbanEditDrawer";
 
 const Kanban = ({
   doId,

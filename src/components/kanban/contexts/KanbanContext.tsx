@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { createContext, useCallback, useContext, useEffect } from "react";
 
-import type { Column, Do, Project } from "../../db/schema";
-import type { KanbanResponse } from "../../pages/api/projects/[projectId]";
+import type { Column, Do, Project } from "../../../db/schema";
+import type { KanbanResponse } from "../../../pages/api/projects/[projectId]";
 
 type KanbanContextValue = {
   projectId: string | null;
@@ -50,9 +50,7 @@ export const KanbanProvider = ({
         cache: "no-store",
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch Kanban");
-      }
+      if (!response.ok) throw new Error("Failed to fetch Kanban");
 
       const data: KanbanResponse = await response.json();
 

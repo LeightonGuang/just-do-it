@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { X } from "lucide-react";
 
-import { useKanban } from "../contexts/KanbanContext";
+import { useKanban } from "../kanban/contexts/KanbanContext";
 
 type KanbanEditDrawerProps = {
   doId: number | null;
