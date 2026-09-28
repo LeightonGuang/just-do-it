@@ -45,7 +45,7 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
     >
       <div
         style={{ backgroundColor: project.colour }}
-        className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border"
+        className="mt-0.5 size-3 shrink-0 rounded-xs border border-border"
       />
       <p>{project.name}</p>
     </a>
