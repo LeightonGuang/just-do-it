@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+import { uniqueIndex } from "drizzle-orm/sqlite-core";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const projects = sqliteTable("projects", {
@@ -10,14 +12,26 @@ export const projects = sqliteTable("projects", {
 
 export type Project = typeof projects.$inferSelect;
 
-export const columns = sqliteTable("columns", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  project_id: integer("project_id")
-    .notNull()
-    .references(() => projects.id),
-  name: text("name").notNull(),
-  position: integer("position").notNull(),
-});
+export const columns = sqliteTable(
+  "columns",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+
+    project_id: integer("project_id")
+      .notNull()
+      .references(() => projects.id),
+
+    name: text("name").notNull(),
+    position: integer("position").notNull(),
+
+    is_done: integer("is_done", { mode: "boolean" }).notNull().default(false),
+  },
+  (table) => [
+    uniqueIndex("one_done_column_per_project")
+      .on(table.project_id)
+      .where(sql`${table.is_done} = 1`),
+  ], // only one is done column can exist per project
+);
 
 export type Column = typeof columns.$inferSelect;
 
