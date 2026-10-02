@@ -1,5 +1,7 @@
 import { useRef } from "react";
 
+import { ChevronRight, Search } from "lucide-react";
+
 import MasterControlInput from "./MasterControlInput";
 import MasterControlHelper from "./MasterControlHelper";
 import MasterControlError from "./commands/MasterControlError";
@@ -40,7 +42,7 @@ const MasterControl = () => {
         selectedIndex={selectedSuggestionIndex}
       />
 
-      <div className="flex h-10 shrink-0 items-center overflow-hidden bg-input px-2">
+      <div className="flex h-10 shrink-0 items-center gap-2 overflow-hidden bg-input px-2">
         <MasterControlInput
           ref={inputRef}
           error={!!error}
@@ -52,6 +54,8 @@ const MasterControl = () => {
           placeholder="/commands, search"
           onCaretChange={handleCaretChange}
         />
+
+        <ChevronRight className="size-6 shrink-0 bg-orange-500 text-white" />
       </div>
 
       <MasterControlHelper />
