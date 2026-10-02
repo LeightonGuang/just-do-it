@@ -80,7 +80,7 @@ const ProjectPage = () => {
     setError("");
 
     try {
-      const res = await fetch(`/api/projects?id=${id}`, {
+      const res = await fetch(`/api/projects/${id}`, {
         method: "DELETE",
       });
 

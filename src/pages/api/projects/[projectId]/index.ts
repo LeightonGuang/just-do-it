@@ -102,3 +102,17 @@ export const PATCH: APIRoute = async ({ params, request }) => {
 
   return Response.json(result[0]);
 };
+
+export const DELETE: APIRoute = async ({ params }) => {
+  const db = drizzle(env.just_do_it);
+
+  const projectId = Number(params.projectId);
+
+  if (!Number.isInteger(projectId)) {
+    return Response.json({ error: "Invalid project ID" }, { status: 400 });
+  }
+
+  await db.delete(projects).where(eq(projects.id, projectId));
+
+  return Response.json({ success: true });
+};

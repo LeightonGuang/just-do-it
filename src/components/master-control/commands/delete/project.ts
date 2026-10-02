@@ -20,7 +20,7 @@ export const deleteProject: SubCommand = {
 
     if (!projectId) throw new Error("Project is required");
 
-    const res = await fetch(`/api/projects?id=${projectId}`, {
+    const res = await fetch(`/api/projects/${projectId}`, {
       method: "DELETE",
     });
 
