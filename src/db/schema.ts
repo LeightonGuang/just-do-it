@@ -50,6 +50,8 @@ export const dos = sqliteTable("dos", {
   title: text("title").notNull(),
   description: text("description"),
 
+  priority: text("priority", { enum: ["low", "mid", "high"] }),
+
   // position: integer("position").notNull(),
 
   start_at: integer("start_at", { mode: "timestamp_ms" }),
