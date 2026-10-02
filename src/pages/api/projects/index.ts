@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
   await db.insert(columns).values([
     {
       project_id: projectId,
-      name: "Todo",
+      name: "Dos",
       position: 0,
       is_done: false,
     },
