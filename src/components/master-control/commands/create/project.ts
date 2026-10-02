@@ -10,6 +10,7 @@ export const createProject: SubCommand = {
       name: "name",
       placeholder: "Project name",
       valueType: "text",
+      greedy: true,
       required: true,
     },
     {

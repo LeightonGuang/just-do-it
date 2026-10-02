@@ -17,6 +17,9 @@ export type ParsedCommand = {
 const caretIn = (caret: number, tok?: Token) =>
   !!tok && caret >= tok.start && caret <= tok.end;
 
+const isValidHexColour = (value: string) =>
+  /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+
 function getFlexPairs(flexParts: CommandPart[]) {
   const pairs: { keyword: KeywordPart; argument: ArgumentPart }[] = [];
   for (let i = 0; i < flexParts.length; i++) {
@@ -120,15 +123,56 @@ export function parseCommand(
       const endTi = stopAt === -1 ? tokens.length : stopAt;
       const slice = tokens.slice(ti, endTi);
 
+      const colourPart = leadingParts.find(
+        (p): p is ArgumentPart =>
+          p.type === "argument" && p.valueType === "colour",
+      );
+
+      if (colourPart && slice.length > 0) {
+        const lastTok = slice[slice.length - 1];
+        if (isValidHexColour(lastTok.text)) {
+          slice.pop();
+          args[colourPart.name] = lastTok.text;
+          if (caretIn(caret, lastTok)) {
+            activePart = colourPart;
+            activeToken = lastTok;
+          }
+        } else if (slice.length > 1 && isValidHexColour(slice[0].text)) {
+          const firstTok = slice.shift()!;
+          args[colourPart.name] = firstTok.text;
+          if (caretIn(caret, firstTok)) {
+            activePart = colourPart;
+            activeToken = firstTok;
+          }
+        }
+      }
+
       args[part.name] = slice.map((t) => t.text).join(" ");
       const hit = slice.find((t) => caretIn(caret, t));
-      if (hit) {
+      if (hit && !activePart) {
         activePart = part;
         activeToken = hit;
       }
       ti = endTi;
       if (!args[part.name] && part.required) complete = false;
       continue;
+    }
+
+    if (part.valueType === "colour") {
+      if (args[part.name]) {
+        continue;
+      }
+      if (isValidHexColour(tok.text)) {
+        args[part.name] = tok.text;
+        if (caretIn(caret, tok)) {
+          activePart = part;
+          activeToken = tok;
+        }
+        ti++;
+        continue;
+      } else if (!part.required) {
+        continue;
+      }
     }
 
     args[part.name] = tok.text;
