@@ -3,7 +3,7 @@ import { eq, like } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
-import { projects } from "../../../db/schema";
+import { columns, projects } from "../../../db/schema";
 
 export const GET: APIRoute = async ({ url }) => {
   const db = drizzle(env.just_do_it);
@@ -46,15 +46,39 @@ export const POST: APIRoute = async ({ request }) => {
   const name = body.name?.trim();
   const colour = body.colour ?? "#000000";
 
-  if (!name)
+  if (!name) {
     return Response.json({ error: "Name is required" }, { status: 400 });
+  }
 
-  await db.insert(projects).values({
-    name,
-    colour,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  const result = await db.batch([
+    db
+      .insert(projects)
+      .values({
+        name,
+        colour,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning({ id: projects.id }),
+  ]);
+
+  const projectId = result[0][0].id;
+
+  // create default columns for the project
+  await db.insert(columns).values([
+    {
+      project_id: projectId,
+      name: "Todo",
+      position: 0,
+      is_done: false,
+    },
+    {
+      project_id: projectId,
+      name: "Done",
+      position: 1,
+      is_done: true,
+    },
+  ]);
 
   return Response.json({ success: true });
 };

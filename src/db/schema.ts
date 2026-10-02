@@ -50,7 +50,7 @@ export const dos = sqliteTable("dos", {
   title: text("title").notNull(),
   description: text("description"),
 
-  position: integer("position").notNull(),
+  // position: integer("position").notNull(),
 
   start_at: integer("start_at", { mode: "timestamp_ms" }),
   end_at: integer("end_at", { mode: "timestamp_ms" }),
