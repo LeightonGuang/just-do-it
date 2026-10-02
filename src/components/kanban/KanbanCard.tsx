@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import type { Do } from "../db/schema";
-import type { ApiDo } from "./master-control/commands/types";
+import type { Do } from "../../db/schema";
+import type { ApiDo } from "../master-control/commands/types";
 
 type Countdown = {
   days: number;
@@ -62,7 +62,7 @@ const KanbanCard = ({
           event.stopPropagation();
           onClick();
         }}
-        className="text-sm font-medium text-text hover:cursor-pointer hover:underline"
+        className="w-fit text-sm font-medium text-text hover:cursor-pointer hover:underline"
       >
         {doItem.title}
       </p>
