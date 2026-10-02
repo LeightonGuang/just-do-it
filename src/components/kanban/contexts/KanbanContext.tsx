@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createContext, useCallback, useContext, useEffect } from "react";
+import { createContext, useCallback, useContext, useEffect } from 'react';
 
 import type { Column, Do, Project } from "../../../db/schema";
 import type { KanbanResponse } from "../../../pages/api/projects/[projectId]";
@@ -12,6 +12,21 @@ type KanbanContextValue = {
   dos: Do[];
 
   fetchKanban: () => Promise<void>;
+
+  // Project editing
+  editingProject: boolean;
+  projectName: string;
+  projectColour: string;
+  savingProject: boolean;
+
+  startEditingProject: () => void;
+  cancelEditingProject: () => void;
+  setProjectName: (name: string) => void;
+  setProjectColour: (colour: string) => void;
+  saveProject: () => Promise<void>;
+
+  editProject: (name: string, colour: string) => Promise<void>;
+
   moveDo: (doId: number, columnId: number) => Promise<void>;
   editColumn: (columnId: number, name: string) => Promise<void>;
   deleteColumn: (columnId: number) => Promise<void>;
@@ -20,7 +35,9 @@ type KanbanContextValue = {
   error: string;
 };
 
-const KanbanContext = createContext<KanbanContextValue | undefined>(undefined);
+const KanbanContext = createContext<KanbanContextValue | undefined>(
+  undefined,
+);
 
 export const KanbanProvider = ({
   children,
@@ -32,8 +49,15 @@ export const KanbanProvider = ({
   const [project, setProject] = useState<Project | null>(null);
   const [columns, setColumns] = useState<Column[]>([]);
   const [dos, setDos] = useState<Do[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Project editing state
+  const [editingProject, setEditingProject] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [projectColour, setProjectColour] = useState("#000000");
+  const [savingProject, setSavingProject] = useState(false);
 
   const fetchKanban = useCallback(async () => {
     if (!projectId) {
@@ -62,11 +86,90 @@ export const KanbanProvider = ({
       setColumns(data.columns);
       setDos(data.dos);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Unknown error");
+      setError(
+        error instanceof Error ? error.message : "Unknown error",
+      );
     } finally {
       setLoading(false);
     }
   }, [projectId]);
+
+  const editProject = useCallback(
+    async (name: string, colour: string) => {
+      if (!projectId) return;
+
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          colour,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as {
+          error?: string;
+        };
+
+        throw new Error(data.error || "Failed to edit project");
+      }
+
+      const data = (await response.json()) as {
+        project: Project;
+      };
+
+      setProject(data.project);
+    },
+    [projectId],
+  );
+
+  const startEditingProject = useCallback(() => {
+    if (!project) return;
+
+    setProjectName(project.name);
+    setProjectColour(project.colour);
+    setEditingProject(true);
+  }, [project]);
+
+  const cancelEditingProject = useCallback(() => {
+    if (savingProject) return;
+
+    if (project) {
+      setProjectName(project.name);
+      setProjectColour(project.colour);
+    }
+
+    setEditingProject(false);
+  }, [project, savingProject]);
+
+  const saveProject = useCallback(async () => {
+    const name = projectName.trim();
+
+    if (!name || savingProject) return;
+
+    setSavingProject(true);
+
+    try {
+      await editProject(name, projectColour);
+
+      // Refresh the complete Kanban state so project,
+      // columns and todos are all guaranteed to be current.
+      await fetchKanban();
+
+      setEditingProject(false);
+    } finally {
+      setSavingProject(false);
+    }
+  }, [
+    projectName,
+    projectColour,
+    savingProject,
+    editProject,
+    fetchKanban,
+  ]);
 
   const moveDo = useCallback(
     async (doId: number, columnId: number) => {
@@ -112,35 +215,38 @@ export const KanbanProvider = ({
     [projectId, dos],
   );
 
-  const editColumn = useCallback(async (columnId: number, name: string) => {
-    const response = await fetch(`/api/columns/${columnId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-      }),
-    });
+  const editColumn = useCallback(
+    async (columnId: number, name: string) => {
+      const response = await fetch(`/api/columns/${columnId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+        }),
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        const data = (await response.json()) as {
+          error?: string;
+        };
+
+        throw new Error(data.error || "Failed to edit column");
+      }
+
       const data = (await response.json()) as {
-        error?: string;
+        column: Column;
       };
 
-      throw new Error(data.error || "Failed to edit column");
-    }
-
-    const data = (await response.json()) as {
-      column: Column;
-    };
-
-    setColumns((currentColumns) =>
-      currentColumns.map((column) =>
-        column.id === columnId ? data.column : column,
-      ),
-    );
-  }, []);
+      setColumns((currentColumns) =>
+        currentColumns.map((column) =>
+          column.id === columnId ? data.column : column,
+        ),
+      );
+    },
+    [],
+  );
 
   const deleteColumn = useCallback(async (columnId: number) => {
     const response = await fetch(`/api/columns/${columnId}`, {
@@ -160,13 +266,22 @@ export const KanbanProvider = ({
     );
 
     setDos((currentDos) =>
-      currentDos.filter((doItem) => doItem.column_id !== columnId),
+      currentDos.filter(
+        (doItem) => doItem.column_id !== columnId,
+      ),
     );
   }, []);
 
   useEffect(() => {
     fetchKanban();
   }, [fetchKanban]);
+
+  // Reset project editing state when switching projects.
+  useEffect(() => {
+    setEditingProject(false);
+    setProjectName("");
+    setProjectColour("#000000");
+  }, [projectId]);
 
   return (
     <KanbanContext.Provider
@@ -178,6 +293,20 @@ export const KanbanProvider = ({
         dos,
 
         fetchKanban,
+
+        editingProject,
+        projectName,
+        projectColour,
+        savingProject,
+
+        startEditingProject,
+        cancelEditingProject,
+        setProjectName,
+        setProjectColour,
+        saveProject,
+
+        editProject,
+
         moveDo,
         editColumn,
         deleteColumn,

@@ -34,15 +34,11 @@ export const useKanbanBoard = () => {
 
     event.dataTransfer.dropEffect = "move";
 
-    if (dragOverColumnId !== columnId) {
-      setDragOverColumnId(columnId);
-    }
+    if (dragOverColumnId !== columnId) setDragOverColumnId(columnId);
   };
 
   const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
-    if (event.currentTarget.contains(event.relatedTarget as Node)) {
-      return;
-    }
+    if (event.currentTarget.contains(event.relatedTarget as Node)) return;
 
     setDragOverColumnId(null);
   };
