@@ -19,7 +19,7 @@ export const columns = sqliteTable(
 
     project_id: integer("project_id")
       .notNull()
-      .references(() => projects.id),
+      .references(() => projects.id, { onDelete: "cascade" }),
 
     name: text("name").notNull(),
     position: integer("position").notNull(),
@@ -40,12 +40,12 @@ export const dos = sqliteTable("dos", {
 
   column_id: integer("column_id")
     .notNull()
-    .references(() => columns.id),
+    .references(() => columns.id, { onDelete: "cascade" }),
 
   // TODO: remove project id in the future, might be redundant
   project_id: integer("project_id")
     .notNull()
-    .references(() => projects.id),
+    .references(() => projects.id, { onDelete: "cascade" }),
 
   title: text("title").notNull(),
   description: text("description"),
