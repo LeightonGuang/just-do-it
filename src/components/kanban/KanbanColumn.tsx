@@ -264,7 +264,7 @@ const KanbanColumn = ({ column, doId }: KanbanColumnProps) => {
             >
               <KanbanCard
                 doItem={doItem}
-                onClick={() => handleEditDo(doItem.id)}
+                onEdit={handleEditDo}
                 className={twMerge(
                   Number(doId) === doItem.id && "border border-green-500",
                 )}

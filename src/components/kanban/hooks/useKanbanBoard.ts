@@ -3,12 +3,20 @@ import { useState } from "react";
 import { useKanban } from "../contexts/KanbanContext";
 
 export const useKanbanBoard = () => {
-  const { dos, moveDo, editColumn, deleteColumn } = useKanban();
+  const {
+    dos,
+    moveDo,
+    editColumn,
+    deleteColumn,
+
+    editingDoId,
+    handleEditDo,
+    handleCloseDoEditor,
+  } = useKanban();
 
   const [draggedDoId, setDraggedDoId] = useState<number | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
   const [movingDoId, setMovingDoId] = useState<number | null>(null);
-  const [editingDoId, setEditingDoId] = useState<number | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
 
   const handleDragStart = (
@@ -34,7 +42,9 @@ export const useKanbanBoard = () => {
 
     event.dataTransfer.dropEffect = "move";
 
-    if (dragOverColumnId !== columnId) setDragOverColumnId(columnId);
+    if (dragOverColumnId !== columnId) {
+      setDragOverColumnId(columnId);
+    }
   };
 
   const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
@@ -73,14 +83,10 @@ export const useKanbanBoard = () => {
     }
   };
 
-  const handleEditDo = (id: number) => {
+  const handleEditDoFromBoard = (id: number) => {
     if (draggedDoId !== null) return;
 
-    setEditingDoId(id);
-  };
-
-  const handleCloseDoEditor = () => {
-    setEditingDoId(null);
+    handleEditDo(id);
   };
 
   const handleEditColumn = (id: number) => {
@@ -129,7 +135,7 @@ export const useKanbanBoard = () => {
     handleDragLeave,
     handleDrop,
 
-    handleEditDo,
+    handleEditDo: handleEditDoFromBoard,
     handleCloseDoEditor,
 
     handleEditColumn,

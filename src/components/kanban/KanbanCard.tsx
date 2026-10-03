@@ -1,3 +1,4 @@
+import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
 import type { Do } from "../../db/schema";
@@ -11,15 +12,13 @@ type Countdown = {
   due: boolean;
 };
 
-const KanbanCard = ({
-  className,
-  doItem,
-  onClick,
-}: {
+type KanbanCardProps = {
   className?: string;
   doItem: ApiDo | Do;
-  onClick: () => void;
-}) => {
+  onEdit: (id: number) => void;
+};
+
+const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
   const [countdown, setCountdown] = useState<Countdown>(() =>
     getCountdown(doItem.end_at),
   );
@@ -45,22 +44,16 @@ const KanbanCard = ({
 
   return (
     <div
-      className={[
-        "border border-border bg-do p-3",
-        "transition-colors",
-        "hover:bg-do-hover",
-        "hover:cursor-grab",
-        "active:cursor-grabbing",
+      className={twMerge(
+        "border border-border bg-do p-3 transition-colors hover:cursor-grab hover:bg-do-hover active:cursor-grabbing",
         className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      )}
     >
       {/* Title */}
       <p
         onClick={(event) => {
           event.stopPropagation();
-          onClick();
+          onEdit(doItem.id);
         }}
         className="w-fit text-sm font-medium text-text hover:cursor-pointer hover:underline"
       >
@@ -132,9 +125,7 @@ const formatDate = (value: string | Date | null | undefined) => {
 
   const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
 
-  if (!hasTime) {
-    return dateString;
-  }
+  if (!hasTime) return dateString;
 
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
@@ -145,9 +136,7 @@ const formatDate = (value: string | Date | null | undefined) => {
 const formatCountdown = (countdown: Countdown) => {
   const parts: string[] = [];
 
-  if (countdown.days > 0) {
-    parts.push(`${countdown.days}d`);
-  }
+  if (countdown.days > 0) parts.push(`${countdown.days}d`);
 
   parts.push(
     `${String(countdown.hours).padStart(2, "0")}:${String(
