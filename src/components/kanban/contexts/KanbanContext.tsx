@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createContext, useCallback, useContext, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect } from "react";
 
 import type { Column, Do, Project } from "../../../db/schema";
 import type { KanbanResponse } from "../../../pages/api/projects/[projectId]";
@@ -13,7 +13,6 @@ type KanbanContextValue = {
 
   fetchKanban: () => Promise<void>;
 
-  // Project editing
   editingProject: boolean;
   projectName: string;
   projectColour: string;
@@ -24,20 +23,19 @@ type KanbanContextValue = {
   setProjectName: (name: string) => void;
   setProjectColour: (colour: string) => void;
   saveProject: () => Promise<void>;
-
   editProject: (name: string, colour: string) => Promise<void>;
 
-  moveDo: (doId: number, columnId: number) => Promise<void>;
   editColumn: (columnId: number, name: string) => Promise<void>;
   deleteColumn: (columnId: number) => Promise<void>;
+  setColumnIsDone: (columnId: number, isDone: boolean) => Promise<void>;
+
+  moveDo: (doId: number, columnId: number) => Promise<void>;
 
   loading: boolean;
   error: string;
 };
 
-const KanbanContext = createContext<KanbanContextValue | undefined>(
-  undefined,
-);
+const KanbanContext = createContext<KanbanContextValue | undefined>(undefined);
 
 export const KanbanProvider = ({
   children,
@@ -76,9 +74,7 @@ export const KanbanProvider = ({
         cache: "no-store",
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch Kanban");
-      }
+      if (!response.ok) throw new Error("Failed to fetch Kanban");
 
       const data: KanbanResponse = await response.json();
 
@@ -86,9 +82,7 @@ export const KanbanProvider = ({
       setColumns(data.columns);
       setDos(data.dos);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Unknown error",
-      );
+      setError(error instanceof Error ? error.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -163,13 +157,7 @@ export const KanbanProvider = ({
     } finally {
       setSavingProject(false);
     }
-  }, [
-    projectName,
-    projectColour,
-    savingProject,
-    editProject,
-    fetchKanban,
-  ]);
+  }, [projectName, projectColour, savingProject, editProject, fetchKanban]);
 
   const moveDo = useCallback(
     async (doId: number, columnId: number) => {
@@ -215,38 +203,35 @@ export const KanbanProvider = ({
     [projectId, dos],
   );
 
-  const editColumn = useCallback(
-    async (columnId: number, name: string) => {
-      const response = await fetch(`/api/columns/${columnId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-        }),
-      });
+  const editColumn = useCallback(async (columnId: number, name: string) => {
+    const response = await fetch(`/api/columns/${columnId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+      }),
+    });
 
-      if (!response.ok) {
-        const data = (await response.json()) as {
-          error?: string;
-        };
-
-        throw new Error(data.error || "Failed to edit column");
-      }
-
+    if (!response.ok) {
       const data = (await response.json()) as {
-        column: Column;
+        error?: string;
       };
 
-      setColumns((currentColumns) =>
-        currentColumns.map((column) =>
-          column.id === columnId ? data.column : column,
-        ),
-      );
-    },
-    [],
-  );
+      throw new Error(data.error || "Failed to edit column");
+    }
+
+    const data = (await response.json()) as {
+      column: Column;
+    };
+
+    setColumns((currentColumns) =>
+      currentColumns.map((column) =>
+        column.id === columnId ? data.column : column,
+      ),
+    );
+  }, []);
 
   const deleteColumn = useCallback(async (columnId: number) => {
     const response = await fetch(`/api/columns/${columnId}`, {
@@ -266,11 +251,49 @@ export const KanbanProvider = ({
     );
 
     setDos((currentDos) =>
-      currentDos.filter(
-        (doItem) => doItem.column_id !== columnId,
-      ),
+      currentDos.filter((doItem) => doItem.column_id !== columnId),
     );
   }, []);
+
+  const setColumnIsDone = useCallback(
+    async (columnId: number, isDone: boolean) => {
+      const response = await fetch(`/api/columns/${columnId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          isDone,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as {
+          error?: string;
+        };
+
+        throw new Error(data.error || "Failed to update column");
+      }
+
+      const data = (await response.json()) as {
+        column: Column;
+      };
+
+      // If this column is being made the done column,
+      // the API has automatically unset the previous one.
+      setColumns((currentColumns) =>
+        currentColumns.map((column) =>
+          column.project_id === data.column.project_id
+            ? {
+                ...column,
+                is_done: column.id === data.column.id ? isDone : false,
+              }
+            : column,
+        ),
+      );
+    },
+    [],
+  );
 
   useEffect(() => {
     fetchKanban();
@@ -308,8 +331,10 @@ export const KanbanProvider = ({
         editProject,
 
         moveDo,
+
         editColumn,
         deleteColumn,
+        setColumnIsDone,
 
         loading,
         error,

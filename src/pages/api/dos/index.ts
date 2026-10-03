@@ -29,6 +29,8 @@ export const GET: APIRoute = async ({ url }) => {
       })
       .from(dos)
       .innerJoin(projects, eq(dos.project_id, projects.id))
+      .innerJoin(columns, eq(dos.column_id, columns.id))
+      .where(eq(columns.is_done, false))
       .orderBy(asc(isNull(dos.end_at)), asc(dos.end_at))
       .limit(5);
 
@@ -243,25 +245,13 @@ export const PATCH: APIRoute = async ({ request }) => {
     updateData.title = title;
   }
 
-  if (body.description !== undefined) {
+  if (body.description !== undefined)
     updateData.description = body.description?.trim() || null;
-  }
 
-  if (body.column_id !== undefined) {
-    updateData.column_id = body.column_id;
-  }
-
-  if (body.project_id !== undefined) {
-    updateData.project_id = body.project_id;
-  }
-
-  if (body.start_at !== undefined) {
-    updateData.start_at = startAt;
-  }
-
-  if (body.end_at !== undefined) {
-    updateData.end_at = endAt;
-  }
+  if (body.column_id !== undefined) updateData.column_id = body.column_id;
+  if (body.project_id !== undefined) updateData.project_id = body.project_id;
+  if (body.start_at !== undefined) updateData.start_at = startAt;
+  if (body.end_at !== undefined) updateData.end_at = endAt;
 
   await db.update(dos).set(updateData).where(eq(dos.id, body.id));
 
