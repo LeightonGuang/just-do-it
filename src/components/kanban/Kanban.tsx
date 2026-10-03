@@ -14,47 +14,25 @@ const Kanban = ({
   className?: string;
 }) => {
   const {
-    loading,
     error,
     project,
     columns,
-    dos,
+    loading,
 
-    editingProject,
     projectName,
     projectColour,
     savingProject,
+    editingProject,
 
-    startEditingProject,
-    cancelEditingProject,
+    saveProject,
     setProjectName,
     setProjectColour,
-    saveProject,
+    startEditingProject,
+    cancelEditingProject,
   } = useKanban();
 
-  const {
-    draggedDoId,
-    dragOverColumnId,
-    movingDoId,
-
-    editingDoId,
-    editingColumnId,
-
-    handleDragStart,
-    handleDragEnd,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
-
-    handleEditDo,
-    handleCloseDoEditor,
-
-    handleEditColumn,
-    handleCloseColumnEditor,
-    handleSaveColumn,
-
-    handleDeleteColumn,
-  } = useKanbanBoard();
+  const { editingDoId, editingColumnId, handleCloseDoEditor } =
+    useKanbanBoard();
 
   if (loading) {
     return (
@@ -194,26 +172,7 @@ const Kanban = ({
         {/* Kanban columns */}
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
           {columns.map((column) => (
-            <KanbanColumn
-              dos={dos}
-              doId={doId}
-              key={column.id}
-              column={column}
-              onDrop={handleDrop}
-              movingDoId={movingDoId}
-              onEditDo={handleEditDo}
-              draggedDoId={draggedDoId}
-              onDragEnd={handleDragEnd}
-              onDragOver={handleDragOver}
-              onDragStart={handleDragStart}
-              onDragLeave={handleDragLeave}
-              onEditColumn={handleEditColumn}
-              onSaveColumn={handleSaveColumn}
-              editingColumnId={editingColumnId}
-              dragOverColumnId={dragOverColumnId}
-              onDeleteColumn={handleDeleteColumn}
-              onCloseColumnEditor={handleCloseColumnEditor}
-            />
+            <KanbanColumn doId={doId} key={column.id} column={column} />
           ))}
         </div>
       </div>

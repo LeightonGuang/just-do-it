@@ -1,73 +1,43 @@
 import { twMerge } from "tailwind-merge";
 import { useEffect, useRef, useState } from "react";
-import { Check, MoreHorizontal, Pencil, Trash, X } from 'lucide-react';
+import { Check, MoreHorizontal, Pencil, Trash, X } from "lucide-react";
 
-import type { Column, Do } from "../../db/schema";
+import type { Column } from "../../db/schema";
 
 import KanbanCard from "./KanbanCard";
+import { useKanban } from "./contexts/KanbanContext";
+import { useKanbanBoard } from "./hooks/useKanbanBoard";
 
 type KanbanColumnProps = {
   column: Column;
-  dos: Do[];
   doId: string | null;
-
-  draggedDoId: number | null;
-  dragOverColumnId: number | null;
-  movingDoId: number | null;
-
-  editingColumnId: number | null;
-
-  onDragStart: (
-    event: React.DragEvent<HTMLDivElement>,
-    id: number,
-  ) => void;
-
-  onDragEnd: () => void;
-
-  onDragOver: (
-    event: React.DragEvent<HTMLElement>,
-    columnId: number,
-  ) => void;
-
-  onDragLeave: (
-    event: React.DragEvent<HTMLElement>,
-  ) => void;
-
-  onDrop: (
-    event: React.DragEvent<HTMLElement>,
-    columnId: number,
-  ) => void;
-
-  onEditDo: (id: number) => void;
-  onEditColumn: (id: number) => void;
-  onSaveColumn: (id: number, name: string) => Promise<void>;
-  onCloseColumnEditor: () => void;
-  onDeleteColumn: (id: number) => void;
 };
 
-const KanbanColumn = ({
-  column,
-  dos,
-  doId,
+const KanbanColumn = ({ column, doId }: KanbanColumnProps) => {
+  const { dos } = useKanban();
 
-  draggedDoId,
-  dragOverColumnId,
-  movingDoId,
+  const {
+    draggedDoId,
+    dragOverColumnId,
+    movingDoId,
 
-  editingColumnId,
+    editingColumnId,
 
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDragLeave,
-  onDrop,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
 
-  onEditDo,
-  onEditColumn,
-  onSaveColumn,
-  onCloseColumnEditor,
-  onDeleteColumn,
-}: KanbanColumnProps) => {
+    handleEditDo,
+
+    handleEditColumn,
+    handleCloseColumnEditor,
+    handleSaveColumn,
+
+    handleDeleteColumn,
+  } = useKanbanBoard();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [name, setName] = useState(column.name);
   const [saving, setSaving] = useState(false);
@@ -77,9 +47,7 @@ const KanbanColumn = ({
 
   const isEditing = editingColumnId === column.id;
 
-  const columnDos = dos.filter(
-    (doItem) => doItem.column_id === column.id,
-  );
+  const columnDos = dos.filter((doItem) => doItem.column_id === column.id);
 
   const isDragOver = dragOverColumnId === column.id;
 
@@ -87,10 +55,7 @@ const KanbanColumn = ({
     if (!menuOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
       }
     };
@@ -98,10 +63,7 @@ const KanbanColumn = ({
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside,
-      );
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [menuOpen]);
 
@@ -119,18 +81,18 @@ const KanbanColumn = ({
 
   const handleEdit = () => {
     setMenuOpen(false);
-    onEditColumn(column.id);
+    handleEditColumn(column.id);
   };
 
   const handleDelete = async () => {
     setMenuOpen(false);
 
-    await onDeleteColumn(column.id);
+    await handleDeleteColumn(column.id);
   };
 
   const handleCancelEdit = () => {
     setName(column.name);
-    onCloseColumnEditor();
+    handleCloseColumnEditor();
   };
 
   const handleSave = async () => {
@@ -139,22 +101,20 @@ const KanbanColumn = ({
     if (!trimmedName || saving) return;
 
     if (trimmedName === column.name) {
-      onCloseColumnEditor();
+      handleCloseColumnEditor();
       return;
     }
 
     try {
       setSaving(true);
 
-      await onSaveColumn(column.id, trimmedName);
+      await handleSaveColumn(column.id, trimmedName);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-  ) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
       void handleSave();
@@ -168,13 +128,12 @@ const KanbanColumn = ({
 
   return (
     <article
-      onDragLeave={onDragLeave}
-      onDrop={(event) => onDrop(event, column.id)}
-      onDragOver={(event) => onDragOver(event, column.id)}
+      onDragLeave={handleDragLeave}
+      onDrop={(event) => handleDrop(event, column.id)}
+      onDragOver={(event) => handleDragOver(event, column.id)}
       className={twMerge(
         "min-w-0 border border-border bg-card p-2 transition-colors",
-        isDragOver &&
-          "border-green-500 bg-green-500/5",
+        isDragOver && "border-green-500 bg-green-500/5",
       )}
     >
       <div className="flex items-center justify-between gap-2">
@@ -186,9 +145,7 @@ const KanbanColumn = ({
               ref={inputRef}
               disabled={saving}
               onKeyDown={handleKeyDown}
-              onChange={(event) =>
-                setName(event.target.value)
-              }
+              onChange={(event) => setName(event.target.value)}
               className="min-w-0 flex-1 border border-border bg-background px-2 py-1 text-sm font-semibold text-text outline-none focus:border-green-500"
             />
 
@@ -220,23 +177,17 @@ const KanbanColumn = ({
 
         <div className="flex shrink-0 items-center gap-1">
           <span className="text-xs text-text-muted tabular-nums">
-            {columnDos.length}{" "}
-            {columnDos.length === 1 ? "do" : "dos"}
+            {columnDos.length} {columnDos.length === 1 ? "do" : "dos"}
           </span>
 
           {!isEditing && (
-            <div
-              ref={menuRef}
-              className="relative"
-            >
+            <div ref={menuRef} className="relative">
               <button
                 type="button"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 aria-label={`Options for ${column.name}`}
-                onClick={() =>
-                  setMenuOpen((open) => !open)
-                }
+                onClick={() => setMenuOpen((open) => !open)}
                 className="flex size-7 items-center justify-center text-text-muted transition-colors hover:bg-background hover:text-text"
               >
                 <MoreHorizontal className="size-4" />
@@ -280,35 +231,27 @@ const KanbanColumn = ({
         )}
       >
         {columnDos.map((doItem) => {
-          const isDragging =
-            draggedDoId === doItem.id;
+          const isDragging = draggedDoId === doItem.id;
 
-          const isMoving =
-            movingDoId === doItem.id;
+          const isMoving = movingDoId === doItem.id;
 
           return (
             <div
               key={doItem.id}
-              onDragEnd={onDragEnd}
+              onDragEnd={handleDragEnd}
               draggable={!isMoving && !isEditing}
-              onDragStart={(event) =>
-                onDragStart(event, doItem.id)
-              }
+              onDragStart={(event) => handleDragStart(event, doItem.id)}
               className={twMerge(
                 "cursor-grab transition-opacity active:cursor-grabbing",
                 isDragging && "opacity-40",
-                isMoving &&
-                  "pointer-events-none opacity-50",
+                isMoving && "pointer-events-none opacity-50",
               )}
             >
               <KanbanCard
                 doItem={doItem}
-                onClick={() =>
-                  onEditDo(doItem.id)
-                }
+                onClick={() => handleEditDo(doItem.id)}
                 className={twMerge(
-                  Number(doId) === doItem.id &&
-                    "border border-green-500",
+                  Number(doId) === doItem.id && "border border-green-500",
                 )}
               />
             </div>
@@ -324,9 +267,7 @@ const KanbanColumn = ({
                 "border border-dashed border-green-500 text-green-500",
             )}
           >
-            {isDragOver
-              ? "Drop here"
-              : "No cards"}
+            {isDragOver ? "Drop here" : "No cards"}
           </div>
         )}
       </div>
