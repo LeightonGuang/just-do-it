@@ -207,7 +207,7 @@ const KanbanColumn = ({ column, doId }: KanbanColumnProps) => {
                   type="button"
                   role="menuitem"
                   onClick={handleEdit}
-                  className="flex w-full items-center gap-1 px-2 py-1.5 text-left text-xs text-text transition-colors hover:bg-background"
+                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-text transition-colors hover:bg-background"
                 >
                   <Pencil className="size-3" />
                   Edit
@@ -218,7 +218,7 @@ const KanbanColumn = ({ column, doId }: KanbanColumnProps) => {
                   role="menuitem"
                   disabled={column.is_done}
                   onClick={() => setColumnIsDone(column.id, true)}
-                  className="flex w-full items-center gap-1 px-2 py-1.5 text-left text-xs whitespace-nowrap text-text transition-colors hover:bg-background disabled:cursor-not-allowed! disabled:text-text-muted! hover:disabled:bg-transparent"
+                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs whitespace-nowrap text-text transition-colors hover:bg-background disabled:cursor-not-allowed! disabled:text-text-muted! hover:disabled:bg-transparent"
                 >
                   <Flag className="size-3" />
                   Set column as done
@@ -228,7 +228,7 @@ const KanbanColumn = ({ column, doId }: KanbanColumnProps) => {
                   type="button"
                   role="menuitem"
                   onClick={handleDelete}
-                  className="flex w-full items-center gap-1 px-2 py-1.5 text-left text-xs text-danger transition-colors hover:bg-danger-background"
+                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-danger transition-colors hover:bg-danger-background"
                 >
                   <Trash className="size-3" />
                   Delete
