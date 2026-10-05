@@ -38,6 +38,23 @@ export const createDo: SubCommand = {
       required: false,
       greedy: true,
     },
+    // {
+    //   type: "keyword",
+    //   value: "priority",
+    //   optional: true,
+    // },
+    // {
+    //   type: "argument",
+    //   name: "priority",
+    //   placeholder: "Priority",
+    //   valueType: "text",
+    //   required: false,
+    //   options: [
+    //     { value: "low", label: "Low" },
+    //     { value: "mid", label: "Mid" },
+    //     { value: "high", label: "High" },
+    //   ],
+    // },
     {
       type: "keyword",
       value: "start",
