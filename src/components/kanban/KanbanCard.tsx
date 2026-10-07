@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
-import type { Do } from "../../db/schema";
+import Tag from "../tags/Tag";
 import type { ApiDo } from "../master-control/commands/types";
 
 type Countdown = {
@@ -14,7 +14,7 @@ type Countdown = {
 
 type KanbanCardProps = {
   className?: string;
-  doItem: ApiDo | Do;
+  doItem: ApiDo;
   onEdit: (id: number) => void;
 };
 
@@ -49,7 +49,6 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
         className,
       )}
     >
-      {/* Title */}
       <p
         onClick={(event) => {
           event.stopPropagation();
@@ -60,14 +59,24 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
         {doItem.title}
       </p>
 
-      {/* Description */}
       {doItem.description && (
         <p className="mt-1 line-clamp-3 text-xs leading-snug text-text-muted">
           {doItem.description}
         </p>
       )}
 
-      {/* Dates */}
+      {doItem.tags?.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {doItem.tags.map((tag) => (
+            <Tag
+              name={tag.name}
+              colour={tag.colour}
+              key={`${tag.name}-${tag.id}`}
+            />
+          ))}
+        </div>
+      )}
+
       {(hasStart || hasEnd) && (
         <div className="mt-3 border-t border-border pt-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -88,7 +97,6 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
             )}
           </div>
 
-          {/* Countdown */}
           {hasEnd && (
             <div
               className={`mt-1.5 text-right text-xs tabular-nums ${
@@ -118,7 +126,9 @@ const formatDate = (value: string | Date | null | undefined) => {
   }
 
   const day = String(date.getDate()).padStart(2, "0");
+
   const month = String(date.getMonth() + 1).padStart(2, "0");
+
   const year = String(date.getFullYear()).slice(-2);
 
   const dateString = `${day}/${month}/${year}`;
@@ -128,6 +138,7 @@ const formatDate = (value: string | Date | null | undefined) => {
   if (!hasTime) return dateString;
 
   const hours = String(date.getHours()).padStart(2, "0");
+
   const minutes = String(date.getMinutes()).padStart(2, "0");
 
   return `${dateString} ${hours}:${minutes}`;
@@ -136,7 +147,9 @@ const formatDate = (value: string | Date | null | undefined) => {
 const formatCountdown = (countdown: Countdown) => {
   const parts: string[] = [];
 
-  if (countdown.days > 0) parts.push(`${countdown.days}d`);
+  if (countdown.days > 0) {
+    parts.push(`${countdown.days}d`);
+  }
 
   parts.push(
     `${String(countdown.hours).padStart(2, "0")}:${String(

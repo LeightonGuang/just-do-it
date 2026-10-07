@@ -1,24 +1,54 @@
 import { useState } from "react";
 import { createContext, useCallback, useContext, useEffect } from "react";
 
-import type { Column, Do, Project } from "../../../db/schema";
-import type { KanbanResponse } from "../../../pages/api/projects/[projectId]";
+import type { Column, Project } from "../../../db/schema";
+
+export type KanbanTag = {
+  id: number;
+  name: string;
+  colour: string;
+};
+
+export type KanbanDo = {
+  id: number;
+  title: string;
+  description: string | null;
+  priority: "low" | "mid" | "high" | null;
+
+  project_id: number;
+  project_name: string;
+  project_colour: string;
+
+  column_id: number;
+
+  start_at: string | null;
+  end_at: string | null;
+  created_at: string;
+  updated_at: string;
+
+  tags: KanbanTag[];
+};
+
+export type KanbanResponse = {
+  project: Project;
+  columns: Column[];
+  dos: KanbanDo[];
+};
 
 type KanbanContextValue = {
   projectId: string | null;
 
   project: Project | null;
   columns: Column[];
-  dos: Do[];
+  dos: KanbanDo[];
+  tags: KanbanTag[];
 
   fetchKanban: () => Promise<void>;
 
-  // Task editor
   editingDoId: number | null;
   handleEditDo: (id: number) => void;
   handleCloseDoEditor: () => void;
 
-  // Project editing
   editingProject: boolean;
   projectName: string;
   projectColour: string;
@@ -52,12 +82,12 @@ export const KanbanProvider = ({
 }) => {
   const [project, setProject] = useState<Project | null>(null);
   const [columns, setColumns] = useState<Column[]>([]);
-  const [dos, setDos] = useState<Do[]>([]);
+  const [dos, setDos] = useState<KanbanDo[]>([]);
+  const [tags, setTags] = useState<KanbanTag[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Task editor state
   const [editingDoId, setEditingDoId] = useState<number | null>(null);
 
   const handleEditDo = useCallback((id: number) => {
@@ -68,7 +98,6 @@ export const KanbanProvider = ({
     setEditingDoId(null);
   }, []);
 
-  // Project editing state
   const [editingProject, setEditingProject] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [projectColour, setProjectColour] = useState("#000000");
@@ -79,6 +108,7 @@ export const KanbanProvider = ({
       setProject(null);
       setColumns([]);
       setDos([]);
+      setTags([]);
       setLoading(false);
       return;
     }
@@ -87,19 +117,38 @@ export const KanbanProvider = ({
       setLoading(true);
       setError("");
 
-      const response = await fetch(`/api/projects/${projectId}`, {
-        cache: "no-store",
-      });
+      const [kanbanResponse, tagsResponse] = await Promise.all([
+        fetch(`/api/projects/${projectId}`, {
+          cache: "no-store",
+        }),
+        fetch("/api/tags", {
+          cache: "no-store",
+        }),
+      ]);
 
-      if (!response.ok) {
+      if (!kanbanResponse.ok) {
         throw new Error("Failed to fetch Kanban");
       }
 
-      const data: KanbanResponse = await response.json();
+      if (!tagsResponse.ok) {
+        throw new Error("Failed to fetch tags");
+      }
+
+      const data = (await kanbanResponse.json()) as KanbanResponse;
+      const tagData = (await tagsResponse.json()) as KanbanTag[];
 
       setProject(data.project);
       setColumns(data.columns);
-      setDos(data.dos);
+
+      // Make sure every task always has a tags array.
+      setDos(
+        data.dos.map((doItem) => ({
+          ...doItem,
+          tags: Array.isArray(doItem.tags) ? doItem.tags : [],
+        })),
+      );
+
+      setTags(tagData);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Unknown error");
     } finally {
@@ -167,9 +216,7 @@ export const KanbanProvider = ({
 
     try {
       await editProject(name, projectColour);
-
       await fetchKanban();
-
       setEditingProject(false);
     } finally {
       setSavingProject(false);
@@ -342,6 +389,7 @@ export const KanbanProvider = ({
         project,
         columns,
         dos,
+        tags,
 
         fetchKanban,
 

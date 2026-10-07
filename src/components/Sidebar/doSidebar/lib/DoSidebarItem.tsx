@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { getCountdown, type Countdown } from "./getCountdown";
 
+import Tag from "../../../tags/Tag";
 import type { SidebarDo } from "../../contexts/SidebarContext";
 
 export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
@@ -51,9 +52,13 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
             </p>
           </div>
 
-          <div className="flex w-max bg-black/10 px-0.5 py-px text-[0.625rem] leading-none">
-            low
-          </div>
+          {doItem.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {doItem.tags.map((tag) => (
+                <Tag name={tag.name} colour={tag.colour} key={tag.id} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

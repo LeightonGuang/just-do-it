@@ -3,7 +3,8 @@ import { ArrowRight } from "lucide-react";
 
 import { useSidebar } from "./SidebarContext";
 
-import type { Tag } from "../../../db/schema";
+import Tag from "../../tags/Tag";
+import type { Tag as DbTag } from "../../../db/schema";
 
 const TagsSidebar = ({ className }: { className?: string }) => {
   const { sidebarTags, loading } = useSidebar();
@@ -26,39 +27,28 @@ const TagsSidebar = ({ className }: { className?: string }) => {
         </a>
       </div>
 
-      {loading ? (
-        <>
-          <TagSidebarSkeleton />
-          <TagSidebarSkeleton />
-          <TagSidebarSkeleton />
-          <TagSidebarSkeleton />
-          <TagSidebarSkeleton />
-        </>
-      ) : (
-        sidebarTags.map((tag) => (
-          <TagSidebarItem tag={tag} key={`${tag.name}-${tag.id}`} />
-        ))
-      )}
+      <div className="flex gap-2">
+        {loading ? (
+          <>
+            <TagSidebarSkeleton />
+            <TagSidebarSkeleton />
+            <TagSidebarSkeleton />
+            <TagSidebarSkeleton />
+            <TagSidebarSkeleton />
+          </>
+        ) : (
+          sidebarTags.map((tag) => (
+            <a href={`/?tag_id=${tag.id}`} key={`${tag.name}-${tag.id}`}>
+              <Tag name={tag.name} colour={tag.colour} />
+            </a>
+          ))
+        )}
+      </div>
     </div>
   );
 };
 
 export default TagsSidebar;
-
-const TagSidebarItem = ({ tag }: { tag: Tag }) => {
-  return (
-    <a
-      href={`/?tag_id=${tag.id}`}
-      className="flex w-max items-center gap-2 text-xs hover:brightness-95"
-      style={{
-        backgroundColor: `color-mix(in srgb, ${tag.colour} 15%, transparent)`,
-        color: `color-mix(in srgb, ${tag.colour} 70%, black)`,
-      }}
-    >
-      <p>{tag.name}</p>
-    </a>
-  );
-};
 
 const TagSidebarSkeleton = () => {
   return (

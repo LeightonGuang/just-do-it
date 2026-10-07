@@ -17,18 +17,20 @@ type FormValues = {
   title: string;
   description: string;
   columnId: string;
+  tagId: string;
   startAt: string;
   endAt: string;
 };
 
 const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
-  const { dos, columns, projectId, fetchKanban } = useKanban();
+  const { dos, columns, tags, projectId, fetchKanban } = useKanban();
 
   const doItem = dos.find((item) => item.id === doId);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [columnId, setColumnId] = useState("");
+  const [tagId, setTagId] = useState("");
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
 
@@ -36,6 +38,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
     title: "",
     description: "",
     columnId: "",
+    tagId: "",
     startAt: "",
     endAt: "",
   });
@@ -52,6 +55,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
         title: "",
         description: "",
         columnId: "",
+        tagId: "",
         startAt: "",
         endAt: "",
       };
@@ -59,6 +63,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       setTitle("");
       setDescription("");
       setColumnId("");
+      setTagId("");
       setStartAt("");
       setEndAt("");
       setInitialValues(emptyValues);
@@ -67,10 +72,14 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       return;
     }
 
+    const existingTagId =
+      doItem.tags?.length > 0 ? String(doItem.tags[0].id) : "";
+
     const values: FormValues = {
       title: doItem.title ?? "",
       description: doItem.description ?? "",
       columnId: String(doItem.column_id ?? ""),
+      tagId: existingTagId,
       startAt: toDatetimeLocal(doItem.start_at),
       endAt: toDatetimeLocal(doItem.end_at),
     };
@@ -78,6 +87,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
     setTitle(values.title);
     setDescription(values.description);
     setColumnId(values.columnId);
+    setTagId(values.tagId);
     setStartAt(values.startAt);
     setEndAt(values.endAt);
     setInitialValues(values);
@@ -116,6 +126,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
     title,
     description,
     columnId,
+    tagId,
     startAt,
     endAt,
   };
@@ -124,6 +135,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
     currentValues.title !== initialValues.title ||
     currentValues.description !== initialValues.description ||
     currentValues.columnId !== initialValues.columnId ||
+    currentValues.tagId !== initialValues.tagId ||
     currentValues.startAt !== initialValues.startAt ||
     currentValues.endAt !== initialValues.endAt;
 
@@ -157,18 +169,23 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       setSaving(true);
       setError("");
 
-      const response = await fetch("/api/dos", {
+      const response = await fetch(`/api/dos/${doItem.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: doItem.id,
           title: trimmedTitle,
           description: description.trim() || null,
+
           column_id: Number(columnId),
+
           project_id: projectId ? Number(projectId) : undefined,
+
+          tag_id: tagId ? Number(tagId) : null,
+
           start_at: startAt ? formatDateForApi(startAt) : null,
+
           end_at: endAt ? formatDateForApi(endAt) : null,
         }),
       });
@@ -182,6 +199,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       }
 
       await fetchKanban();
+
       onClose();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to save task");
@@ -216,6 +234,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       }
 
       await fetchKanban();
+
       onClose();
     } catch (error) {
       setError(
@@ -343,6 +362,30 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
                 </select>
               </div>
 
+              <div>
+                <label
+                  htmlFor="kanban-tag"
+                  className="mb-1.5 block text-xs font-medium text-text-muted"
+                >
+                  Tag
+                </label>
+
+                <select
+                  value={tagId}
+                  id="kanban-tag"
+                  onChange={(event) => setTagId(event.target.value)}
+                  className="w-full border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted"
+                >
+                  <option value="">No tag</option>
+
+                  {tags.map((tag) => (
+                    <option key={tag.id} value={tag.id}>
+                      {tag.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <DateTimeField
                 label="Start"
                 value={startAt}
@@ -383,7 +426,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
                 <button
                   type="submit"
                   disabled={!hasChanges || saving || deleting}
-                  className="bg-text px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed! disabled:opacity-40"
+                  className="bg-text px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {saving ? "Saving..." : "Save changes"}
                 </button>
