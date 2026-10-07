@@ -1,10 +1,12 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
-import { eq, like, and, asc, isNull } from "drizzle-orm";
+import { eq, like, and, asc, isNull, inArray } from "drizzle-orm";
 
 import { parseDate } from "../../../../lib/date";
-import { dos, columns, projects } from "../../../db/schema";
+import { dos, columns, projects, doTags, tags } from "../../../db/schema";
+
+import type { Tag } from "../../../db/schema";
 
 export const GET: APIRoute = async ({ url }) => {
   const db = drizzle(env.just_do_it);
@@ -34,7 +36,42 @@ export const GET: APIRoute = async ({ url }) => {
       .orderBy(asc(isNull(dos.end_at)), asc(dos.end_at))
       .limit(5);
 
-    return Response.json(sidebarDos);
+    if (sidebarDos.length === 0) return Response.json([]);
+
+    const doIds = sidebarDos.map((item) => item.id);
+
+    const sidebarTags = await db
+      .select({
+        do_id: doTags.do_id,
+        id: tags.id,
+        name: tags.name,
+        colour: tags.colour,
+      })
+      .from(doTags)
+      .innerJoin(tags, eq(doTags.tag_id, tags.id))
+      .where(inArray(doTags.do_id, doIds));
+
+    const tagsByDo = new Map<number, Tag[]>();
+
+    for (const tag of sidebarTags) {
+      const existing = tagsByDo.get(tag.do_id) ?? [];
+
+      existing.push({
+        id: tag.id,
+        name: tag.name,
+        colour: tag.colour,
+        created_at: new Date(), // see note below
+      });
+
+      tagsByDo.set(tag.do_id, existing);
+    }
+
+    const result = sidebarDos.map((todo) => ({
+      ...todo,
+      tags: tagsByDo.get(todo.id) ?? [],
+    }));
+
+    return Response.json(result);
   }
 
   const conditions = [];
