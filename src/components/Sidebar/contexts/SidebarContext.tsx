@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { createContext, useCallback, useContext, useEffect } from "react";
 
-import type { Do, Project, Tag } from "../../../db/schema";
+import type { Do, Project } from "../../../db/schema";
+
+export type SidebarTag = {
+  id: number;
+  name: string;
+  colour: string;
+};
 
 export type SidebarDo = Omit<
   Do,
@@ -11,14 +17,17 @@ export type SidebarDo = Omit<
   end_at: string | null;
   created_at: string;
   updated_at: string;
+
+  project_name: string;
   project_colour: string;
-  tags: Tag[];
+
+  tags: SidebarTag[];
 };
 
 type SidebarContextValue = {
   sidebarProjects: Project[];
   sidebarDos: SidebarDo[];
-  sidebarTags: Tag[];
+  sidebarTags: SidebarTag[];
 
   loading: boolean;
   error: string;
@@ -39,7 +48,7 @@ export const SidebarProvider = ({
 }) => {
   const [sidebarProjects, setSidebarProjects] = useState<Project[]>([]);
   const [sidebarDos, setSidebarDos] = useState<SidebarDo[]>([]);
-  const [sidebarTags, setSidebarTags] = useState<Tag[]>([]);
+  const [sidebarTags, setSidebarTags] = useState<SidebarTag[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -69,7 +78,7 @@ export const SidebarProvider = ({
 
     if (!res.ok) throw new Error("Failed to fetch tags");
 
-    const data: Tag[] = await res.json();
+    const data: SidebarTag[] = await res.json();
 
     setSidebarTags(data);
   }, []);

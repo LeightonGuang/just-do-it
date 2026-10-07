@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { useState, useRef, useEffect } from "react";
 
-import DoSidebar from "./DoSidebar";
+import DoSidebar from "./doSidebar/DoSidebar";
 import ProjectsSidebar from "./ProjectsSidebar";
 import TagsSidebar from "./contexts/TagsSidebar";
 
