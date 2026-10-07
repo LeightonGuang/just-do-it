@@ -2,9 +2,9 @@ import { twMerge } from "tailwind-merge";
 import { Check, Pencil, Plus, X } from "lucide-react";
 
 import KanbanColumn from "./KanbanColumn";
-import KanbanEditDrawer from "./KanbanEditDrawer";
 import { useKanban } from "./contexts/KanbanContext";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
+import KanbanEditDrawer from "./kanbanEditDrawer/KanbanEditDrawer";
 
 const Kanban = ({
   doId,

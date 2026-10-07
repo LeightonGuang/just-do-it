@@ -3,18 +3,14 @@ import { useEffect, useState } from "react";
 
 import { X } from "lucide-react";
 
-import { useKanban } from "./contexts/KanbanContext";
+import { DateTimeField } from "./libs/DateTimeField";
+import { useKanban } from "../contexts/KanbanContext";
+import { toDatetimeLocal } from "./libs/toDatetimeLocal";
+import { formatDateForApi } from "./libs/formatDateForApi";
 
 type KanbanEditDrawerProps = {
   doId: number | null;
   onClose: () => void;
-};
-
-type DateTimeFieldProps = {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
 };
 
 type FormValues = {
@@ -398,70 +394,6 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       </aside>
     </>
   );
-};
-
-const DateTimeField = ({ id, label, value, onChange }: DateTimeFieldProps) => {
-  return (
-    <div>
-      <label
-        htmlFor={id}
-        className="mb-1.5 block text-xs font-medium text-text-muted"
-      >
-        {label}
-      </label>
-
-      <div className="flex gap-2">
-        <input
-          id={id}
-          value={value}
-          type="datetime-local"
-          onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted"
-        />
-
-        <button
-          type="button"
-          disabled={!value}
-          onClick={() => onChange("")}
-          className="shrink-0 border border-danger-border px-3 text-xs text-danger transition-colors hover:bg-danger hover:text-white disabled:cursor-not-allowed disabled:text-text disabled:opacity-40 disabled:hover:bg-transparent"
-        >
-          Clear
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const toDatetimeLocal = (value: string | Date | null | undefined) => {
-  if (!value) return "";
-
-  const date = typeof value === "string" ? new Date(value) : value;
-
-  if (Number.isNaN(date.getTime())) return "";
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
-const formatDateForApi = (value: string) => {
-  const [datePart, timePart] = value.split("T");
-
-  if (!datePart) return "";
-
-  const [year, month, day] = datePart.split("-");
-
-  if (!year || !month || !day) return "";
-
-  if (!timePart) {
-    return `${Number(day)}-${Number(month)}-${Number(year)}`;
-  }
-
-  return `${Number(day)}-${Number(month)}-${Number(year)} ${timePart}`;
 };
 
 export default KanbanEditDrawer;
