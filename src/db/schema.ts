@@ -62,3 +62,36 @@ export const dos = sqliteTable("dos", {
 });
 
 export type Do = typeof dos.$inferSelect;
+
+export const tags = sqliteTable(
+  "tags",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+
+    name: text("name").notNull(),
+
+    // Optional: useful if tags have colours in your UI
+    colour: text("colour").notNull().default("#000000"),
+
+    created_at: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [uniqueIndex("tags_name_unique").on(table.name)],
+);
+
+export type Tag = typeof tags.$inferSelect;
+
+export const doTags = sqliteTable(
+  "do_tags",
+  {
+    do_id: integer("do_id")
+      .notNull()
+      .references(() => dos.id, { onDelete: "cascade" }),
+
+    tag_id: integer("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (table) => [uniqueIndex("do_tags_unique").on(table.do_id, table.tag_id)],
+);
+
+export type DoTag = typeof doTags.$inferSelect;

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 
 import DoSidebar from "./DoSidebar";
 import ProjectsSidebar from "./ProjectsSidebar";
+import TagsSidebar from "./contexts/TagsSidebar";
 
 const MIN_WIDTH = 150;
 const MAX_WIDTH = 400;
@@ -154,6 +155,7 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
         <div className="flex flex-col">
           <DoSidebar />
           <ProjectsSidebar />
+          <TagsSidebar />
         </div>
       </div>
 
