@@ -3,7 +3,57 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
-import { tags } from "../../../../db/schema";
+import { tags, dos, doTags } from "../../../../db/schema";
+
+export const GET: APIRoute = async ({ params }) => {
+  const db = drizzle(env.just_do_it);
+
+  const tagId = Number(params.tagId);
+
+  if (!Number.isInteger(tagId)) {
+    return Response.json({ error: "Invalid tag ID" }, { status: 400 });
+  }
+
+  const result = await db
+    .select({
+      do: {
+        id: dos.id,
+        column_id: dos.column_id,
+        project_id: dos.project_id,
+        title: dos.title,
+        description: dos.description,
+        priority: dos.priority,
+        start_at: dos.start_at,
+        end_at: dos.end_at,
+        created_at: dos.created_at,
+        updated_at: dos.updated_at,
+      },
+      tag: {
+        id: tags.id,
+        name: tags.name,
+        colour: tags.colour,
+      },
+    })
+    .from(dos)
+    .innerJoin(doTags, eq(doTags.do_id, dos.id))
+    .innerJoin(tags, eq(tags.id, doTags.tag_id))
+    .where(eq(tags.id, tagId));
+
+  if (result.length === 0) {
+    return Response.json(
+      {
+        tag: null,
+        dos: [],
+      },
+      { status: 200 },
+    );
+  }
+
+  return Response.json({
+    tag: result[0].tag,
+    dos: result.map((row) => row.do),
+  });
+};
 
 export const DELETE: APIRoute = async ({ params }) => {
   const db = drizzle(env.just_do_it);

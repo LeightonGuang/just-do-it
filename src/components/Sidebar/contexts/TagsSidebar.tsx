@@ -38,7 +38,7 @@ const TagsSidebar = ({ className }: { className?: string }) => {
           </>
         ) : (
           sidebarTags.map((tag) => (
-            <a href={`/?tag_id=${tag.id}`} key={`${tag.name}-${tag.id}`}>
+            <a href={`/tags?id=${tag.id}`} key={`${tag.name}-${tag.id}`}>
               <Tag name={tag.name} colour={tag.colour} />
             </a>
           ))

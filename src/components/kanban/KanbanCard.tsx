@@ -15,7 +15,7 @@ type Countdown = {
 type KanbanCardProps = {
   className?: string;
   doItem: ApiDo;
-  onEdit: (id: number) => void;
+  onEdit?: (id: number) => void;
 };
 
 const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
@@ -24,9 +24,7 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
   );
 
   useEffect(() => {
-    if (!doItem.end_at) {
-      return;
-    }
+    if (!doItem.end_at) return;
 
     const updateCountdown = () => {
       setCountdown(getCountdown(doItem.end_at));
@@ -52,7 +50,7 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
       <p
         onClick={(event) => {
           event.stopPropagation();
-          onEdit(doItem.id);
+          onEdit && onEdit(doItem.id);
         }}
         className="w-fit text-sm font-medium text-text hover:cursor-pointer hover:underline"
       >

@@ -1,0 +1,16 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import FilteredTagPage from "../../components/tags/FilteredTagPage";
+import TagsPage from "../../components/tags/TagsPage";
+
+const tagId = Astro.url.searchParams.get("id");
+---
+
+<BaseLayout title="Tags" description="Tags page">
+  {tagId ? 
+  ( 
+    <FilteredTagPage client:only="react" tagId={tagId} />
+  ) : (
+    <TagsPage client:only="react" />
+  )}
+</BaseLayout>
