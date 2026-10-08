@@ -55,7 +55,12 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
           {doItem.tags?.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {doItem.tags.map((tag) => (
-                <Tag name={tag.name} colour={tag.colour} key={tag.id} />
+                <Tag
+                  key={tag.id}
+                  name={tag.name}
+                  colour={tag.colour}
+                  className="px-1 py-0.5 text-[0.625rem] leading-none"
+                />
               ))}
             </div>
           )}
