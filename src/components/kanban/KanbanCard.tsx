@@ -2,6 +2,7 @@ import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
 import Tag from "../tags/Tag";
+
 import type { ApiDo } from "../master-control/commands/types";
 
 type Countdown = {
@@ -76,8 +77,8 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
       )}
 
       {(hasStart || hasEnd) && (
-        <div className="mt-3 border-t border-border pt-2">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+        <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-2">
+          <div className="flex min-w-0 items-center gap-1.5 text-xs text-text-muted">
             {hasStart && (
               <span className="truncate text-text">
                 {formatDate(doItem.start_at)}
@@ -96,17 +97,14 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
           </div>
 
           {hasEnd && (
-            <div
-              className={`mt-1.5 text-right text-xs tabular-nums ${
-                countdown.due ? "text-danger" : "text-text-muted"
-              }`}
-            >
-              {countdown.due ? (
-                <span className="animate-pulse font-medium">Due</span>
-              ) : (
-                <span>{formatCountdown(countdown)}</span>
+            <span
+              className={twMerge(
+                "shrink-0 rounded bg-background px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+                countdown.due ? "text-danger" : "text-text-muted",
               )}
-            </div>
+            >
+              {countdown.due ? "Due" : formatCountdown(countdown)}
+            </span>
           )}
         </div>
       )}
