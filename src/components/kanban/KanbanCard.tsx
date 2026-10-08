@@ -99,7 +99,7 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
           {hasEnd && (
             <span
               className={twMerge(
-                "shrink-0 rounded bg-background px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+                "shrink-0 rounded-xs bg-background px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
                 countdown.due ? "text-danger" : "text-text-muted",
               )}
             >
