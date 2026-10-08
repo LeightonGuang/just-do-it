@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "astro dev --host",
     "build": "astro build",
+    "deploy": "wrangler deploy",
     "preview": "astro preview",
     "astro": "astro",
     "cf-typegen": "wrangler types",
@@ -15,7 +16,8 @@
     "drizzle:studio": "drizzle-kit studio",
     "drizzle:migrate": "drizzle-kit migrate",
     "drizzle:migrate:local": "wrangler d1 migrations apply just-do-it --local",
-    "db:reset": "psql \"$DATABASE_URL\" -f ./script/reset.sql",
+    "db:reset": "psql \"$DATABASE_URL\" -f ./scripts/reset.sql",
+    "db:reset:remote": "wrangler d1 execute just-do-it --remote --file ./scripts/reset.sql",
     "db:hard-reset": "powershell -Command \"if (Test-Path .wrangler) { Remove-Item -Recurse -Force .wrangler }; if (Test-Path drizzle/migrations) { Remove-Item -Recurse -Force drizzle/migrations }\"",
     "query:local": "wrangler d1 execute just-do-it --local --command",
     "query:remote": "wrangler d1 execute just-do-it --remote --command"
