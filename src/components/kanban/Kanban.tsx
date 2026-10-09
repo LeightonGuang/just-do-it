@@ -55,7 +55,7 @@ const Kanban = ({
   return (
     <section className={twMerge("relative min-h-dvh", className)}>
       <div className="dot-grid min-h-dvh p-4 md:p-8 md:pb-24">
-        <div className="flex items-center justify-between">
+        <div className="flex h-4 items-center justify-between">
           {editingProject ? (
             <div className="flex items-center gap-3">
               {/* Colour picker */}
@@ -64,7 +64,7 @@ const Kanban = ({
                 style={{
                   backgroundColor: projectColour,
                 }}
-                className="relative size-6 shrink-0 cursor-pointer overflow-hidden rounded-full border border-border"
+                className="relative size-4 shrink-0 cursor-pointer overflow-hidden"
               >
                 <input
                   type="color"
@@ -87,7 +87,7 @@ const Kanban = ({
                 onChange={(event) => {
                   setProjectName(event.target.value);
                 }}
-                className="w-64 border border-border bg-card px-3 py-2 text-sm text-text outline-none focus:border-text-muted disabled:opacity-50"
+                className="w-64 border border-border bg-card px-2 py-1 text-sm text-text outline-none focus:border-text-muted disabled:opacity-50"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -112,7 +112,7 @@ const Kanban = ({
                 disabled={savingProject || !projectName.trim()}
                 className="flex size-7 items-center justify-center text-text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Check className="size-4" />
+                <Check className="size-4 text-success hover:text-success-hover" />
               </button>
 
               {/* Cancel */}
@@ -124,11 +124,11 @@ const Kanban = ({
                 onClick={cancelEditingProject}
                 className="flex size-7 items-center justify-center text-text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <X className="size-4" />
+                <X className="size-4 text-danger hover:text-danger-hover" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex h-4 items-center gap-3">
               {/* Project colour */}
               <div
                 className="size-4 shrink-0"
@@ -148,9 +148,9 @@ const Kanban = ({
                 title="Edit project"
                 aria-label="Edit project"
                 onClick={startEditingProject}
-                className="flex size-7 items-center justify-center text-text-muted transition-colors hover:text-text"
+                className="flex items-center justify-center text-text-muted transition-colors hover:text-text"
               >
-                <Pencil className="size-3.5" />
+                <Pencil className="size-4" />
               </button>
             </div>
           )}
@@ -161,7 +161,7 @@ const Kanban = ({
             onClick={() => {
               // Open add column drawer/modal
             }}
-            className="flex items-center gap-1.5 border border-border bg-card px-4 py-2 text-xs text-text-muted transition-colors hover:bg-background hover:text-text"
+            className="flex items-center gap-1.5 border border-border bg-card px-2 py-1 text-xs text-text-muted transition-colors hover:bg-background hover:text-text"
           >
             <Plus className="size-3.5" />
 

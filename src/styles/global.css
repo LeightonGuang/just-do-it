@@ -44,6 +44,10 @@ button {
   --color-text: oklch(0.2152 0.0078 285.73); /* #19191d */
   --color-text-muted: oklch(0.5479 0.0123 285.99); /* #707078 */
 
+  --color-success: oklch(55% 0.16 150); /* #16803d */
+  --color-success-hover: oklch(49% 0.16 150); /* #126832 */
+  --color-success-background: oklch(94% 0.045 150); /* #dcfce7 */
+  --color-success-border: oklch(82% 0.09 150); /* #9de8b4 */
   --color-danger: oklch(55% 0.19 25); /* #c92f33 */
   --color-danger-hover: oklch(49% 0.19 25); /* #b31220 */
   --color-danger-background: oklch(94% 0.045 25); /* #ffe0dc */
@@ -66,6 +70,10 @@ button {
   --color-text: var(--color-text);
   --color-text-muted: var(--color-text-muted);
 
+  --color-success: var(--color-success);
+  --color-success-hover: var(--color-success-hover);
+  --color-success-background: var(--color-success-background);
+  --color-success-border: var(--color-success-border);
   --color-danger: var(--color-danger);
   --color-danger-hover: var(--color-danger-hover);
   --color-danger-background: var(--color-danger-background);
