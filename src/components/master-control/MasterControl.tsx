@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import MasterControlInput from "./MasterControlInput";
 import MasterControlHelper from "./MasterControlHelper";
@@ -10,7 +10,6 @@ import MasterControlSuggestions from "./MasterControlSuggestions";
 
 const MasterControl = () => {
   const inputRef = useRef<HTMLInputElement>(null);
-
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
