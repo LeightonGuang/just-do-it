@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createContext, useCallback, useContext, useEffect } from "react";
 
-import type { Do, Project } from "../../../db/schema";
+import type { Do, Project } from "../../db/schema";
 
 export type SidebarTag = {
   id: number;

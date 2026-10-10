@@ -3,10 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { COMMANDS } from "../registry";
 import { parseCommand } from "../parser";
+import { useKanban } from "../../../kanban/contexts";
 import useInputNavigation from "./useInputNavigation";
 import useEntitySuggestions from "./useEntitySuggestions";
 import useCommandSuggestions from "./useCommandSuggestions";
-import { useKanban } from "../../../kanban/contexts/KanbanContext";
 import { useSidebar } from "../../../Sidebar/contexts/SidebarContext";
 
 import type { MasterControlSuggestion, SelectedEntity } from "../types";

@@ -1,6 +1,6 @@
 import MobileDashboard from "./MobileDashboard";
 import DesktopDashboard from "./DesktopDashboard";
-import { KanbanProvider } from "./kanban/contexts/KanbanContext";
+import { KanbanProvider } from "./kanban/contexts";
 
 const Dashboard = ({
   projectId,

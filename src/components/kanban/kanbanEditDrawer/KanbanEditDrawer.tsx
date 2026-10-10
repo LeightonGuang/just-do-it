@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 
 import { X } from "lucide-react";
 
+import { useKanban } from "../contexts";
 import { DateTimeField } from "./libs/DateTimeField";
-import { useKanban } from "../contexts/KanbanContext";
 import { toDatetimeLocal } from "./libs/toDatetimeLocal";
 import { formatDateForApi } from "./libs/formatDateForApi";
 

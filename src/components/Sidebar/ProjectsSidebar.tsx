@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { useSidebar } from "./contexts/SidebarContext";
 
-import type { Project } from "../../db/schema";
+import type { Project } from "../../src/db/schema";
 
 const ProjectsSidebar = ({ className }: { className?: string }) => {
   const { sidebarProjects, loading } = useSidebar();

@@ -1,8 +1,8 @@
 import { twMerge } from "tailwind-merge";
 import { Check, Pencil, Plus, X } from "lucide-react";
 
+import { useKanban } from "./contexts";
 import KanbanColumn from "./KanbanColumn";
-import { useKanban } from "./contexts/KanbanContext";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import KanbanEditDrawer from "./kanbanEditDrawer/KanbanEditDrawer";
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import type { EntityType } from "../types";
-import type { Project, Do, Column } from "../../../../db/schema";
+import type { Project, Do, Column } from "../../../../../db/schema";
 
 type UseEntitySuggestionsOptions = {
   enabled: boolean;

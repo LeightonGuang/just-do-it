@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { useKanban } from "../contexts/KanbanContext";
+import { useKanban } from "../contexts";
 
 export const useKanbanBoard = () => {
   const {

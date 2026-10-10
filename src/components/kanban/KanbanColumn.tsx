@@ -5,7 +5,7 @@ import { Check, Flag, MoreHorizontal, Pencil, Trash, X } from "lucide-react";
 import type { Column } from "../../db/schema";
 
 import KanbanCard from "./KanbanCard";
-import { useKanban } from "./contexts/KanbanContext";
+import { useKanban } from "./contexts";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 
 type KanbanColumnProps = {

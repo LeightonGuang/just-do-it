@@ -23,6 +23,7 @@
     "query:remote": "wrangler d1 execute just-do-it --remote --command"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.10",
     "@astrojs/cloudflare": "^14.3.1",
     "@astrojs/react": "^6.0.5",
     "@tailwindcss/vite": "^4.3.3",
@@ -36,6 +37,7 @@
     "react-dom": "^19.3.0",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
     "wrangler": "^4.131.1"
   },
   "allowScripts": {
