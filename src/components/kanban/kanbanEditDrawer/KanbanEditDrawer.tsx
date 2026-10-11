@@ -1,8 +1,15 @@
-import { twMerge } from "tailwind-merge";
-import { useEffect, useState } from "react";
-
 import { X } from "lucide-react";
+import { twMerge } from "tailwind-merge";
+import { useCallback, useEffect, useState } from "react";
 
+type CreateDoData = {
+  title: string;
+  project_id?: number;
+  column_id?: number;
+  description?: string;
+  start_at?: string;
+  end_at?: string;
+};
 import { useKanban } from "../contexts";
 import { DateTimeField } from "./libs/DateTimeField";
 import { toDatetimeLocal } from "./libs/toDatetimeLocal";
@@ -11,6 +18,9 @@ import { formatDateForApi } from "./libs/formatDateForApi";
 type KanbanEditDrawerProps = {
   doId: number | null;
   onClose: () => void;
+  onCreate?: (data: CreateDoData) => Promise<void>;
+  isCreating?: boolean;
+  createColumnId?: number;
 };
 
 type FormValues = {
@@ -22,8 +32,15 @@ type FormValues = {
   endAt: string;
 };
 
-const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
-  const { dos, columns, tags, projectId, fetchKanban } = useKanban();
+const KanbanEditDrawer = ({
+  doId,
+  onClose,
+  onCreate,
+  isCreating = false,
+  createColumnId = undefined,
+}: KanbanEditDrawerProps) => {
+  const { dos, columns, tags, projectId, fetchKanban, handleCloseDoEditor } =
+    useKanban();
 
   const doItem = dos.find((item) => item.id === doId);
 
@@ -47,14 +64,17 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
-  const isOpen = doId !== null;
+  // Handle creating a new DO with column context
+  
+
+  const isOpen = doId !== null || isCreating;
 
   useEffect(() => {
     if (!doItem) {
       const emptyValues: FormValues = {
         title: "",
         description: "",
-        columnId: "",
+        columnId: String(createColumnId) || "", // Auto-fill column ID when creating
         tagId: "",
         startAt: "",
         endAt: "",
@@ -62,7 +82,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
 
       setTitle("");
       setDescription("");
-      setColumnId("");
+      setColumnId(String(createColumnId) || "");
       setTagId("");
       setStartAt("");
       setEndAt("");
@@ -142,8 +162,6 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!doItem || !hasChanges) return;
-
     const trimmedTitle = title.trim();
 
     if (!trimmedTitle) {
@@ -151,64 +169,75 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
       return;
     }
 
-    if (!columnId) {
-      setError("Column is required");
+    // In create mode, always save. In edit mode, only save if there are changes.
+    const shouldSave = isCreating || hasChanges;
+    if (!shouldSave && !isCreating) {
       return;
     }
 
-    if (
-      startAt &&
-      endAt &&
-      new Date(startAt).getTime() > new Date(endAt).getTime()
-    ) {
-      setError("Start time must be before end time");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError("");
-
-      const response = await fetch(`/api/dos/${doItem.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+    if (onCreate && isCreating) {
+      // In create mode, use the onCreate callback from context for proper state management
+      try {
+        setSaving(true);
+        setError("");
+        await onCreate({
           title: trimmedTitle,
-          description: description.trim() || null,
-
-          column_id: Number(columnId),
-
-          project_id: projectId ? Number(projectId) : undefined,
-
-          tag_id: tagId ? Number(tagId) : null,
-
-          start_at: startAt ? formatDateForApi(startAt) : null,
-
-          end_at: endAt ? formatDateForApi(endAt) : null,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-
-        throw new Error(data?.error || "Failed to save task");
+          description: description.trim() || undefined,
+          start_at: formatDateForApi(startAt) || undefined,
+          end_at: formatDateForApi(endAt) || undefined,
+          project_id: Number(projectId),
+          column_id: createColumnId ? Number(createColumnId) : undefined,
+        });
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to save task");
       }
+    } else {
+      // Fallback: direct API call for backward compatibility
+      try {
+        setSaving(true);
+        setError("");
 
-      await fetchKanban();
+        const endpoint = isCreating ? `/api/dos` : `/api/dos/${doItem?.id}`;
+        const method = isCreating ? "POST" : "PATCH";
 
-      onClose();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to save task");
-    } finally {
-      setSaving(false);
+        const response = await fetch(endpoint, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: trimmedTitle,
+            description: description.trim() || null,
+            column_id: isCreating ? Number(createColumnId) : Number(columnId),
+            project_id: projectId ? Number(projectId) : undefined,
+            tag_id: !isCreating && tagId ? Number(tagId) : null,
+            start_at: formatDateForApi(startAt) || null,
+            end_at: formatDateForApi(endAt) || null,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = (await response.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+
+          throw new Error(data?.error || "Failed to save task");
+        }
+
+        await fetchKanban();
+        onClose();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to save task");
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
   const handleDelete = async () => {
+    // Only allow delete in edit mode, not create mode
+    if (isCreating) return;
+
     if (!doItem) return;
 
     const confirmed = window.confirm(
@@ -407,7 +436,7 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
               <button
                 type="button"
                 onClick={handleDelete}
-                disabled={deleting || saving}
+                disabled={deleting || saving || isCreating}
                 className="px-2 py-2 text-sm text-danger transition-colors hover:text-danger/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? "Deleting..." : "Delete"}
@@ -425,10 +454,10 @@ const KanbanEditDrawer = ({ doId, onClose }: KanbanEditDrawerProps) => {
 
                 <button
                   type="submit"
-                  disabled={!hasChanges || saving || deleting}
+                  disabled={!hasChanges || (!isCreating && !title.trim()) || saving || deleting}
                   className="bg-text px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {saving ? "Saving..." : "Save changes"}
+                  {saving ? "Creating..." : "Create"}
                 </button>
               </div>
             </div>

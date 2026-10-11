@@ -11,9 +11,10 @@ import { useKanbanBoard } from "./hooks/useKanbanBoard";
 type KanbanColumnProps = {
   column: Column;
   doId: string | null;
+  onCreateDoClick?: () => void;
 };
 
-const KanbanColumn = ({ column, doId }: KanbanColumnProps) => {
+const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
   const { dos, setColumnIsDone } = useKanban();
 
   const {
@@ -285,6 +286,16 @@ const KanbanColumn = ({ column, doId }: KanbanColumnProps) => {
             {isDragOver ? "Drop here" : "No cards"}
           </div>
         )}
+
+        {/* Create new do button at bottom */}
+        <button
+          type="button"
+          onClick={onCreateDoClick}
+          disabled={!onCreateDoClick}
+          className="mt-4 flex min-h-12 items-center justify-center border border-border bg-card px-3 text-xs font-medium text-text-muted transition-colors hover:bg-background hover:text-text disabled:opacity-50"
+        >
+          Create new do
+        </button>
       </div>
     </article>
   );

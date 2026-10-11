@@ -1,221 +1,112 @@
-import type { APIRoute } from "astro";
+import { eq, and, desc } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
-import { eq, like, and, asc, desc, isNull, inArray } from "drizzle-orm";
+
+import type { APIRoute } from "astro";
 
 import { parseDate } from "../../../../lib/date";
-import { dos, columns, projects, doTags, tags } from "../../../db/schema";
+import { dos, projects, columns } from "../../../db/schema";
 
-export const GET: APIRoute = async ({ url }) => {
-  const db = drizzle(env.just_do_it);
+const VALID_PRIORITIES = ["low", "mid", "high"] as const;
 
-  const title = url.searchParams.get("title");
-  const projectIdParam = url.searchParams.get("project_id");
-  const isSidebar = url.searchParams.get("sidebar") === "true";
-
-  const conditions = [];
-
-  if (title?.trim()) conditions.push(like(dos.title, `%${title.trim()}%`));
-
-  if (projectIdParam) {
-    const projectId = Number(projectIdParam);
-
-    if (!Number.isNaN(projectId))
-      conditions.push(eq(dos.project_id, projectId));
+function validatePriority(priority?: string | null) {
+  if (priority === undefined || priority === null) {
+    return null;
   }
-
-  // Sidebar only shows unfinished tasks.
-  if (isSidebar) conditions.push(eq(columns.is_done, false));
-
-  let tasks: any[];
-  try {
-    tasks = await db
-      .select({
-        id: dos.id,
-        title: dos.title,
-        description: dos.description,
-        project_id: dos.project_id,
-        column_id: dos.column_id,
-        start_at: dos.start_at,
-        end_at: dos.end_at,
-        created_at: dos.created_at,
-        updated_at: dos.updated_at,
-        project_name: projects.name,
-        project_colour: projects.colour,
-      })
-      .from(dos)
-      .innerJoin(projects, eq(dos.project_id, projects.id))
-      .innerJoin(columns, eq(dos.column_id, columns.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(asc(isNull(dos.end_at)), asc(dos.end_at))
-      .limit(isSidebar ? 5 : 1000);
-  } catch (error) {
-    console.error("Database read error in GET /api/dos:", error);
-    // Return an empty array to prevent the API crash, but log the error for debugging.
-    return Response.json([]);
+  const p = priority.trim();
+  if (VALID_PRIORITIES.includes(p as any)) {
+    return p as "low" | "mid" | "high";
   }
+  return null;
+}
 
-  if (tasks.length === 0) {
-    return Response.json([]);
-  }
+const db = drizzle(env.just_do_it);
 
-  // Fetch tags for the returned todos.
-  const doIds = tasks.map((task) => task.id);
-
-  const taskTags = await db
-    .select({
-      do_id: doTags.do_id,
-      id: tags.id,
-      name: tags.name,
-      colour: tags.colour,
-    })
-    .from(doTags)
-    .innerJoin(tags, eq(doTags.tag_id, tags.id))
-    .where(inArray(doTags.do_id, doIds));
-
-  const tagsByDo = new Map<
-    number,
-    {
-      id: number;
-      name: string;
-      colour: string;
-    }[]
-  >();
-
-  for (const tag of taskTags) {
-    const existing = tagsByDo.get(tag.do_id) ?? [];
-
-    existing.push({
-      id: tag.id,
-      name: tag.name,
-      colour: tag.colour,
-    });
-
-    tagsByDo.set(tag.do_id, existing);
-  }
-
-  const result = tasks.map((task) => ({
-    ...task,
-    tags: tagsByDo.get(task.id) ?? [],
-  }));
-
-  return Response.json(result);
-};
-
-// POST /api/dos - create a do
 export const POST: APIRoute = async ({ request }) => {
-  const db = drizzle(env.just_do_it);
-
   const body = (await request.json()) as {
-    title?: string;
+    title: string;
     project_id?: number;
     column_id?: number;
-    description?: string;
+    description?: string | null;
+    priority?: "low" | "mid" | "high" | null;
     start_at?: string | null;
     end_at?: string | null;
   };
 
-  const title = body.title?.trim();
-  const projectId = body.project_id;
-  const description = body.description?.trim() || null;
-
-  if (!title) {
-    return Response.json({ error: "Title is required" }, { status: 400 });
+  if (!body.title) {
+    return Response.json({ error: "title is required" }, { status: 400 });
   }
 
-  if (!projectId) {
-    return Response.json({ error: "Project is required" }, { status: 400 });
+  // Get project and column from context if not provided in request
+  let projectIdFromContext = body.project_id;
+  let columnIdFromContext = body.column_id;
+
+  const title = body.title.trim();
+  const description = body.description ?? null;
+  const priority = validatePriority(body.priority);
+  const startAt = typeof body.start_at === "string" && body.start_at.trim() ? parseDate(body.start_at) : null;
+  const endAt = typeof body.end_at === "string" && body.end_at.trim() ? parseDate(body.end_at) : null;
+
+  // If no project_id or column_id provided, we need to determine them from context
+  if (!projectIdFromContext || !columnIdFromContext) {
+    return Response.json({ 
+      error: "project_id and column_id must be provided when creating tasks via API" 
+    }, { status: 400 });
   }
 
-  const startAt =
-    typeof body.start_at === "string" && body.start_at.trim()
-      ? parseDate(body.start_at)
-      : null;
+  const projectId = Number(projectIdFromContext);
+  const columnId = Number(columnIdFromContext);
 
-  const endAt =
-    typeof body.end_at === "string" && body.end_at.trim()
-      ? parseDate(body.end_at)
-      : null;
-
-  if (body.start_at && !startAt) {
-    return Response.json(
-      {
-        error:
-          "Invalid start date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
-      },
-      { status: 400 },
-    );
-  }
-
-  if (body.end_at && !endAt) {
-    return Response.json(
-      {
-        error:
-          "Invalid end date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
-      },
-      { status: 400 },
-    );
-  }
-
-  if (startAt && endAt && startAt > endAt) {
-    return Response.json(
-      { error: "Start time must be before end time" },
-      { status: 400 },
-    );
-  }
-
-  let columnId = body.column_id;
-
+  // Handle column assignment if not provided
+  let insertedColumnId: number | undefined = columnId;
   if (!columnId) {
-    const existingCols = await db
-      .select()
-      .from(columns)
-      .where(eq(columns.project_id, projectId));
-
+    const existingCols = await db.select().from(columns).where(eq(columns.project_id, projectId));
     if (existingCols.length > 0) {
-      columnId = existingCols[0].id;
+      insertedColumnId = existingCols[0].id;
     } else {
-      const insertedCol = await db
-        .insert(columns)
-        .values({
-          project_id: projectId,
-          name: "To Do",
-          position: 0,
-        })
-        .returning();
-
-      columnId = insertedCol[0]?.id;
+      const insertedCol = await db.insert(columns).values({ project_id: projectId, name: "To Do", position: 0 }).returning();
+      insertedColumnId = insertedCol[0]?.id;
     }
   }
 
-  if (!columnId) {
+  if (!insertedColumnId) {
     return Response.json(
       { error: "Could not assign column to task" },
       { status: 500 },
     );
   }
 
-  const now = new Date();
+  // Insert using drizzle - values must match $inferInsert type exactly
+  await db.insert(dos).values({
+    title,
+    project_id: projectId,
+    column_id: insertedColumnId,
+    description,
+    priority,
+    start_at: startAt,
+    end_at: endAt,
+    created_at: new Date(Date.now()),
+    updated_at: new Date(Date.now()),
+  }).run();
 
-  const inserted = await db
-    .insert(dos)
-    .values({
-      title: title!,
-      project_id: projectId!,
-      column_id: columnId!,
-      description: null,
-      start_at: null,
-      end_at: null,
-      created_at: now!,
-      updated_at: now!,
-    })
-    .returning();
-
-  // Get the auto-generated ID from SQLite's last_insert_rowid()
+  // Query the newly inserted row - get the most recently created item in this column/project
   const result = await db
-    .select({ id: dos.id, title: dos.title, description: dos.description, project_id: dos.project_id, column_id: dos.column_id, start_at: dos.start_at, end_at: dos.end_at, created_at: dos.created_at, updated_at: dos.updated_at, project_name: projects.name, project_colour: projects.colour })
+    .select({ 
+      id: dos.id, 
+      title: dos.title, 
+      description: dos.description, 
+      project_id: dos.project_id, 
+      column_id: dos.column_id, 
+      start_at: dos.start_at, 
+      end_at: dos.end_at, 
+      created_at: dos.created_at, 
+      updated_at: dos.updated_at, 
+      project_name: projects.name, 
+      project_colour: projects.colour 
+    })
     .from(dos)
     .innerJoin(projects, eq(dos.project_id, projects.id))
+    .where(and(eq(dos.project_id, projectId), eq(dos.column_id, insertedColumnId)))
     .orderBy(desc(dos.updated_at))
     .limit(1);
 
@@ -225,148 +116,164 @@ export const POST: APIRoute = async ({ request }) => {
   });
 };
 
-export const PATCH: APIRoute = async ({ request }) => {
-  const db = drizzle(env.just_do_it);
+export const GET: APIRoute = async ({ params }) => {
+  const doIdStr = params.id;
+  
+  if (!doIdStr) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
+  }
+
+  const doId = parseInt(doIdStr, 10);
+
+  if (isNaN(doId)) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
+  }
+
+  const result = await db
+    .select({ 
+      id: dos.id, 
+      title: dos.title, 
+      description: dos.description, 
+      project_id: dos.project_id, 
+      column_id: dos.column_id, 
+      start_at: dos.start_at, 
+      end_at: dos.end_at, 
+      created_at: dos.created_at, 
+      updated_at: dos.updated_at, 
+      project_name: projects.name, 
+      project_colour: projects.colour 
+    })
+    .from(dos)
+    .innerJoin(projects, eq(dos.project_id, projects.id))
+    .where(eq(dos.id, doId));
+
+  if (result.length === 0) {
+    return Response.json({ error: "DO not found" }, { status: 404 });
+  }
+
+  return Response.json({ task: result[0] });
+};
+
+export const PATCH: APIRoute = async ({ params, request }) => {
+  const doIdStr = params.id;
+  
+  if (!doIdStr) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
+  }
+
+  const doId = parseInt(doIdStr, 10);
+
+  if (isNaN(doId)) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
+  }
 
   const body = (await request.json()) as {
-    id?: number;
     title?: string;
-    description?: string | null;
-    column_id?: number;
     project_id?: number;
-    tag_id?: number | null;
+    column_id?: number;
+    description?: string | null;
+    priority?: "low" | "mid" | "high" | null;
     start_at?: string | null;
     end_at?: string | null;
   };
 
-  if (!body.id) {
-    return Response.json({ error: "ID is required" }, { status: 400 });
+  if (!body.title) {
+    return Response.json({ error: "title is required" }, { status: 400 });
   }
 
-  const startAt =
-    typeof body.start_at === "string" && body.start_at.trim()
-      ? parseDate(body.start_at)
-      : null;
+  // Get project and column from context if not provided in request
+  let projectIdFromContext = body.project_id;
+  let columnIdFromContext = body.column_id;
 
-  const endAt =
-    typeof body.end_at === "string" && body.end_at.trim()
-      ? parseDate(body.end_at)
-      : null;
+  const title = body.title.trim();
+  const description = body.description ?? null;
+  const priority = validatePriority(body.priority);
+  const startAt = typeof body.start_at === "string" && body.start_at.trim() ? parseDate(body.start_at) : null;
+  const endAt = typeof body.end_at === "string" && body.end_at.trim() ? parseDate(body.end_at) : null;
 
-  if (body.start_at && !startAt) {
+  // If no project_id or column_id provided, we need to determine them from context
+  if (!projectIdFromContext || !columnIdFromContext) {
+    return Response.json({ 
+      error: "project_id and column_id must be provided when updating tasks via API" 
+    }, { status: 400 });
+  }
+
+  const projectId = Number(projectIdFromContext);
+  const columnId = Number(columnIdFromContext);
+
+  // Handle column assignment if not provided (only allow if explicitly provided or same as original)
+  let insertedColumnId: number | undefined = columnId;
+  if (!columnId) {
+    const existingCols = await db.select().from(columns).where(eq(columns.project_id, projectId));
+    if (existingCols.length > 0) {
+      insertedColumnId = existingCols[0].id;
+    } else {
+      const insertedCol = await db.insert(columns).values({ project_id: projectId, name: "To Do", position: 0 }).returning();
+      insertedColumnId = insertedCol[0]?.id;
+    }
+  }
+
+  if (!insertedColumnId) {
     return Response.json(
-      {
-        error:
-          "Invalid start date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
-      },
-      { status: 400 },
+      { error: "Could not assign column to task" },
+      { status: 500 },
     );
   }
 
-  if (body.end_at && !endAt) {
-    return Response.json(
-      {
-        error:
-          "Invalid end date. Use d-m-yyyy or d-m-yyyy hh:mm (24-hour time).",
-      },
-      { status: 400 },
-    );
-  }
+  // Check if we're moving to a different column
+  const currentDo = await db.select({ column_id: dos.column_id }).from(dos).where(eq(dos.id, doId));
+  const movingColumn = insertedColumnId !== currentDo[0]?.column_id;
 
-  if (startAt && endAt && startAt > endAt) {
-    return Response.json(
-      {
-        error: "Start time must be before end time",
-      },
-      { status: 400 },
-    );
-  }
-
-  // Make sure the task exists.
-  const existingDo = await db
-    .select({
-      id: dos.id,
-      project_id: dos.project_id,
+  // Update the task using drizzle v5 syntax (no .values() for update)
+  await db.update(dos).set({
+    title,
+    project_id: projectId,
+    column_id: insertedColumnId,
+    description,
+    priority,
+    start_at: startAt,
+    end_at: endAt,
+    updated_at: new Date(Date.now()),
+  }).where(eq(dos.id, doId)).run();
+  const result = await db
+    .select({ 
+      id: dos.id, 
+      title: dos.title, 
+      description: dos.description, 
+      project_id: dos.project_id, 
+      column_id: dos.column_id, 
+      start_at: dos.start_at, 
+      end_at: dos.end_at, 
+      created_at: dos.created_at, 
+      updated_at: dos.updated_at, 
+      project_name: projects.name, 
+      project_colour: projects.colour 
     })
     .from(dos)
-    .where(eq(dos.id, body.id))
-    .limit(1);
+    .innerJoin(projects, eq(dos.project_id, projects.id))
+    .where(eq(dos.id, doId));
 
-  if (existingDo.length === 0) {
-    return Response.json({ error: "Task not found" }, { status: 404 });
+  return Response.json({ task: result[0] });
+};
+
+export const DELETE: APIRoute = async ({ params }) => {
+  const doIdStr = params.id;
+  
+  if (!doIdStr) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
   }
 
-  const updateData: Record<string, unknown> = {
-    updated_at: new Date(),
-  };
+  const doId = parseInt(doIdStr, 10);
 
-  if (body.title !== undefined) {
-    const title = body.title.trim();
-
-    if (!title) {
-      return Response.json({ error: "Title is required" }, { status: 400 });
-    }
-
-    updateData.title = title;
+  if (isNaN(doId)) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
   }
 
-  if (body.description !== undefined) {
-    updateData.description = body.description?.trim() || null;
+  const result = await db.delete(dos).where(eq(dos.id, doId));
+
+  if (result.results.length === 0) {
+    return Response.json({ error: "DO not found" }, { status: 404 });
   }
 
-  if (body.column_id !== undefined) {
-    updateData.column_id = body.column_id;
-  }
-
-  if (body.project_id !== undefined) {
-    updateData.project_id = body.project_id;
-  }
-
-  if (body.start_at !== undefined) {
-    updateData.start_at = startAt;
-  }
-
-  if (body.end_at !== undefined) {
-    updateData.end_at = endAt;
-  }
-
-  // Update the task itself.
-  await db.update(dos).set(updateData).where(eq(dos.id, body.id));
-
-  // Update tag relationship if tag_id was included in the request.
-  if (body.tag_id !== undefined) {
-    // Remove existing tag relationships.
-    await db.delete(doTags).where(eq(doTags.do_id, body.id));
-
-    // Add the new tag relationship.
-    if (body.tag_id !== null) {
-      const tagId = Number(body.tag_id);
-
-      if (!Number.isInteger(tagId)) {
-        return Response.json({ error: "Invalid tag ID" }, { status: 400 });
-      }
-
-      // Make sure the tag actually exists.
-      const existingTag = await db
-        .select({
-          id: tags.id,
-        })
-        .from(tags)
-        .where(eq(tags.id, tagId))
-        .limit(1);
-
-      if (existingTag.length === 0) {
-        return Response.json({ error: "Tag not found" }, { status: 404 });
-      }
-
-      await db.insert(doTags).values({
-        do_id: body.id,
-        tag_id: tagId,
-      });
-    }
-  }
-
-  return Response.json({
-    success: true,
-  });
+  return Response.json({ success: true });
 };

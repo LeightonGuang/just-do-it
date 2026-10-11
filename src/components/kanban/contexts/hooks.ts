@@ -1,20 +1,49 @@
 import { useCallback, useState } from "react";
 
-import type { KanbanDo } from "./types";
 import type { Project } from "../../../db";
 
 /** Hook for managing DO editing state */
-export const useEditingDo = () => {
+type UseEditingDoOptions = {
+  setCreatingDoId: (id: number | null) => void;
+};
+
+export const useEditingDo = ({ setCreatingDoId }: UseEditingDoOptions) => {
   const [editingDoId, setEditingDoId] = useState<number | null>(null);
+
+  const handleCloseDoEditor = useCallback(() => {
+    setEditingDoId(null);
+  }, [setEditingDoId]);
 
   return {
     editingDoId,
+    setEditingDoId,
     handleEditDo: useCallback((id: number) => {
       setEditingDoId(id);
     }, []),
     handleCloseDoEditor: useCallback(() => {
       setEditingDoId(null);
-    }, []),
+    }, [setEditingDoId]),
+  };
+}
+
+/** Hook for managing DO creation state */
+type UseCreateOptions = {
+  columnId: number;
+};
+
+export const useCreateDo = ({ columnId }: UseCreateOptions) => {
+  const [creatingDoId, setCreatingDoId] = useState<number | null>(null);
+
+  const handleCloseDoEditor = useCallback(() => {
+    setCreatingDoId(null);
+  }, [setCreatingDoId]);
+
+  return {
+    creatingDoId,
+    setCreatingDoId,
+    handleCloseDoEditor: useCallback(() => {
+      setCreatingDoId(null);
+    }, [setCreatingDoId]),
   };
 };
 
@@ -50,6 +79,8 @@ export const useProjectEditState = (project: Project | null) => {
 
 /** Hook for managing global state (saving/loading/error) */
 export const useGlobalState = () => {
+  const [creatingDoId, setCreatingDoId] = useState<number | null>(null);
+  const [isCreatingMode, setIsCreatingMode] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,6 +92,10 @@ export const useGlobalState = () => {
     setSavingProject,
     setLoading,
     setError,
+    creatingDoId,
+    setCreatingDoId,
+    isCreatingMode,
+    setIsCreatingMode,
     resetState: useCallback(() => {
       setSavingProject(false);
       setLoading(false);

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { twMerge } from "tailwind-merge";
 import { Check, Pencil, Plus, X } from "lucide-react";
 
@@ -29,10 +30,24 @@ const Kanban = ({
     setProjectColour,
     startEditingProject,
     cancelEditingProject,
+    handleCreateDo,
   } = useKanban();
 
-  const { editingDoId, editingColumnId, handleCloseDoEditor } =
-    useKanbanBoard();
+  const {
+    editingDoId,
+    editingColumnId,
+    handleEditDo,
+    handleCloseDoEditor,
+  } = useKanbanBoard();
+
+  const {
+    isCreatingMode,
+    creatingDoId,
+    setCreatingDoId,
+    setIsCreatingMode,
+  } = useKanban();
+
+  const [createColumnId, setCreateColumnId] = useState<number | undefined>(undefined);
 
   if (loading) {
     return (
@@ -172,12 +187,27 @@ const Kanban = ({
         {/* Kanban columns */}
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
           {columns.map((column) => (
-            <KanbanColumn doId={doId} key={column.id} column={column} />
+            <KanbanColumn
+              doId={doId}
+              key={column.id}
+              column={column}
+              onCreateDoClick={() => {
+                setIsCreatingMode(true);
+                setCreatingDoId(null);
+                setCreateColumnId(column.id);
+              }}
+            />
           ))}
         </div>
       </div>
 
-      <KanbanEditDrawer doId={editingDoId} onClose={handleCloseDoEditor} />
+      <KanbanEditDrawer
+        doId={creatingDoId || editingDoId}
+        isCreating={isCreatingMode}
+        createColumnId={createColumnId}
+        onClose={handleCloseDoEditor}
+        onCreate={isCreatingMode ? handleCreateDo : undefined}
+      />
 
       {editingColumnId !== null && <div>{/* Column editor goes here */}</div>}
     </section>

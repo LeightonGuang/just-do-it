@@ -1,12 +1,23 @@
 import { useState } from 'react';
 import { createContext, useCallback, useContext, useEffect } from 'react';
 
+import { formatDateForApi } from "../kanbanEditDrawer/libs/formatDateForApi";
+
 import type { KanbanDo, KanbanTag } from "./types";
 import type { Project, Column } from "../../../db";
 
 import { useEditingDo } from "./hooks";
 import { useGlobalState } from "./hooks";
 import { useProjectEditState } from "./hooks";
+
+export type CreateDoData = {
+  title: string;
+  project_id?: number;
+  column_id?: number;
+  description?: string;
+  start_at?: string;
+  end_at?: string;
+};
 
 type KanbanContextValue = {
   projectId: string | null;
@@ -19,6 +30,12 @@ type KanbanContextValue = {
   editingDoId: number | null;
   handleEditDo: (id: number) => void;
   handleCloseDoEditor: () => void;
+  creatingDoId: number | null;
+  setCreatingDoId: (id: number | null) => void;
+  isCreatingMode: boolean;
+  setIsCreatingMode: (value: boolean) => void;
+  editingColumnId: number | null;
+  handleCreateDo: (data: CreateDoData) => Promise<void>;
   editingProject: boolean;
   projectName: string;
   projectColour: string;
@@ -36,6 +53,8 @@ type KanbanContextValue = {
   editColumn: (columnId: number, name: string) => Promise<void>;
   deleteColumn: (columnId: number) => Promise<void>;
   setColumnIsDone: (columnId: number, isDone: boolean) => Promise<void>;
+
+  createDo: (data: CreateDoData) => Promise<void>;
 
   loading: boolean;
   error: string;
@@ -55,9 +74,56 @@ export const KanbanProvider = ({
   const [dos, setDos] = useState<KanbanDo[]>([]);
   const [tags, setTags] = useState<KanbanTag[]>([]);
 
-  const editingDo = useEditingDo();
-  const projectEditState = useProjectEditState(project);
+  const [editingColumnId] = useState<number | null>(null);
+
   const globalState = useGlobalState();
+
+  const {
+    editingDoId,
+    handleEditDo,
+    handleCloseDoEditor,
+  } = useEditingDo({ setCreatingDoId: globalState.setCreatingDoId });
+
+  // Handle creating a new DO through the create mode button
+  const handleCreateDo = useCallback(
+    async (data: CreateDoData) => {
+      if (!projectId) return;
+
+      try {
+        await fetch("/api/dos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: data.title,
+            description: data.description || undefined,
+            start_at: data.start_at ? formatDateForApi(data.start_at) : undefined,
+            end_at: data.end_at ? formatDateForApi(data.end_at) : undefined,
+            project_id: Number(projectId),
+            column_id: data.column_id ? Number(data.column_id) : undefined,
+          }),
+        });
+
+        await fetchKanbanData();
+        handleCloseDoEditor();
+        globalState.setCreatingDoId?.(null);
+        globalState.setIsCreatingMode?.(false);
+      } catch (error) {
+        console.error("Failed to create task:", error);
+        throw error;
+      }
+    },
+    [projectId, formatDateForApi, globalState.setCreatingDoId, globalState.setIsCreatingMode],
+  );
+
+  const {
+    editingProject,
+    projectName,
+    projectColour,
+    startEditingProject,
+    cancelEditingProject,
+    setProjectName,
+    setProjectColour,
+  } = useProjectEditState(project);
 
   const fetchKanbanData = useCallback(async () => {
     if (!projectId) {
@@ -118,20 +184,20 @@ export const KanbanProvider = ({
   );
 
   const saveProject = useCallback(async () => {
-    const name = projectEditState.projectName.trim();
+    const name = projectName.trim();
 
     if (!name || globalState.savingProject) return;
 
     globalState.setSavingProject(true);
 
     try {
-      await editProject(name, projectEditState.projectColour);
+      await editProject(name, projectColour);
       await fetchKanbanData();
-      projectEditState.cancelEditingProject();
+      cancelEditingProject();
     } finally {
       globalState.setSavingProject(false);
     }
-  }, [projectEditState]);
+  }, [projectName]);
 
   const moveDo = useCallback(
     async (doId: number, columnId: number) => {
@@ -203,9 +269,33 @@ export const KanbanProvider = ({
         currentDos.filter((doItem) => doItem.column_id !== columnId),
       );
 
-      editingDo.handleCloseDoEditor();
+      handleCloseDoEditor();
     },
     [dos],
+  );
+
+  const createDo = useCallback(
+    async (data: CreateDoData) => {
+      if (!projectId) return;
+
+      try {
+        const response = await fetch("/api/dos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          const data = (await response.json()) as { error?: string };
+          throw new Error(data.error || "Failed to create task");
+        }
+
+        await fetchKanbanData();
+      } catch (error) {
+        console.error("Failed to create task:", error);
+      }
+    },
+    [projectId, fetchKanbanData],
   );
 
   const setColumnIsDone = useCallback(
@@ -246,21 +336,30 @@ export const KanbanProvider = ({
         dos,
         tags,
         fetchKanban: fetchKanbanData,
-        ...editingDo,
-        editingProject: projectEditState.editingProject,
-        projectName: projectEditState.projectName,
-        projectColour: projectEditState.projectColour,
+        editingDoId,
+        editingProject,
+        handleEditDo,
+        handleCloseDoEditor,
+        creatingDoId: globalState.creatingDoId,
+        setCreatingDoId: globalState.setCreatingDoId,
+        editingColumnId: editingColumnId,
+        isCreatingMode: globalState.isCreatingMode,
+        setIsCreatingMode: globalState.setIsCreatingMode,
+        handleCreateDo,
+        projectName,
+        projectColour,
         savingProject: globalState.savingProject,
-        startEditingProject: projectEditState.startEditingProject,
-        cancelEditingProject: projectEditState.cancelEditingProject,
-        setProjectName: projectEditState.setProjectName,
-        setProjectColour: projectEditState.setProjectColour,
+        startEditingProject,
+        cancelEditingProject,
+        setProjectName,
+        setProjectColour,
         saveProject,
         editProject,
         moveDo,
         editColumn,
         deleteColumn,
         setColumnIsDone,
+        createDo,
         loading: globalState.loading,
         error: globalState.error,
       }}

@@ -1,4 +1,4 @@
-export { useKanban, KanbanProvider } from "./context";
+export { useKanban, KanbanProvider, type CreateDoData } from "./context";
 
 export * from "./hooks";
 export * from "./actions";
