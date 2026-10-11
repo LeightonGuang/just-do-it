@@ -287,7 +287,7 @@ const DoDrawer = ({
                     setSelectedTagIds(new Set(selectedOptions));
                   }}
                   style={{ width: "100%", minHeight: "80px" }}
-                  className="w-full border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted rounded"
+                  className="w-full bg-background text-sm text-text outline-none focus:border-text-muted rounded"
                 >
                   {tagsArray.map((tag) => (
                     <option key={tag.id} value={tag.id}>{tag.name}</option>
