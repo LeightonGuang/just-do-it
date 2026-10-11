@@ -7,14 +7,15 @@ import { getCountdown, type Countdown } from "./getCountdown";
 import type { SidebarDo } from "../../contexts/SidebarContext";
 
 export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
-  const hasEndDate = doItem.end_at !== null;
+  const hasEndDate = Boolean(doItem.end_at);
 
+  // Only initialize countdown state when there's an end date
   const [countdown, setCountdown] = useState<Countdown>(() =>
-    getCountdown(doItem.end_at),
+    hasEndDate ? getCountdown(doItem.end_at) : { days: 0, hours: 0, minutes: 0, seconds: 0, due: false },
   );
 
   useEffect(() => {
-    if (!doItem.end_at) return;
+    if (!hasEndDate) return;
 
     setCountdown(getCountdown(doItem.end_at));
 
@@ -23,14 +24,14 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [doItem.end_at]);
+  }, [hasEndDate, doItem.end_at]);
 
   return (
     <a
       href={`?project_id=${doItem.project_id}&do_id=${doItem.id}`}
       className={twMerge(
         "flex min-w-0 items-start gap-2 bg-card p-2 hover:bg-card-hover md:p-1",
-        countdown.due && "bg-danger-background",
+        hasEndDate && countdown.due && "bg-danger-background",
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
