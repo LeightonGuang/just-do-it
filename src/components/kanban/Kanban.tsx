@@ -5,7 +5,7 @@ import { Check, Pencil, Plus, X } from "lucide-react";
 import { useKanban } from "./contexts";
 import KanbanColumn from "./KanbanColumn";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
-import KanbanEditDrawer from "./kanbanEditDrawer/KanbanEditDrawer";
+import DoDrawer from "./doDrawer/DoDrawer";
 
 const Kanban = ({
   doId,
@@ -201,7 +201,7 @@ const Kanban = ({
         </div>
       </div>
 
-      <KanbanEditDrawer
+      <DoDrawer
         doId={creatingDoId || editingDoId}
         isCreating={isCreatingMode}
         createColumnId={createColumnId}
