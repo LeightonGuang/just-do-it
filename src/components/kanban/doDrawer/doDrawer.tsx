@@ -6,61 +6,66 @@ import type { DoDrawerProps, CreateDoData, KanbanDo } from "./types";
 import { DateTimeField } from "../kanbanEditDrawer/libs/DateTimeField";
 import { formatDateForApi } from "../kanbanEditDrawer/libs/formatDateForApi";
 
-const DoDrawer = ({ doId, onClose, onCreate, isCreating, createColumnId }: DoDrawerProps) => {
+const DoDrawer = ({ doId, onClose, onCreate, isCreating }: DoDrawerProps) => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [isEditingMode, setIsEditingMode] = useState(false);
 
-  // Fetch DO data when editing mode is active
+  // Fetch DO data when switching to edit mode
+  const fetchDoData = async () => {
+    if (!doId || isCreating) return null;
+
+    try {
+      const response = await fetch(`/api/dos/${doId}`, { method: "GET" });
+      if (response.ok) {
+        const data = await response.json();
+        setDoData(data);
+        setIsEditingMode(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch DO:", err);
+    }
+  };
+
+  // Populate form with existing DO data when entering edit mode
   const [doData, setDoData] = useState<KanbanDo | null>(null);
 
   useEffect(() => {
-    // Reset form when doId changes
-    if (doId === null) {
-      setTitle("");
+    if (doId !== null && !isCreating) {
+      setTitle(""); // Clear title first
       setDescription("");
       setError("");
-      setDoData(null);
+
+      fetchDoData().then((data) => {
+        if (data) {
+          setTitle(data.title || "");
+          setDescription(data.description || "");
+        }
+      });
     } else {
-      // Fetch existing DO data for edit mode
-      fetch(`/api/dos/${doId}`, { method: "GET" })
-        .then((response) => response.json())
-        .then((data) => setDoData(data))
-        .catch(() => {})
-        .finally(() => setError(""));
+      setDoData(null);
+      setIsEditingMode(false);
     }
-  }, [doId]);
+  }, [doId, isCreating]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && doId === null) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    if (doId !== null) {
-      document.body.style.overflow = "";
-      return () => {
-        document.removeEventListener("keydown", handleKeyDown);
-        document.body.style.overflow = "";
+  // Prepare create/update data based on mode
+  const prepareCreateData = (formData: CreateDoData): CreateDoData => {
+    if (isEditingMode && doData) {
+      return {
+        ...formData,
+        id: doData.id,
+        project_id: doData.project_id,
+        column_id: doData.column_id,
       };
     }
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [doId, onClose]);
-
-  // Prepare create data based on mode
-  const prepareCreateData = (formData: CreateDoData): CreateDoData => {
     return {
       ...formData,
-      project_id: doData?.project_id || isCreating ? 1 : undefined,
-      column_id: createColumnId || doData?.column_id || isCreating ? 1 : undefined,
+      project_id: isCreating ? 1 : doData?.project_id,
+      column_id: createColumnId || isCreating ? 1 : doData?.column_id,
     };
   };
 
@@ -117,18 +122,6 @@ const DoDrawer = ({ doId, onClose, onCreate, isCreating, createColumnId }: DoDra
     }
   };
 
-  // Populate form with existing DO data when in edit mode
-  useEffect(() => {
-    if (!isCreating && doData) {
-      setTitle(doData.title || "");
-      setDescription(doData.description || "");
-      setError("");
-    } else {
-      setTitle("");
-      setDescription("");
-    }
-  }, [doData, isCreating]);
-
   return (
     <>
       <div
@@ -154,7 +147,7 @@ const DoDrawer = ({ doId, onClose, onCreate, isCreating, createColumnId }: DoDra
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
           <div className="min-w-0">
             <p className="text-xs tracking-wider text-text-muted uppercase">
-              {isCreating ? "Create task" : "Edit task"}
+              {isCreating ? "Create task" : isEditingMode ? "Edit task" : ""}
             </p>
             <h2 className="truncate text-sm font-semibold text-text">{doId ? "Task" : ""}</h2>
           </div>
