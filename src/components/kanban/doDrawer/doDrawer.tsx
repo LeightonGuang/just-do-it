@@ -14,9 +14,8 @@ const DoDrawer = ({
   onDelete,
   isCreating,
   createColumnId: initialCreateColumnId,
-  doData: doDataProp = undefined,
   tags: availableTags = [],
-}: DoDrawerProps & { doData?: KanbanDo; tags?: KanbanTag[] }) => {
+}: DoDrawerProps & { tags?: KanbanTag[] }) => {
   // Ensure we always have an array (not null/undefined)
   const tagsArray = Array.isArray(availableTags) ? availableTags : [];
   const [saving, setSaving] = useState(false);
@@ -75,30 +74,11 @@ const DoDrawer = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doId, isCreating]);
 
-  // If doDataProp is passed as a prop, use it immediately to populate the form
-  useEffect(() => {
-    if (doDataProp) {
-      setTitle(doDataProp.title || "");
-      setDescription(doDataProp.description || "");
-      setIsEditingMode(true);
-    } else {
-      setIsEditingMode(false);
-    }
-  }, [doDataProp]);
+
 
   // Prepare create/update data based on mode
   const prepareCreateData = (formData: CreateDoData): CreateDoData => {
     const tags = Array.from(selectedTagIds).map((id) => ({ id }));
-
-    if (isEditingMode && doDataProp) {
-      return {
-        title: formData.title || doDataProp.title || "",
-        description: formData.description ?? doDataProp.description ?? undefined,
-        project_id: doDataProp.project_id ?? undefined,
-        column_id: doDataProp.column_id ?? undefined,
-        tags,
-      };
-    }
 
     return {
       title: formData.title || "",
@@ -279,12 +259,11 @@ const DoDrawer = ({
               <div>
                 <label htmlFor="kanban-tags" className="mb-1.5 block text-xs font-medium text-text-muted">Tags</label>
                 <select
-                  multiple
                   id="kanban-tags"
-                  className="w-full text-sm text-text outline-none focus:border-text-muted rounded"
+                  className="w-full text-sm text-text outline-none focus:border-text-muted"
                   onChange={(event) => {
-                    const selectedOptions = Array.from(event.target.selectedOptions, option => Number(option.value));
-                    setSelectedTagIds(new Set(selectedOptions));
+                    const selectedTagId = Number(event.target.value);
+                    setSelectedTagIds(new Set([selectedTagId]));
                   }}
                 >
                   {tagsArray.map((tag) => (
