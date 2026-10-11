@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ request }) => {
   const sidebarMode = new URL(request.url).searchParams.get("sidebar") === "true";
 
   if (sidebarMode) {
-    // Sidebar mode - return all tasks with their tags
+    // Sidebar mode - return up to 5 tasks with their tags
     const result = await db.select({
       id: dos.id,
       title: dos.title,
@@ -25,7 +25,8 @@ export const GET: APIRoute = async ({ request }) => {
     })
     .from(dos)
     .innerJoin(projects, eq(dos.project_id, projects.id))
-    .orderBy(desc(dos.updated_at));
+    .orderBy(desc(dos.updated_at))
+    .limit(5);
 
     // Fetch tags for each DO
     const dosWithTags = await Promise.all(
