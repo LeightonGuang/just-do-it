@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 
 import Tag from "../../tags/Tag";
-import type { Tag as DbTag } from "../../db/schema";
+import type { Tag as DbTag } from "../../../db/schema";
 
 const TagsSidebar = ({ className }: { className?: string }) => {
   const { sidebarTags, loading } = useSidebar();

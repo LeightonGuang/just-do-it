@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { eq, like } from "drizzle-orm";
+import { like } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 

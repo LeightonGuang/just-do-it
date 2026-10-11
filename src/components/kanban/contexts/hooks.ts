@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 import type { KanbanDo } from "./types";
-import type { Project } from "../../../../db/schema";
+import type { Project } from "../../../db";
 
 /** Hook for managing DO editing state */
 export const useEditingDo = () => {
@@ -54,5 +54,17 @@ export const useGlobalState = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  return { loading, error, savingProject, setSavingProject, setLoading, setError };
+  return {
+    loading,
+    error,
+    savingProject,
+    setSavingProject,
+    setLoading,
+    setError,
+    resetState: useCallback(() => {
+      setSavingProject(false);
+      setLoading(false);
+      setError("");
+    }, []),
+  };
 };

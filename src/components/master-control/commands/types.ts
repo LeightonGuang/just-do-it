@@ -1,4 +1,4 @@
-import type { Project, Column } from "../../../db/schema";
+import type { Project, Column } from "../../../db";
 
 export type ApiTag = {
   id: number;

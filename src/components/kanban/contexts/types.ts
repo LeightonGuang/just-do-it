@@ -1,4 +1,4 @@
-import type { Column, Project } from "../../db/schema";
+import type { Column, Project } from "../../../db";
 
 export type KanbanTag = {
   id: number;

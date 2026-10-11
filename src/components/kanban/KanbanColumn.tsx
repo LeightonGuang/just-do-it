@@ -2,7 +2,7 @@ import { twMerge } from "tailwind-merge";
 import { useEffect, useRef, useState } from "react";
 import { Check, Flag, MoreHorizontal, Pencil, Trash, X } from "lucide-react";
 
-import type { Column } from "../../db/schema";
+import type { Column } from "../../db";
 
 import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts";

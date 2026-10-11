@@ -2,7 +2,7 @@ import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 import { Plus, Trash, TrashOff } from "lucide-react";
 
-import type { Tag } from "../../src/db/schema";
+import type { Tag } from "../../db/schema";
 
 const TagsPage = () => {
   const [tags, setTags] = useState<Tag[]>([]);

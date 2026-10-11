@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createContext, useCallback, useContext, useEffect } from 'react';
 
 import type { KanbanDo, KanbanTag } from "./types";
-import type { Project, Column } from "../../db/schema";
+import type { Project, Column } from "../../../db";
 
 import { useEditingDo } from "./hooks";
 import { useGlobalState } from "./hooks";
@@ -126,7 +126,7 @@ export const KanbanProvider = ({
 
     try {
       await editProject(name, projectEditState.projectColour);
-      await fetchKanbanData(projectId);
+      await fetchKanbanData();
       projectEditState.cancelEditingProject();
     } finally {
       globalState.setSavingProject(false);

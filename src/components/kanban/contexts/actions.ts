@@ -1,4 +1,4 @@
-import type { Project, Column } from "../../../../db/schema";
+import type { Project, Column } from "../../../db";
 import type { KanbanDo, KanbanResponse, KanbanTag } from "./types";
 
 /** Fetch all Kanban data for a project */

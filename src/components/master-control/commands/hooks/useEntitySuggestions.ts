@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import type { EntityType } from "../types";
-import type { Project, Do, Column } from "../../../../../db/schema";
+import type { ApiDo, EntityType } from "../types";
+import type { Project, Column } from "../../../../db";
 
 type UseEntitySuggestionsOptions = {
   enabled: boolean;
@@ -14,7 +14,7 @@ type UseEntitySuggestionsOptions = {
 
 export type EntitySuggestionsResult = {
   projects: Project[];
-  dos: Do[];
+  dos: ApiDo[];
   columns: Column[];
 };
 
@@ -27,7 +27,7 @@ const useEntitySuggestions = ({
   entityProjectId,
 }: UseEntitySuggestionsOptions): EntitySuggestionsResult => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [dos, setDos] = useState<Do[]>([]);
+  const [dos, setDos] = useState<ApiDo[]>([]);
   const [columns, setColumns] = useState<Column[]>([]);
 
   useEffect(() => {
@@ -127,7 +127,7 @@ const useEntitySuggestions = ({
             return;
           }
 
-          const data: Do[] = await res.json();
+          const data: ApiDo[] = await res.json();
 
           setDos(data);
           setProjects([]);

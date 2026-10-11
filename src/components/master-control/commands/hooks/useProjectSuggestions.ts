@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { Project } from "../../../../../db/schema";
+import type { Project } from "../../../../db";
 
 type UseProjectSuggestionsOptions = {
   enabled: boolean;
