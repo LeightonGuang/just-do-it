@@ -55,6 +55,7 @@ type KanbanContextValue = {
   setColumnIsDone: (columnId: number, isDone: boolean) => Promise<void>;
 
   createDo: (data: CreateDoData) => Promise<void>;
+  deleteDo: (doId: number) => Promise<void>;
 
   loading: boolean;
   error: string;
@@ -82,11 +83,14 @@ export const KanbanProvider = ({
     editingDoId,
     handleEditDo,
     handleCloseDoEditor,
-  } = useEditingDo({ setCreatingDoId: globalState.setCreatingDoId });
+  } = useEditingDo({
+    setCreatingDoId: globalState.setCreatingDoId,
+    setIsCreatingMode: globalState.setIsCreatingMode,
+  });
 
   // Handle creating a new DO through the create mode button
   const handleCreateDo = useCallback(
-    async (data: CreateDoData) => {
+    async (data: CreateDoData & { tags?: KanbanTag[] }) => {
       if (!projectId) return;
 
       try {
@@ -100,6 +104,7 @@ export const KanbanProvider = ({
             end_at: data.end_at ? formatDateForApi(data.end_at) : undefined,
             project_id: Number(projectId),
             column_id: data.column_id ? Number(data.column_id) : undefined,
+            tags: data.tags || [],
           }),
         });
 
@@ -212,8 +217,8 @@ export const KanbanProvider = ({
       );
 
       try {
-        const response = await fetch("/api/dos", {
-          method: "PATCH",
+        const response = await fetch("/api/dos/move", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: doId, column_id: columnId }),
         });
@@ -298,6 +303,25 @@ export const KanbanProvider = ({
     [projectId, fetchKanbanData],
   );
 
+  const deleteDo = useCallback(
+    async (doId: number) => {
+      const response = await fetch(`/api/dos/${doId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error || "Failed to delete task");
+      }
+
+      // Remove the task from state so the UI updates immediately.
+      setDos((currentDos) =>
+        currentDos.filter((doItem) => doItem.id !== doId),
+      );
+    },
+    [],
+  );
+
   const setColumnIsDone = useCallback(
     async (columnId: number, isDone: boolean) => {
       const response = await fetch(`/api/columns/${columnId}`, {
@@ -360,6 +384,7 @@ export const KanbanProvider = ({
         deleteColumn,
         setColumnIsDone,
         createDo,
+        deleteDo,
         loading: globalState.loading,
         error: globalState.error,
       }}
@@ -412,7 +437,7 @@ const fetchKanban = async (projectId: string | null) => {
       ...doItem,
       tags: Array.isArray(doItem.tags) ? doItem.tags : [],
     })),
-    tags: tagData,
+    tags: tagData || [],
   };
 };
 
@@ -420,4 +445,5 @@ type KanbanResponse = {
   project: Project;
   columns: Column[];
   dos: KanbanDo[];
+  tags: KanbanTag[];
 };

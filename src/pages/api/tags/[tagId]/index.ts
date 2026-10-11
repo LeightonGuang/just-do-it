@@ -22,7 +22,6 @@ export const GET: APIRoute = async ({ params }) => {
         project_id: dos.project_id,
         title: dos.title,
         description: dos.description,
-        priority: dos.priority,
         start_at: dos.start_at,
         end_at: dos.end_at,
         created_at: dos.created_at,
@@ -40,13 +39,10 @@ export const GET: APIRoute = async ({ params }) => {
     .where(eq(tags.id, tagId));
 
   if (result.length === 0) {
-    return Response.json(
-      {
-        tag: null,
-        dos: [],
-      },
-      { status: 200 },
-    );
+    return Response.json({
+      tag: null,
+      dos: [],
+    }, { status: 200 });
   }
 
   return Response.json({
@@ -64,6 +60,10 @@ export const DELETE: APIRoute = async ({ params }) => {
     return Response.json({ error: "Invalid tag ID" }, { status: 400 });
   }
 
+  // Delete all dos_tags entries for this tag first
+  await db.delete(doTags).where(eq(doTags.tag_id, id));
+
+  // Then delete the tag itself
   const result = await db
     .delete(tags)
     .where(eq(tags.id, id))

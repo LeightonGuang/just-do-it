@@ -19,6 +19,8 @@ const Kanban = ({
     project,
     columns,
     loading,
+    dos,
+    tags,
 
     projectName,
     projectColour,
@@ -31,6 +33,7 @@ const Kanban = ({
     startEditingProject,
     cancelEditingProject,
     handleCreateDo,
+    deleteDo,
   } = useKanban();
 
   const {
@@ -66,6 +69,9 @@ const Kanban = ({
   }
 
   if (!project) return null;
+
+  // Find the DO object for editing mode
+  const editingDo = editingDoId ? dos.find((doItem) => doItem.id === editingDoId) : null;
 
   return (
     <section className={twMerge("relative min-h-dvh", className)}>
@@ -192,6 +198,7 @@ const Kanban = ({
               key={column.id}
               column={column}
               onCreateDoClick={() => {
+                handleCloseDoEditor();
                 setIsCreatingMode(true);
                 setCreatingDoId(null);
                 setCreateColumnId(column.id);
@@ -207,6 +214,9 @@ const Kanban = ({
         createColumnId={createColumnId}
         onClose={handleCloseDoEditor}
         onCreate={isCreatingMode ? handleCreateDo : undefined}
+        onDelete={deleteDo}
+        doData={editingDo ?? undefined}
+        tags={tags}
       />
 
       {editingColumnId !== null && <div>{/* Column editor goes here */}</div>}

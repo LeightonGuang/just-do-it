@@ -10,7 +10,6 @@ export type ApiDo = {
   id: number;
   title: string;
   description: string | null;
-  priority: "low" | "mid" | "high" | null;
 
   project_id: number;
   project_name: string;

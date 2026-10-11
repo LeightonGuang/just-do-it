@@ -1,6 +1,3 @@
-import type { Column } from "../../../../db";
-import type { MoveDOType } from "./move";
-
 export type CreateDoData = {
   title: string;
   project_id?: number;
@@ -8,23 +5,18 @@ export type CreateDoData = {
   description?: string;
   start_at?: string;
   end_at?: string;
-};
-
-type FormValues = {
-  title: string;
-  description: string;
-  columnId: string;
-  tagId: string;
-  startAt: string;
-  endAt: string;
+  tags?: Array<{ id: number }>;
 };
 
 export type DoDrawerProps = {
   doId: number | null;
   onClose: () => void;
   onCreate?: (data: CreateDoData) => Promise<void>;
+  onDelete?: (doId: number) => Promise<void>;
   isCreating?: boolean;
   createColumnId?: number;
+  doData?: KanbanDo;
+  tags?: KanbanTag[];
 };
 
 // Move-related types for drag-and-drop functionality

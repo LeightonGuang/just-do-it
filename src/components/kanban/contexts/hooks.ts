@@ -5,10 +5,19 @@ import type { Project } from "../../../db";
 /** Hook for managing DO editing state */
 type UseEditingDoOptions = {
   setCreatingDoId: (id: number | null) => void;
+  setIsCreatingMode: (value: boolean) => void;
 };
 
-export const useEditingDo = ({ setCreatingDoId }: UseEditingDoOptions) => {
+export const useEditingDo = ({ setCreatingDoId, setIsCreatingMode }: UseEditingDoOptions) => {
   const [editingDoId, setEditingDoId] = useState<number | null>(null);
+
+  const handleEditDo = useCallback((id: number) => {
+    setEditingDoId(id);
+    // Editing and creating are mutually exclusive. Reset create mode so the
+    // drawer always PATCHes an existing task instead of duplicating it.
+    setCreatingDoId(null);
+    setIsCreatingMode(false);
+  }, [setEditingDoId, setCreatingDoId, setIsCreatingMode]);
 
   const handleCloseDoEditor = useCallback(() => {
     setEditingDoId(null);
@@ -17,12 +26,8 @@ export const useEditingDo = ({ setCreatingDoId }: UseEditingDoOptions) => {
   return {
     editingDoId,
     setEditingDoId,
-    handleEditDo: useCallback((id: number) => {
-      setEditingDoId(id);
-    }, []),
-    handleCloseDoEditor: useCallback(() => {
-      setEditingDoId(null);
-    }, [setEditingDoId]),
+    handleEditDo,
+    handleCloseDoEditor,
   };
 }
 
