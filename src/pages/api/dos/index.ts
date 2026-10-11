@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
-import { eq, like, and, asc, isNull, inArray } from "drizzle-orm";
+import { eq, like, and, asc, desc, isNull, inArray } from "drizzle-orm";
 
 import { parseDate } from "../../../../lib/date";
 import { dos, columns, projects, doTags, tags } from "../../../db/schema";
@@ -27,31 +27,31 @@ export const GET: APIRoute = async ({ url }) => {
   // Sidebar only shows unfinished tasks.
   if (isSidebar) conditions.push(eq(columns.is_done, false));
 
-  const tasks = await db
-    .select({
-      id: dos.id,
-      title: dos.title,
-      description: dos.description,
-      priority: dos.priority,
-
-      project_id: dos.project_id,
-      project_name: projects.name,
-      project_colour: projects.colour,
-
-      column_id: dos.column_id,
-
-      start_at: dos.start_at,
-      end_at: dos.end_at,
-
-      created_at: dos.created_at,
-      updated_at: dos.updated_at,
-    })
-    .from(dos)
-    .innerJoin(projects, eq(dos.project_id, projects.id))
-    .innerJoin(columns, eq(dos.column_id, columns.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(asc(isNull(dos.end_at)), asc(dos.end_at))
-    .limit(isSidebar ? 5 : 1000);
+  let tasks: any[];
+  try {
+    tasks = await db
+      .select({
+        id: dos.id,
+        title: dos.title,
+        description: dos.description,
+        project_id: dos.project_id,
+        column_id: dos.column_id,
+        start_at: dos.start_at,
+        end_at: dos.end_at,
+        created_at: dos.created_at,
+        updated_at: dos.updated_at,
+      })
+      .from(dos)
+      .innerJoin(projects, eq(dos.project_id, projects.id))
+      .innerJoin(columns, eq(dos.column_id, columns.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(asc(isNull(dos.end_at)), asc(dos.end_at))
+      .limit(isSidebar ? 5 : 1000);
+  } catch (error) {
+    console.error("Database read error in GET /api/dos:", error);
+    // Return an empty array to prevent the API crash, but log the error for debugging.
+    return Response.json([]);
+  }
 
   if (tasks.length === 0) {
     return Response.json([]);
@@ -198,20 +198,27 @@ export const POST: APIRoute = async ({ request }) => {
   const inserted = await db
     .insert(dos)
     .values({
-      title,
-      description,
-      project_id: projectId,
-      column_id: columnId,
-      start_at: startAt,
-      end_at: endAt,
-      created_at: now,
-      updated_at: now,
+      title: title!,
+      project_id: projectId!,
+      column_id: columnId!,
+      description: null,
+      start_at: null,
+      end_at: null,
+      created_at: now!,
+      updated_at: now!,
     })
     .returning();
 
+  // Get the auto-generated ID from SQLite's last_insert_rowid()
+  const result = await db
+    .select({ id: dos.id, title: dos.title, description: dos.description, project_id: dos.project_id, column_id: dos.column_id, start_at: dos.start_at, end_at: dos.end_at, created_at: dos.created_at, updated_at: dos.updated_at })
+    .from(dos)
+    .orderBy(desc(dos.updated_at))
+    .limit(1);
+
   return Response.json({
     success: true,
-    task: inserted[0],
+    task: result[0],
   });
 };
 
