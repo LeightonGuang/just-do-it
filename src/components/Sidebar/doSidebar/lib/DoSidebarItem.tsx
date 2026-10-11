@@ -11,7 +11,9 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
 
   // Only initialize countdown state when there's an end date
   const [countdown, setCountdown] = useState<Countdown>(() =>
-    hasEndDate ? getCountdown(doItem.end_at) : { days: 0, hours: 0, minutes: 0, seconds: 0, due: false },
+    hasEndDate
+      ? getCountdown(doItem.end_at)
+      : { days: 0, hours: 0, minutes: 0, seconds: 0, due: false },
   );
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
               className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border"
             />
 
-            <p className="truncate text-[0.6875rem] leading-none text-text-muted">
+            <p className="truncate text-[0.6875rem] leading-tight whitespace-nowrap text-text-muted">
               {doItem.project_name}
             </p>
           </div>
