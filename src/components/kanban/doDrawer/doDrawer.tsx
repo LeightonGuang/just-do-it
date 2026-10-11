@@ -17,6 +17,8 @@ const DoDrawer = ({
   doData: doDataProp = undefined,
   tags: availableTags = [],
 }: DoDrawerProps & { doData?: KanbanDo; tags?: KanbanTag[] }) => {
+  // Ensure we always have an array (not null/undefined)
+  const tagsArray = Array.isArray(availableTags) ? availableTags : [];
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
@@ -24,6 +26,8 @@ const DoDrawer = ({
   const [description, setDescription] = useState("");
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
 
   // Fetch DO data (and its tags) when editing an existing task
   const fetchDoData = async (): Promise<DoWithTags | null> => {
@@ -53,6 +57,10 @@ const DoDrawer = ({
           setDescription(task.description || "");
           setSelectedTagIds(new Set(task.tags?.map((tag) => tag.id) ?? []));
           setIsEditingMode(true);
+
+          // Set datetime values for the DateTimeField components
+          setStartAt(task.start_at ? new Date(task.start_at).toISOString().slice(0, 16) : "");
+          setEndAt(task.end_at ? new Date(task.end_at).toISOString().slice(0, 16) : "");
         }
       } else {
         setSelectedTagIds(new Set());
@@ -264,10 +272,10 @@ const DoDrawer = ({
               />
             </div>
 
-            <DateTimeField label="Start" value="" id="kanban-start" onChange={() => {}} />
-            <DateTimeField label="Due" value="" id="kanban-end" onChange={() => {}} />
+            <DateTimeField label="Start" value={startAt} id="kanban-start" onChange={setStartAt} />
+            <DateTimeField label="Due" value={endAt} id="kanban-end" onChange={setEndAt} />
 
-            {availableTags.length > 0 && (
+            {tagsArray.length > 0 && (
               <div>
                 <label htmlFor="kanban-tags" className="mb-1.5 block text-xs font-medium text-text-muted">Tags</label>
                 <select
@@ -281,11 +289,19 @@ const DoDrawer = ({
                   style={{ width: "100%", minHeight: "80px" }}
                   className="w-full border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted rounded"
                 >
-                  {availableTags.map((tag) => (
+                  {tagsArray.map((tag) => (
                     <option key={tag.id} value={tag.id}>{tag.name}</option>
                   ))}
+
+                  {!tagsArray.length && isEditingMode && (
+                    <option disabled>No tags available</option>
+                  )}
                 </select>
               </div>
+            )}
+
+            {!tagsArray.length && isCreating && (
+              <div className="text-xs text-text-muted">No tags available. Create some in the Tags page first.</div>
             )}
           </div>
         </div>

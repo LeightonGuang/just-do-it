@@ -29,6 +29,8 @@ export type KanbanDo = {
   description?: string | null;
   column_id: number | null;
   project_id: number | null;
+  start_at?: string | null;
+  end_at?: string | null;
 };
 
 export type KanbanTag = {
