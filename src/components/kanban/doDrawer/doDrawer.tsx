@@ -2,22 +2,34 @@ import { X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
-import type { DoDrawerProps } from "./types";
+import type { DoDrawerProps, CreateDoData, KanbanDo } from "./types";
 import { DateTimeField } from "../kanbanEditDrawer/libs/DateTimeField";
 import { formatDateForApi } from "../kanbanEditDrawer/libs/formatDateForApi";
 
-const KanbanEditDrawer = ({ doId, onClose, onCreate }: DoDrawerProps) => {
+const DoDrawer = ({ doId, onClose, onCreate, isCreating, createColumnId }: DoDrawerProps) => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
+  // Fetch DO data when editing mode is active
+  const [doData, setDoData] = useState<KanbanDo | null>(null);
+
   useEffect(() => {
+    // Reset form when doId changes
     if (doId === null) {
       setTitle("");
       setDescription("");
       setError("");
+      setDoData(null);
+    } else {
+      // Fetch existing DO data for edit mode
+      fetch(`/api/dos/${doId}`, { method: "GET" })
+        .then((response) => response.json())
+        .then((data) => setDoData(data))
+        .catch(() => {})
+        .finally(() => setError(""));
     }
   }, [doId]);
 
@@ -43,6 +55,15 @@ const KanbanEditDrawer = ({ doId, onClose, onCreate }: DoDrawerProps) => {
     };
   }, [doId, onClose]);
 
+  // Prepare create data based on mode
+  const prepareCreateData = (formData: CreateDoData): CreateDoData => {
+    return {
+      ...formData,
+      project_id: doData?.project_id || isCreating ? 1 : undefined,
+      column_id: createColumnId || doData?.column_id || isCreating ? 1 : undefined,
+    };
+  };
+
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -55,13 +76,12 @@ const KanbanEditDrawer = ({ doId, onClose, onCreate }: DoDrawerProps) => {
       setSaving(true);
       setError("");
 
+      // Call create or update based on mode
       if (onCreate) {
-        await onCreate({
+        await onCreate(prepareCreateData({
           title: title.trim(),
           description: description.trim() || undefined,
-          project_id: 1,
-          column_id: 1, // Will be set by parent
-        });
+        }));
       }
 
       onClose();
@@ -97,6 +117,18 @@ const KanbanEditDrawer = ({ doId, onClose, onCreate }: DoDrawerProps) => {
     }
   };
 
+  // Populate form with existing DO data when in edit mode
+  useEffect(() => {
+    if (!isCreating && doData) {
+      setTitle(doData.title || "");
+      setDescription(doData.description || "");
+      setError("");
+    } else {
+      setTitle("");
+      setDescription("");
+    }
+  }, [doData, isCreating]);
+
   return (
     <>
       <div
@@ -121,7 +153,9 @@ const KanbanEditDrawer = ({ doId, onClose, onCreate }: DoDrawerProps) => {
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
           <div className="min-w-0">
-            <p className="text-xs tracking-wider text-text-muted uppercase">Edit task</p>
+            <p className="text-xs tracking-wider text-text-muted uppercase">
+              {isCreating ? "Create task" : "Edit task"}
+            </p>
             <h2 className="truncate text-sm font-semibold text-text">{doId ? "Task" : ""}</h2>
           </div>
 
@@ -177,30 +211,23 @@ const KanbanEditDrawer = ({ doId, onClose, onCreate }: DoDrawerProps) => {
               <button
                 type="button"
                 onClick={handleDelete}
-                disabled={deleting || saving}
-                className="px-2 py-2 text-sm text-danger transition-colors hover:text-danger/80 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={deleting || saving || doId === null}
+                aria-label="Delete task"
+                className="flex flex-1 items-center justify-center rounded border border-danger/30 bg-danger/5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-40"
               >
-                {deleting ? "Deleting..." : "Delete"}
+                <X className="mr-2 size-3.5" />
+                Delete
               </button>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={saving || deleting}
-                  className="border border-border px-4 py-2 text-sm text-text transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={!title.trim() || saving || deleting}
-                  className="bg-text px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {saving ? "Creating..." : "Create"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                onClick={() => {}}
+                aria-label="Save task"
+                disabled={saving}
+                className="flex flex-1 items-center justify-center rounded bg-text text-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-text-muted disabled:opacity-40"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
             </div>
           </div>
         </form>
@@ -209,4 +236,4 @@ const KanbanEditDrawer = ({ doId, onClose, onCreate }: DoDrawerProps) => {
   );
 };
 
-export default KanbanEditDrawer;
+export default DoDrawer;
