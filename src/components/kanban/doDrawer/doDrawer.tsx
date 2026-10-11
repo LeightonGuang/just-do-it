@@ -2,8 +2,8 @@ import { X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
-import type { DoDrawerProps, CreateDoData, KanbanDo, KanbanTag } from "./types";
 import { DateTimeField } from "../kanbanEditDrawer/libs/DateTimeField";
+import type { DoDrawerProps, CreateDoData, KanbanDo, KanbanTag } from "./types";
 
 type DoWithTags = KanbanDo & { tags?: { id: number }[] };
 
@@ -232,8 +232,8 @@ const DoDrawer = ({
 
         <button
           type="button"
-          onClick={handleClose}
           aria-label="Close"
+          onClick={handleClose}
           className="flex justify-center p-1 text-text-muted transition-colors hover:text-text"
         >
           <X className="size-4" />
@@ -279,15 +279,13 @@ const DoDrawer = ({
               <div>
                 <label htmlFor="kanban-tags" className="mb-1.5 block text-xs font-medium text-text-muted">Tags</label>
                 <select
-                  id="kanban-tags"
                   multiple
-                  value={Array.from(selectedTagIds).map(String)}
+                  id="kanban-tags"
+                  className="w-full text-sm text-text outline-none focus:border-text-muted rounded"
                   onChange={(event) => {
                     const selectedOptions = Array.from(event.target.selectedOptions, option => Number(option.value));
                     setSelectedTagIds(new Set(selectedOptions));
                   }}
-                  style={{ width: "100%", minHeight: "80px" }}
-                  className="w-full bg-background text-sm text-text outline-none focus:border-text-muted rounded"
                 >
                   {tagsArray.map((tag) => (
                     <option key={tag.id} value={tag.id}>{tag.name}</option>
@@ -311,8 +309,8 @@ const DoDrawer = ({
             <button
               type="button"
               onClick={handleDelete}
-              disabled={deleting || saving || doId === null}
               aria-label="Delete task"
+              disabled={deleting || saving || doId === null}
               className="flex flex-1 items-center justify-center rounded border border-danger/30 bg-danger/5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-40"
             >
               <X className="mr-2 size-3.5" />
