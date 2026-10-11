@@ -16,6 +16,19 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
       : { days: 0, hours: 0, minutes: 0, seconds: 0, due: false },
   );
 
+  // Only update countdown when there's an end date
+  useEffect(() => {
+    if (!hasEndDate) return;
+
+    setCountdown(getCountdown(doItem.end_at));
+
+    const interval = setInterval(() => {
+      setCountdown(getCountdown(doItem.end_at));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [hasEndDate, doItem.end_at]);
+
   useEffect(() => {
     if (!hasEndDate) return;
 
@@ -65,7 +78,7 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
               className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border"
             />
 
-            <p className="truncate text-[0.6875rem] leading-tight whitespace-nowrap text-text-muted">
+            <p className="text-[0.6875rem] leading-tight whitespace-nowrap text-text-muted">
               {doItem.project_name}
             </p>
           </div>

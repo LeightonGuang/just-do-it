@@ -211,7 +211,7 @@ const Kanban = ({
       {/* Backdrop - closes when clicking outside */}
       {(creatingDoId || editingDoId) && (
         <div
-          className="fixed inset-0 z-40 bg-black/20"
+          className="fixed inset-0 z-40 bg-black/20 blur-md"
           onClick={handleCloseDoEditor}
         />
       )}
@@ -223,8 +223,7 @@ const Kanban = ({
         onClose={handleCloseDoEditor}
         onCreate={isCreatingMode ? handleCreateDo : undefined}
         onDelete={deleteDo}
-        doData={editingDo ?? undefined}
-        tags={tags}
+        tags={tags || []}
       />
 
       {editingColumnId !== null && <div>{/* Column editor goes here */}</div>}

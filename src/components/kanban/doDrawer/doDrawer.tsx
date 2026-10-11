@@ -24,7 +24,7 @@ const DoDrawer = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isEditingMode, setIsEditingMode] = useState(false);
-  const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
 
@@ -54,7 +54,7 @@ const DoDrawer = ({
         if (task) {
           setTitle(task.title || "");
           setDescription(task.description || "");
-          setSelectedTagIds(new Set(task.tags?.map((tag) => tag.id) ?? []));
+          setSelectedTagId(task.tags?.[0]?.id ?? null);
           setIsEditingMode(true);
 
           // Set datetime values for the DateTimeField components
@@ -62,7 +62,7 @@ const DoDrawer = ({
           setEndAt(task.end_at ? new Date(task.end_at).toISOString().slice(0, 16) : "");
         }
       } else {
-        setSelectedTagIds(new Set());
+        setSelectedTagId(null);
       }
     };
 
@@ -78,7 +78,7 @@ const DoDrawer = ({
 
   // Prepare create/update data based on mode
   const prepareCreateData = (formData: CreateDoData): CreateDoData => {
-    const tags = Array.from(selectedTagIds).map((id) => ({ id }));
+    const tags = selectedTagId ? [{ id: selectedTagId }] : [];
 
     return {
       title: formData.title || "",
@@ -109,6 +109,7 @@ const DoDrawer = ({
       if (isCreating && onCreate) {
         // Create a new DO through the provided callback
         await onCreate(saveData);
+        handleClose();
       } else if (doId != null) {
         // Update an existing DO via PATCH (never POST — that would duplicate)
         const response = await fetch(`/api/dos/${doId}`, {
@@ -125,9 +126,7 @@ const DoDrawer = ({
         const updatedData = (await response.json()) as { task?: DoWithTags };
         setTitle(updatedData.task?.title || "");
         setDescription(updatedData.task?.description || "");
-        setSelectedTagIds(
-          new Set(updatedData.task?.tags?.map((tag) => tag.id) ?? []),
-        );
+        setSelectedTagId(updatedData.task?.tags?.[0]?.id ?? null);
       } else {
         // Create a new DO via POST (fallback when no callback is provided)
         const createResponse = await fetch("/api/dos", {
@@ -187,8 +186,10 @@ const DoDrawer = ({
     setTitle("");
     setDescription("");
     setIsEditingMode(false);
-    setSelectedTagIds(new Set());
+    setSelectedTagId(null);
     setError("");
+    setStartAt("");
+    setEndAt("");
   };
 
   return (
@@ -260,12 +261,13 @@ const DoDrawer = ({
                 <label htmlFor="kanban-tags" className="mb-1.5 block text-xs font-medium text-text-muted">Tags</label>
                 <select
                   id="kanban-tags"
-                  className="w-full text-sm text-text outline-none focus:border-text-muted"
+                  className="w-full border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted"
                   onChange={(event) => {
                     const selectedTagId = Number(event.target.value);
-                    setSelectedTagIds(new Set([selectedTagId]));
+                    setSelectedTagId(selectedTagId);
                   }}
                 >
+                  <option value="">No tag</option>
                   {tagsArray.map((tag) => (
                     <option key={tag.id} value={tag.id}>{tag.name}</option>
                   ))}

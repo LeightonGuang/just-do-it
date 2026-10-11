@@ -5,7 +5,7 @@ export type CreateDoData = {
   description?: string;
   start_at?: string;
   end_at?: string;
-  tags?: Array<{ id: number }>;
+  tags?: Array<{ id: number }> | null;
 };
 
 export type DoDrawerProps = {
@@ -15,7 +15,6 @@ export type DoDrawerProps = {
   onDelete?: (doId: number) => Promise<void>;
   isCreating?: boolean;
   createColumnId?: number;
-  doData?: KanbanDo;
   tags?: KanbanTag[];
 };
 
