@@ -5,7 +5,7 @@ import { Check, Pencil, Plus, X } from "lucide-react";
 import { useKanban } from "./contexts";
 import KanbanColumn from "./KanbanColumn";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
-import DoDrawer from "./doDrawer/DoDrawer";
+import DoDrawer from "./doDrawer/doDrawer";
 
 const Kanban = ({
   doId,

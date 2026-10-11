@@ -1,4 +1,5 @@
 import type { Column } from "../../../../db";
+import type { MoveDOType } from "./move";
 
 export type CreateDoData = {
   title: string;
