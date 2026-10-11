@@ -208,10 +208,10 @@ const Kanban = ({
         </div>
       </div>
 
-      {/* Backdrop with blur - closes when clicking outside */}
+      {/* Backdrop - closes when clicking outside */}
       {(creatingDoId || editingDoId) && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-black/20"
           onClick={handleCloseDoEditor}
         />
       )}

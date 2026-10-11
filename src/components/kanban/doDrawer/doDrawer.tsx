@@ -212,7 +212,6 @@ const DoDrawer = ({
         "shadow-2xl",
         "transition-transform duration-300 ease-out",
         doId !== null || isCreating ? "translate-x-0" : "translate-x-full",
-        "backdrop-blur-sm",
       )}
     >
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
