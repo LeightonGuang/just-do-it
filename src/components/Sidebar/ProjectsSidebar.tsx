@@ -16,7 +16,7 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
       )}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-sm">Projects</h2>
+        <h2 className="text-sm font-medium">Projects</h2>
 
         <a
           href="/projects"
@@ -52,13 +52,16 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
   return (
     <a
       href={`/?project_id=${project.id}`}
-      className="flex items-center gap-2 bg-card p-2 text-xs hover:bg-card-hover md:p-1"
+      className="group flex items-center gap-2 bg-card p-2 text-xs hover:bg-card-hover md:p-1"
     >
+      {/* Color indicator circle with border */}
       <div
         style={{ backgroundColor: project.colour }}
-        className="mt-0.5 size-3 shrink-0 rounded-xs border border-border"
+        className="mt-0.5 size-3 shrink-0 rounded-sm border border-border shadow-sm group-hover:border-opacity-100"
       />
-      <p>{project.name}</p>
+      
+      {/* Project name */}
+      <p className="font-medium truncate">{project.name}</p>
     </a>
   );
 };
@@ -66,7 +69,7 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
 const ProjectSidebarSkeleton = () => {
   return (
     <div className="flex items-center gap-2 bg-card p-2 md:p-1">
-      <div className="size-3 shrink-0 animate-pulse rounded-xs bg-border" />
+      <div className="size-3 shrink-0 animate-pulse rounded-sm bg-border" />
       <div className="h-3 w-24 animate-pulse rounded-sm bg-border" />
     </div>
   );

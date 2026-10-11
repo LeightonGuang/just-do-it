@@ -8,7 +8,7 @@ const MobileSidebar = ({ className }: { className?: string }) => {
   return (
     <aside className={twMerge("w-full overflow-hidden pt-4", className)}>
       <div className="h-full overflow-y-auto">
-        <h1 className="mx-4 text-lg font-medium whitespace-nowrap text-orange-500 uppercase">
+        <h1 className="px-4 py-3 text-lg font-bold whitespace-nowrap text-orange-600 uppercase tracking-wide">
           <a href="/" className="hover:underline">
             Just Do it
           </a>

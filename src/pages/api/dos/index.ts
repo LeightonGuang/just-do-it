@@ -40,6 +40,8 @@ export const GET: APIRoute = async ({ url }) => {
         end_at: dos.end_at,
         created_at: dos.created_at,
         updated_at: dos.updated_at,
+        project_name: projects.name,
+        project_colour: projects.colour,
       })
       .from(dos)
       .innerJoin(projects, eq(dos.project_id, projects.id))
@@ -211,8 +213,9 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Get the auto-generated ID from SQLite's last_insert_rowid()
   const result = await db
-    .select({ id: dos.id, title: dos.title, description: dos.description, project_id: dos.project_id, column_id: dos.column_id, start_at: dos.start_at, end_at: dos.end_at, created_at: dos.created_at, updated_at: dos.updated_at })
+    .select({ id: dos.id, title: dos.title, description: dos.description, project_id: dos.project_id, column_id: dos.column_id, start_at: dos.start_at, end_at: dos.end_at, created_at: dos.created_at, updated_at: dos.updated_at, project_name: projects.name, project_colour: projects.colour })
     .from(dos)
+    .innerJoin(projects, eq(dos.project_id, projects.id))
     .orderBy(desc(dos.updated_at))
     .limit(1);
 

@@ -146,7 +146,7 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
           isCollapsed && "pointer-events-none invisible",
         )}
       >
-        <h1 className="p-2 text-lg font-medium whitespace-nowrap text-orange-500 uppercase">
+        <h1 className="px-4 py-3 text-lg font-bold whitespace-nowrap text-orange-600 uppercase tracking-wide">
           <a href="/" className="hover:underline">
             Just Do it
           </a>

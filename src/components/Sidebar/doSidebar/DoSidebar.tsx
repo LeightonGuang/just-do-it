@@ -17,7 +17,7 @@ const DoSidebar = ({ className }: { className?: string }) => {
         className,
       )}
     >
-      <div className="items-center1 flex justify-between">
+      <div className="flex items-center justify-between">
         <h2 className="text-sm">Dos</h2>
 
         <a
