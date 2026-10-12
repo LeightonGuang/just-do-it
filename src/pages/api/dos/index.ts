@@ -34,6 +34,7 @@ export const GET: APIRoute = async ({ request }) => {
         const taskTags = await db.select({
           id: doTags.tag_id,
           name: tags.name,
+          colour: tags.colour,
         }).from(doTags)
           .innerJoin(tags, eq(doTags.tag_id, tags.id))
           .where(eq(doTags.do_id, task.id));

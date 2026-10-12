@@ -90,7 +90,7 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
                   key={tag.id}
                   name={tag.name}
                   colour={tag.colour}
-                  className="px-1 py-0.5 text-[0.625rem] leading-none"
+                  className="text-[0.625rem] leading-none"
                 />
               ))}
             </div>

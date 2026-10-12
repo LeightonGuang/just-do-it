@@ -123,6 +123,9 @@ const DoDrawer = ({
           throw new Error(data.error || "Failed to update task");
         }
 
+        // Close the drawer and use the newest edited information from the API response
+        handleClose();
+
         const updatedData = (await response.json()) as { task?: DoWithTags };
         setTitle(updatedData.task?.title || "");
         setDescription(updatedData.task?.description || "");
@@ -261,6 +264,7 @@ const DoDrawer = ({
                 <label htmlFor="kanban-tags" className="mb-1.5 block text-xs font-medium text-text-muted">Tags</label>
                 <select
                   id="kanban-tags"
+                  value={selectedTagId ?? ""}
                   className="w-full border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted"
                   onChange={(event) => {
                     const selectedTagId = Number(event.target.value);
@@ -269,7 +273,12 @@ const DoDrawer = ({
                 >
                   <option value="">No tag</option>
                   {tagsArray.map((tag) => (
-                    <option key={tag.id} value={tag.id}>{tag.name}</option>
+                    <option
+                      key={tag.id}
+                      value={tag.id.toString()}
+                    >
+                      {tag.name}
+                    </option>
                   ))}
 
                   {!tagsArray.length && isEditingMode && (
