@@ -71,6 +71,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
     project_id?: number;
     start_at?: string | null;
     end_at?: string | null;
+    position?: number;
     tags?: Array<{ id: number }>;
   };
 
@@ -149,6 +150,16 @@ export const PATCH: APIRoute = async ({ params, request }) => {
 
   if (endAt !== null) {
     updateData.end_at = new Date(endAt);
+  }
+
+  if (body.position !== undefined) {
+    if (!Number.isInteger(body.position)) {
+      return Response.json(
+        { error: "Position must be an integer" },
+        { status: 400 },
+      );
+    }
+    updateData.position = body.position;
   }
 
   // Update the task.

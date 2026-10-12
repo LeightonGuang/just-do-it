@@ -77,12 +77,6 @@ export const moveDo = async (
 ) => {
   if (!projectId) return;
 
-  // Optimistically update local state
-  const optimisticUpdate = (dos: KanbanDo[]) =>
-    dos.map((doItem) =>
-      doItem.id === doId ? { ...doItem, column_id: columnId } : doItem,
-    );
-
   try {
     const response = await fetch(`/api/dos/${doId}`, {
       method: "PATCH",

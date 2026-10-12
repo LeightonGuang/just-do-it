@@ -15,28 +15,29 @@ type KanbanColumnProps = {
 };
 
 const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
-  const { dos, setColumnIsDone } = useKanban();
-
   const {
+    dos,
+    setColumnIsDone,
+    editingColumnId,
+    handleEditDo,
+    // DO reordering handlers from context
     draggedDoId,
     dragOverColumnId,
     movingDoId,
+    handleDragStart: handleDoDragStart,
+    handleDragEnd: handleDoDragEnd,
+    handleDragOver: handleDoDragOver,
+    handleDragLeave: handleDoDragLeave,
+    handleDrop: handleDoDrop,
+  } = useKanban();
 
-    editingColumnId,
-
-    handleDragStart,
-    handleDragEnd,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
-
-    handleEditDo,
-
-    handleEditColumn,
-    handleCloseColumnEditor,
+  const {
     handleSaveColumn,
-
     handleDeleteColumn,
+    handleDropColumn,
+    setDraggedColumnId,
+    draggedColumnId,
+    setDragOverColumnForReorder,
   } = useKanbanBoard();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,8 +48,30 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = editingColumnId === column.id;
-  const columnDos = dos.filter((doItem) => doItem.column_id === column.id);
+  // Safety check for dos - prevents "Cannot read properties of undefined (reading 'filter')"
+  const columnDos = Array.isArray(dos) ? dos.filter((doItem) => doItem.column_id === column.id) : [];
   const isDragOver = dragOverColumnId === column.id;
+
+  // Add drag event handlers for column reordering
+  useEffect(() => {
+    if (draggedColumnId !== null) {
+      const handleMouseMove = () => {
+        document.body.style.cursor = "grabbing";
+      };
+
+      const handleMouseUp = () => {
+        document.body.style.cursor = "";
+      };
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [draggedColumnId]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -71,16 +94,17 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
 
     setName(column.name);
 
-    // Focus after the input has rendered.
     requestAnimationFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     });
   }, [isEditing, column.name]);
 
+  const [editingColumnLocal, setEditingColumnLocal] = useState(false);
+
   const handleEdit = () => {
     setMenuOpen(false);
-    handleEditColumn(column.id);
+    setEditingColumnLocal(true);
   };
 
   const handleDelete = async () => {
@@ -91,7 +115,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
 
   const handleCancelEdit = () => {
     setName(column.name);
-    handleCloseColumnEditor();
+    setEditingColumnLocal(false);
   };
 
   const handleSave = async () => {
@@ -99,17 +123,13 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
 
     if (!trimmedName || saving) return;
 
-    if (trimmedName === column.name) {
-      handleCloseColumnEditor();
-      return;
-    }
-
     try {
       setSaving(true);
 
       await handleSaveColumn(column.id, trimmedName);
     } finally {
       setSaving(false);
+      setEditingColumnLocal(false);
     }
   };
 
@@ -125,18 +145,67 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
     }
   };
 
+  // Column drag end handler
+  const handleColumnDragEnd = () => {
+    setDraggedColumnId(null);
+    setDragOverColumnForReorder(null);
+  };
+
+  // Use local editing state or context editing state
+  const showEditor = editingColumnLocal || isEditing;
+
   return (
     <article
-      onDragLeave={handleDragLeave}
-      onDrop={(event) => handleDrop(event, column.id)}
-      onDragOver={(event) => handleDragOver(event, column.id)}
+      onDragLeave={(event) => handleDoDragLeave(event)}
+      onDrop={(event) => {
+        // Only handle DO drops here, not column reordering
+        const droppedDoId = Number(event.dataTransfer.getData("text/plain"));
+        if (!droppedDoId) return;
+        handleDoDrop(event, column.id);
+      }}
+      onDragOver={(event) => handleDoDragOver(event, column.id)}
       className={twMerge(
         "min-w-0 border border-border bg-card p-2 transition-colors",
         isDragOver && "border-green-500 bg-green-500/5",
+        draggedColumnId === column.id && "opacity-50",
       )}
     >
+      {/* Drag handle for column reordering */}
+      {!showEditor && (
+        <div
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("application/column-id", String(column.id));
+            setDraggedColumnId(column.id);
+          }}
+          onDragEnd={handleColumnDragEnd}
+          className="absolute -top-3 left-0 right-0 flex items-center justify-center cursor-grab hover:bg-background/50 rounded"
+        >
+          <div className="h-1.5 w-8 bg-border hover:bg-border-muted transition-colors" />
+        </div>
+      )}
+
+      {/* Drop zone for column reordering */}
+      {!showEditor && (
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            setDragOverColumnForReorder(column.id);
+          }}
+          onDragLeave={() => setDragOverColumnForReorder(null)}
+          onDrop={async (event) => {
+            event.preventDefault();
+            await handleDropColumn(event, column.id);
+            setDragOverColumnForReorder(null);
+          }}
+          className="absolute inset-0 z-10"
+        />
+      )}
+
       <div className="flex items-center justify-between gap-2">
-        {isEditing ? (
+        {showEditor ? (
           <div className="flex min-w-0 flex-1 items-center gap-1">
             <input
               type="text"
@@ -186,7 +255,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
           </span>
         </div>
 
-        {!isEditing && (
+        {!showEditor && (
           <div ref={menuRef} className="relative">
             <button
               type="button"
@@ -254,9 +323,9 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
           return (
             <div
               key={doItem.id}
-              onDragEnd={handleDragEnd}
-              draggable={!isMoving && !isEditing}
-              onDragStart={(event) => handleDragStart(event, doItem.id)}
+              onDragEnd={handleDoDragEnd}
+              draggable={!isMoving && !showEditor}
+              onDragStart={(event) => handleDoDragStart(event, doItem.id)}
               className={twMerge(
                 "cursor-grab transition-opacity active:cursor-grabbing",
                 isDragging && "opacity-40",
@@ -266,6 +335,12 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
               <KanbanCard
                 doItem={doItem}
                 onEdit={handleEditDo}
+                handleDragStart={handleDoDragStart}
+                handleDragEnd={handleDoDragEnd}
+                handleDragOver={handleDoDragOver}
+                handleDragLeave={handleDoDragLeave}
+                handleDrop={handleDoDrop}
+                columnId={column.id}
                 className={twMerge(
                   Number(doId) === doItem.id && "border border-green-500",
                 )}

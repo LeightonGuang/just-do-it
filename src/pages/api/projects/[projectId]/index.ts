@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import type { APIRoute, APIContext } from "astro";
+import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
@@ -19,10 +19,10 @@ export type KanbanResponse = {
   })[];
 };
 
-export const GET = (async (context: APIContext<{ projectId: string }, { projectId: string }>) => {
+export const GET: APIRoute = async ({ params }) => {
   const db = drizzle(env.just_do_it);
 
-  const projectId = Number(context.params.projectId);
+  const projectId = Number(params.projectId);
 
   if (!Number.isInteger(projectId)) {
     return new Response(JSON.stringify({ error: "Invalid ID" }), { status: 400 });
@@ -87,12 +87,12 @@ export const GET = (async (context: APIContext<{ projectId: string }, { projectI
   };
 
   return new Response(JSON.stringify(response));
-}) satisfies APIRoute;
+};
 
-export const PATCH = (async (context: APIContext<{ projectId: string }, { projectId: string }>) => {
+export const PATCH: APIRoute = async ({ request, params }) => {
   const db = drizzle(env.just_do_it);
 
-  const projectId = Number(context.params.projectId);
+  const projectId = Number(params.projectId);
 
   if (!Number.isInteger(projectId)) {
     return new Response(JSON.stringify({ error: "Invalid ID" }), { status: 400 });
@@ -104,7 +104,7 @@ export const PATCH = (async (context: APIContext<{ projectId: string }, { projec
   };
 
   try {
-    body = await context.request.json();
+    body = await request.json();
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
   }
@@ -142,12 +142,12 @@ export const PATCH = (async (context: APIContext<{ projectId: string }, { projec
   }
 
   return new Response(JSON.stringify(result[0]));
-}) satisfies APIRoute;
+};
 
-export const DELETE = (async (context: APIContext<{ projectId: string }, { projectId: string }>) => {
+export const DELETE: APIRoute = async ({ params }) => {
   const db = drizzle(env.just_do_it);
 
-  const projectId = Number(context.params.projectId);
+  const projectId = Number(params.projectId);
 
   if (!Number.isInteger(projectId)) {
     return new Response(JSON.stringify({ error: "Invalid project ID" }), { status: 400 });
@@ -156,4 +156,4 @@ export const DELETE = (async (context: APIContext<{ projectId: string }, { proje
   await db.delete(projects).where(eq(projects.id, projectId));
 
   return new Response(JSON.stringify({ success: true }));
-}) satisfies APIRoute;
+};

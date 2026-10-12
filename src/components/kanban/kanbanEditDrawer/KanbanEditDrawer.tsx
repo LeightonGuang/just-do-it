@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type CreateDoData = {
   title: string;
@@ -39,7 +39,7 @@ const KanbanEditDrawer = ({
   isCreating = false,
   createColumnId = undefined,
 }: KanbanEditDrawerProps) => {
-  const { dos, columns, tags, projectId, fetchKanban, handleCloseDoEditor } =
+  const { dos, columns, tags, projectId, fetchKanban } =
     useKanban();
 
   const doItem = dos.find((item) => item.id === doId);

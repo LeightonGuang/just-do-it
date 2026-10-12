@@ -4,7 +4,6 @@ import { Check, Pencil, Plus, X } from "lucide-react";
 
 import { useKanban } from "./contexts";
 import KanbanColumn from "./KanbanColumn";
-import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import DoDrawer from "./doDrawer/doDrawer";
 
 const Kanban = ({
@@ -19,7 +18,6 @@ const Kanban = ({
     project,
     columns,
     loading,
-    dos,
     tags,
 
     projectName,
@@ -39,9 +37,8 @@ const Kanban = ({
   const {
     editingDoId,
     editingColumnId,
-    handleEditDo,
     handleCloseDoEditor,
-  } = useKanbanBoard();
+  } = useKanban();
 
   const {
     isCreatingMode,
@@ -51,6 +48,8 @@ const Kanban = ({
   } = useKanban();
 
   const [createColumnId, setCreateColumnId] = useState<number | undefined>(undefined);
+
+
 
   if (loading) {
     return (
@@ -70,8 +69,28 @@ const Kanban = ({
 
   if (!project) return null;
 
+  // Safety check for columns - prevents "Cannot read properties of undefined (reading 'map')"
+  if (!columns || columns.length === 0) {
+    return (
+      <section className="min-h-dvh p-8">
+        <p className="text-text-muted">No columns found</p>
+      </section>
+    );
+  }
+
+  // Ensure columns is an array before mapping
+  const columnArray = Array.isArray(columns) ? columns : [];
+
+  if (columnArray.length === 0) {
+    return (
+      <section className="min-h-dvh p-8">
+        <p className="text-text-muted">No columns found</p>
+      </section>
+    );
+  }
+
   // Find the DO object for editing mode
-  const editingDo = editingDoId ? dos.find((doItem) => doItem.id === editingDoId) : null;
+
 
   return (
     <section className={twMerge("relative min-h-dvh", className)}>
@@ -192,7 +211,7 @@ const Kanban = ({
 
         {/* Kanban columns */}
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
-          {columns.map((column) => (
+          {columnArray.map((column) => (
             <KanbanColumn
               doId={doId}
               key={column.id}

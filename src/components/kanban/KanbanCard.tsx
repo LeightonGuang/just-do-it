@@ -17,9 +17,25 @@ type KanbanCardProps = {
   className?: string;
   doItem: ApiDo;
   onEdit?: (id: number) => void;
+  handleDragStart?: (event: React.DragEvent<HTMLDivElement>, id: number) => void;
+  handleDragEnd?: () => void;
+  handleDragOver?: (event: React.DragEvent<HTMLElement>, columnId: number) => void;
+  handleDragLeave?: (event: React.DragEvent<HTMLElement>) => void;
+  handleDrop?: (event: React.DragEvent<HTMLElement>, columnId: number) => Promise<void>;
+  columnId?: number;
 };
 
-const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
+const KanbanCard = ({
+  className,
+  doItem,
+  onEdit,
+  handleDragStart,
+  handleDragEnd,
+  handleDragOver,
+  handleDragLeave,
+  handleDrop,
+  columnId,
+}: KanbanCardProps) => {
   const [countdown, setCountdown] = useState<Countdown>(() =>
     getCountdown(doItem.end_at),
   );
@@ -47,6 +63,12 @@ const KanbanCard = ({ className, doItem, onEdit }: KanbanCardProps) => {
         "border border-border bg-do p-3 transition-colors hover:cursor-grab hover:bg-do-hover active:cursor-grabbing",
         className,
       )}
+      draggable
+      onDragStart={(event) => handleDragStart && handleDragStart(event, doItem.id)}
+      onDragEnd={handleDragEnd}
+      onDragOver={(event) => columnId !== undefined && handleDragOver && handleDragOver(event, columnId)}
+      onDragLeave={handleDragLeave}
+      onDrop={(event) => columnId !== undefined && handleDrop && handleDrop(event, columnId)}
     >
       <p
         onClick={(event) => {

@@ -1,14 +1,12 @@
-import { useState } from 'react';
-import { createContext, useCallback, useContext, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { createContext, useContext } from 'react';
 
 import { formatDateForApi } from "../kanbanEditDrawer/libs/formatDateForApi";
 
 import type { KanbanDo, KanbanTag } from "./types";
 import type { Project, Column } from "../../../db";
 
-import { useEditingDo } from "./hooks";
-import { useGlobalState } from "./hooks";
-import { useProjectEditState } from "./hooks";
+import { useDoReorder } from "./hooks";
 
 export type CreateDoData = {
   title: string;
@@ -59,6 +57,16 @@ type KanbanContextValue = {
 
   loading: boolean;
   error: string;
+
+  // DO reordering state and handlers
+  draggedDoId: number | null;
+  dragOverColumnId: number | null;
+  movingDoId: number | null;
+  handleDragStart: (event: React.DragEvent<HTMLDivElement>, id: number) => void;
+  handleDragEnd: () => void;
+  handleDragOver: (event: React.DragEvent<HTMLElement>, columnId: number) => void;
+  handleDragLeave: (event: React.DragEvent<HTMLElement>) => void;
+  handleDrop: (event: React.DragEvent<HTMLElement>, columnId: number) => Promise<void>;
 };
 
 const KanbanContext = createContext<KanbanContextValue | undefined>(undefined);
@@ -75,18 +83,39 @@ export const KanbanProvider = ({
   const [dos, setDos] = useState<KanbanDo[]>([]);
   const [tags, setTags] = useState<KanbanTag[]>([]);
 
-  const [editingColumnId] = useState<number | null>(null);
+  // DO editing state
+  const [editingDoId, setEditingDoId] = useState<number | null>(null);
+  const [creatingDoId, setCreatingDoId] = useState<number | null>(null);
+  const [isCreatingMode, setIsCreatingMode] = useState(false);
 
-  const globalState = useGlobalState();
+  // Column editing state
+  const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
 
+  // Project editing state
+  const [editingProject, setEditingProject] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [projectColour, setProjectColour] = useState('#3b82f6');
+  const [savingProject, setSavingProject] = useState(false);
+
+  // DO reordering state and handlers
   const {
-    editingDoId,
-    handleEditDo,
-    handleCloseDoEditor,
-  } = useEditingDo({
-    setCreatingDoId: globalState.setCreatingDoId,
-    setIsCreatingMode: globalState.setIsCreatingMode,
-  });
+    draggedDoId: doDraggedId,
+    dragOverColumnId: doDragOverColumnId,
+    movingDoId: doMovingDoId,
+    handleDragStart: handleDoDragStart,
+    handleDragEnd: handleDoDragEnd,
+    handleDragOver: handleDoDragOver,
+    handleDragLeave: handleDoDragLeave,
+    handleDrop: handleDoDrop,
+  } = useDoReorder({ projectId });
+
+  const handleCloseDoEditor = useCallback(() => {
+    setEditingDoId(null);
+  }, []);
+
+  const cancelEditingProject = useCallback(() => {
+    setEditingProject(false);
+  }, []);
 
   // Handle creating a new DO through the create mode button
   const handleCreateDo = useCallback(
@@ -110,25 +139,15 @@ export const KanbanProvider = ({
 
         await fetchKanbanData();
         handleCloseDoEditor();
-        globalState.setCreatingDoId?.(null);
-        globalState.setIsCreatingMode?.(false);
+        setCreatingDoId(null);
+        setIsCreatingMode(false);
       } catch (error) {
         console.error("Failed to create task:", error);
         throw error;
       }
     },
-    [projectId, formatDateForApi, globalState.setCreatingDoId, globalState.setIsCreatingMode],
+    [projectId, handleCloseDoEditor],
   );
-
-  const {
-    editingProject,
-    projectName,
-    projectColour,
-    startEditingProject,
-    cancelEditingProject,
-    setProjectName,
-    setProjectColour,
-  } = useProjectEditState(project);
 
   const fetchKanbanData = useCallback(async () => {
     if (!projectId) {
@@ -136,30 +155,27 @@ export const KanbanProvider = ({
       setColumns([]);
       setDos([]);
       setTags([]);
-      globalState.resetState();
       return;
     }
 
     try {
-      globalState.setLoading(true);
-      globalState.setError("");
+      const response = await fetch(`/api/projects/${projectId}`, { cache: "no-store" });
 
-      const response = await fetchKanban(projectId);
-
-      if (!response.project) {
+      if (!response.ok) {
         throw new Error("Failed to fetch Kanban");
       }
 
-      setProject(response.project);
-      setColumns(response.columns);
-      setDos(response.dos);
-      setTags(response.tags);
+      const data = (await response.json()) as {
+        project: Project;
+        columns: Column[];
+        dos: KanbanDo[];
+      };
+
+      setProject(data.project);
+      setColumns(data.columns || []);
+      setDos(data.dos || []);
     } catch (error) {
-      globalState.setError(
-        error instanceof Error ? error.message : "Unknown error",
-      );
-    } finally {
-      globalState.setLoading(false);
+      console.error("Failed to fetch Kanban:", error);
     }
   }, [projectId]);
 
@@ -191,18 +207,18 @@ export const KanbanProvider = ({
   const saveProject = useCallback(async () => {
     const name = projectName.trim();
 
-    if (!name || globalState.savingProject) return;
+    if (!name) return;
 
-    globalState.setSavingProject(true);
+    setSavingProject(true);
 
     try {
       await editProject(name, projectColour);
       await fetchKanbanData();
       cancelEditingProject();
     } finally {
-      globalState.setSavingProject(false);
+      setSavingProject(false);
     }
-  }, [projectName]);
+  }, [projectName, projectColour]);
 
   const moveDo = useCallback(
     async (doId: number, columnId: number) => {
@@ -276,7 +292,7 @@ export const KanbanProvider = ({
 
       handleCloseDoEditor();
     },
-    [dos],
+    [],
   );
 
   const createDo = useCallback(
@@ -351,6 +367,40 @@ export const KanbanProvider = ({
     [],
   );
 
+  const fetchKanban = async (projectId: string | null) => {
+    if (!projectId) {
+      return {
+        project: null as Project | null,
+        columns: [],
+        dos: [],
+        tags: [],
+      };
+    }
+
+    const [kanbanResponse, tagsResponse] = await Promise.all([
+      fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
+      fetch("/api/tags", { cache: "no-store" }),
+    ]);
+
+    if (!kanbanResponse.ok) {
+      throw new Error("Failed to fetch Kanban");
+    }
+
+    if (!tagsResponse.ok) {
+      throw new Error("Failed to fetch tags");
+    }
+
+    const data = (await kanbanResponse.json()) as KanbanResponse;
+    const tagData = (await tagsResponse.json()) as KanbanTag[];
+
+    return {
+      project: data.project,
+      columns: data.columns || [],
+      dos: data.dos || [],
+      tags: tagData || [],
+    };
+  };
+
   return (
     <KanbanContext.Provider
       value={{
@@ -362,18 +412,18 @@ export const KanbanProvider = ({
         fetchKanban: fetchKanbanData,
         editingDoId,
         editingProject,
-        handleEditDo,
+        handleEditDo: setEditingDoId,
         handleCloseDoEditor,
-        creatingDoId: globalState.creatingDoId,
-        setCreatingDoId: globalState.setCreatingDoId,
-        editingColumnId: editingColumnId,
-        isCreatingMode: globalState.isCreatingMode,
-        setIsCreatingMode: globalState.setIsCreatingMode,
+        creatingDoId,
+        setCreatingDoId,
+        editingColumnId,
+        isCreatingMode,
+        setIsCreatingMode,
         handleCreateDo,
         projectName,
         projectColour,
-        savingProject: globalState.savingProject,
-        startEditingProject,
+        savingProject,
+        startEditingProject: () => setEditingProject(true),
         cancelEditingProject,
         setProjectName,
         setProjectColour,
@@ -385,8 +435,17 @@ export const KanbanProvider = ({
         setColumnIsDone,
         createDo,
         deleteDo,
-        loading: globalState.loading,
-        error: globalState.error,
+        loading: false,
+        error: "",
+        // DO reordering
+        draggedDoId: doDraggedId,
+        dragOverColumnId: doDragOverColumnId,
+        movingDoId: doMovingDoId,
+        handleDragStart: handleDoDragStart,
+        handleDragEnd: handleDoDragEnd,
+        handleDragOver: handleDoDragOver,
+        handleDragLeave: handleDoDragLeave,
+        handleDrop: handleDoDrop,
       }}
     >
       {children}
@@ -402,43 +461,6 @@ export const useKanban = () => {
   }
 
   return context;
-};
-
-const fetchKanban = async (projectId: string | null) => {
-  if (!projectId) {
-    return {
-      project: null as Project | null,
-      columns: [],
-      dos: [],
-      tags: [],
-    };
-  }
-
-  const [kanbanResponse, tagsResponse] = await Promise.all([
-    fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
-    fetch("/api/tags", { cache: "no-store" }),
-  ]);
-
-  if (!kanbanResponse.ok) {
-    throw new Error("Failed to fetch Kanban");
-  }
-
-  if (!tagsResponse.ok) {
-    throw new Error("Failed to fetch tags");
-  }
-
-  const data = (await kanbanResponse.json()) as KanbanResponse;
-  const tagData = (await tagsResponse.json()) as KanbanTag[];
-
-  return {
-    project: data.project,
-    columns: data.columns,
-    dos: data.dos.map((doItem) => ({
-      ...doItem,
-      tags: Array.isArray(doItem.tags) ? doItem.tags : [],
-    })),
-    tags: tagData || [],
-  };
 };
 
 type KanbanResponse = {

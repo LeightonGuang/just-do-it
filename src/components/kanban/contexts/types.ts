@@ -17,12 +17,21 @@ export type KanbanDo = {
 
   column_id: number;
 
+  position: number;
+
   start_at: string | null;
   end_at: string | null;
   created_at: string;
   updated_at: string;
 
   tags: KanbanTag[];
+};
+
+// Column reordering state types
+export type KanbanBoardState = {
+  draggedColumnId: number | null;
+  dragOverColumnForReorder: number | null;
+  movingColumnId: number | null;
 };
 
 export type KanbanResponse = {
