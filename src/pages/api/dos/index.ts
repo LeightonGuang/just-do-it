@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ request }) => {
     })
     .from(dos)
     .innerJoin(projects, eq(dos.project_id, projects.id))
-    .orderBy(desc(dos.updated_at))
+    .orderBy(desc(dos.position), desc(dos.updated_at))
     .limit(5);
 
     // Fetch tags for each DO
@@ -113,6 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
     description,
     project_id: projectId,
     column_id: insertedColumnId,
+    position: 0,
     start_at: startAt !== null ? new Date(startAt) : null,
     end_at: endAt !== null ? new Date(endAt) : null,
     created_at: new Date(),
@@ -159,6 +160,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
     title?: string;
     description?: string | null;
     column_id?: number;
+    position?: number;
     start_at?: string | null;
     end_at?: string | null;
   };
@@ -182,6 +184,10 @@ export const PATCH: APIRoute = async ({ params, request }) => {
 
   if (body.column_id !== undefined) {
     updateData.column_id = body.column_id;
+  }
+
+  if (body.position !== undefined) {
+    updateData.position = body.position;
   }
 
   if (body.start_at !== undefined) {
@@ -219,16 +225,21 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   });
 };
 
-export const MOVE: APIRoute = async ({ request }) => {
+export const MOVE: APIRoute = async ({ params, request }) => {
   const db = drizzle(env.just_do_it);
-  const body = (await request.json()) as { id: number; column_id: number };
+  const doId = Number(params.doId);
 
-  if (!body.id || !body.column_id) {
-    return Response.json({ error: "id and column_id are required" }, { status: 400 });
+  if (!doId) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
   }
 
-  const doId = body.id;
-  const columnId = body.column_id;
+  const body = (await request.json()) as { position?: number };
+
+  if (!body.position) {
+    return Response.json({ error: "position is required" }, { status: 400 });
+  }
+
+  const newPosition = Number(body.position);
 
   // Check if task exists
   const existing = await db.select({ id: dos.id }).from(dos).where(eq(dos.id, doId)).limit(1);
@@ -236,9 +247,9 @@ export const MOVE: APIRoute = async ({ request }) => {
     return Response.json({ error: "Task not found" }, { status: 404 });
   }
 
-  // Update the task's column_id
+  // Update the task's position
   await db.update(dos).set({
-    column_id: columnId,
+    position: newPosition,
     updated_at: new Date(),
   }).where(eq(dos.id, doId));
 

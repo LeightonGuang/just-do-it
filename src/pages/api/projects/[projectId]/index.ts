@@ -49,7 +49,8 @@ export const GET: APIRoute = async ({ params }) => {
   const projectDos = await db
     .select()
     .from(dos)
-    .where(eq(dos.project_id, projectId));
+    .where(eq(dos.project_id, projectId))
+    .orderBy(dos.position, dos.updated_at);
 
   const projectTags = await db
     .select({
