@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
@@ -25,8 +25,7 @@ export const GET: APIRoute = async ({ request }) => {
     })
     .from(dos)
     .innerJoin(projects, eq(dos.project_id, projects.id))
-    .orderBy(desc(dos.position), desc(dos.updated_at))
-    .limit(5);
+    .orderBy(sql`${dos.position} IS NOT NULL DESC, ${dos.position} DESC, ${dos.updated_at} DESC`).limit(5);
 
     // Fetch tags for each DO
     const dosWithTags = await Promise.all(

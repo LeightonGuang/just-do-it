@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
@@ -50,7 +50,7 @@ export const GET: APIRoute = async ({ params }) => {
     .select()
     .from(dos)
     .where(eq(dos.project_id, projectId))
-    .orderBy(dos.position, dos.updated_at);
+    .orderBy(sql`${dos.position} IS NOT NULL DESC, ${dos.position} DESC, ${dos.updated_at} DESC`);
 
   const projectTags = await db
     .select({
