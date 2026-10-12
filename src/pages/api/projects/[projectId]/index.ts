@@ -1,5 +1,5 @@
-import { eq, sql } from "drizzle-orm";
-import type { APIRoute } from "astro";
+import { eq } from "drizzle-orm";
+import type { APIRoute, APIContext } from "astro";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
@@ -19,13 +19,13 @@ export type KanbanResponse = {
   })[];
 };
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET = (async (context: APIContext<{ projectId: string }, { projectId: string }>) => {
   const db = drizzle(env.just_do_it);
 
-  const projectId = Number(params.projectId);
+  const projectId = Number(context.params.projectId);
 
   if (!Number.isInteger(projectId)) {
-    return Response.json({ error: "Invalid ID" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid ID" }), { status: 400 });
   }
 
   const projectResult = await db
@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ params }) => {
     .limit(1);
 
   if (projectResult.length === 0) {
-    return Response.json({ error: "Project not found" }, { status: 404 });
+    return new Response(JSON.stringify({ error: "Project not found" }), { status: 404 });
   }
 
   const project = projectResult[0];
@@ -47,10 +47,21 @@ export const GET: APIRoute = async ({ params }) => {
     .orderBy(columns.position);
 
   const projectDos = await db
-    .select()
+    .select({
+      id: dos.id,
+      title: dos.title,
+      description: dos.description,
+      column_id: dos.column_id,
+      position: dos.position,
+      start_at: dos.start_at,
+      end_at: dos.end_at,
+      created_at: dos.created_at,
+      updated_at: dos.updated_at,
+      project_id: dos.project_id,
+    })
     .from(dos)
     .where(eq(dos.project_id, projectId))
-    .orderBy(sql`${dos.position} IS NOT NULL DESC, ${dos.position} DESC, ${dos.updated_at} DESC`);
+    .all();
 
   const projectTags = await db
     .select({
@@ -75,16 +86,16 @@ export const GET: APIRoute = async ({ params }) => {
     dos: dosWithTags,
   };
 
-  return Response.json(response);
-};
+  return new Response(JSON.stringify(response));
+}) satisfies APIRoute;
 
-export const PATCH: APIRoute = async ({ params, request }) => {
+export const PATCH = (async (context: APIContext<{ projectId: string }, { projectId: string }>) => {
   const db = drizzle(env.just_do_it);
 
-  const projectId = Number(params.projectId);
+  const projectId = Number(context.params.projectId);
 
   if (!Number.isInteger(projectId)) {
-    return Response.json({ error: "Invalid ID" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid ID" }), { status: 400 });
   }
 
   let body: {
@@ -93,9 +104,9 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   };
 
   try {
-    body = await request.json();
+    body = await context.request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
   }
 
   const name = typeof body.name === "string" ? body.name.trim() : undefined;
@@ -103,11 +114,11 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   const colour = typeof body.colour === "string" ? body.colour : undefined;
 
   if (name === undefined && colour === undefined) {
-    return Response.json({ error: "Nothing to update" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Nothing to update" }), { status: 400 });
   }
 
   if (name !== undefined && !name) {
-    return Response.json({ error: "Title cannot be empty" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Title cannot be empty" }), { status: 400 });
   }
 
   const updates: Partial<Project> = {};
@@ -127,22 +138,22 @@ export const PATCH: APIRoute = async ({ params, request }) => {
     .returning();
 
   if (result.length === 0) {
-    return Response.json({ error: "Project not found" }, { status: 404 });
+    return new Response(JSON.stringify({ error: "Project not found" }), { status: 404 });
   }
 
-  return Response.json(result[0]);
-};
+  return new Response(JSON.stringify(result[0]));
+}) satisfies APIRoute;
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE = (async (context: APIContext<{ projectId: string }, { projectId: string }>) => {
   const db = drizzle(env.just_do_it);
 
-  const projectId = Number(params.projectId);
+  const projectId = Number(context.params.projectId);
 
   if (!Number.isInteger(projectId)) {
-    return Response.json({ error: "Invalid project ID" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid project ID" }), { status: 400 });
   }
 
   await db.delete(projects).where(eq(projects.id, projectId));
 
-  return Response.json({ success: true });
-};
+  return new Response(JSON.stringify({ success: true }));
+}) satisfies APIRoute;

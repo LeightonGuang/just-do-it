@@ -114,6 +114,14 @@ const KanbanEditDrawer = ({
     setError("");
   }, [doItem]);
 
+  // Sync tagId with tags array when tags are loaded (for dropdown selection)
+  useEffect(() => {
+    if (!doItem) return;
+    
+    const existingTagId = doItem.tags?.length > 0 ? String(doItem.tags[0].id) : "";
+    setTagId(existingTagId);
+  }, [doItem, tags]);
+
   useEffect(() => {
     if (!isOpen) return;
 

@@ -1,4 +1,4 @@
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 
@@ -25,11 +25,18 @@ export const GET: APIRoute = async ({ request }) => {
     })
     .from(dos)
     .innerJoin(projects, eq(dos.project_id, projects.id))
-    .orderBy(sql`${dos.position} IS NOT NULL DESC, ${dos.position} DESC, ${dos.updated_at} DESC`).limit(5);
+    .all();
+
+    // Filter out NULL positions and order properly
+    const filteredDos = (result as Array<any>).filter((task) => task.position !== null && task.position !== undefined);
+    const sortedDos = [...filteredDos].sort((a, b) => {
+      if (b.position === a.position) return b.updated_at.getTime() - a.updated_at.getTime();
+      return b.position - a.position;
+    });
 
     // Fetch tags for each DO
     const dosWithTags = await Promise.all(
-      result.map(async (task) => {
+      sortedDos.map(async (task) => {
         const taskTags = await db.select({
           id: doTags.tag_id,
           name: tags.name,

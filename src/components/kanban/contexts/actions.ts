@@ -84,12 +84,12 @@ export const moveDo = async (
     );
 
   try {
-    const response = await fetch("/api/dos", {
+    const response = await fetch(`/api/dos/${doId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id: doId, column_id: columnId }),
+      body: JSON.stringify({ column_id: columnId }),
     });
 
     if (!response.ok) {
