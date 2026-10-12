@@ -217,10 +217,10 @@ export const KanbanProvider = ({
       );
 
       try {
-        const response = await fetch("/api/dos/move", {
-          method: "POST",
+        const response = await fetch(`/api/dos/${doId}`, {
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: doId, column_id: columnId }),
+          body: JSON.stringify({ column_id: columnId }),
         });
 
         if (!response.ok) {

@@ -147,6 +147,78 @@ export const POST: APIRoute = async ({ request }) => {
   });
 };
 
+export const PATCH: APIRoute = async ({ params, request }) => {
+  const db = drizzle(env.just_do_it);
+  const doId = Number(params.doId);
+
+  if (!doId) {
+    return Response.json({ error: "Invalid DO ID" }, { status: 400 });
+  }
+
+  const body = (await request.json()) as {
+    title?: string;
+    description?: string | null;
+    column_id?: number;
+    start_at?: string | null;
+    end_at?: string | null;
+  };
+
+  // Check if task exists
+  const existing = await db.select({ id: dos.id, title: dos.title, description: dos.description }).from(dos).where(eq(dos.id, doId)).limit(1);
+  if (existing.length === 0) {
+    return Response.json({ error: "Task not found" }, { status: 404 });
+  }
+
+  // Prepare update data
+  const updateData: Partial<typeof dos.$inferInsert> = {};
+
+  if (body.title !== undefined) {
+    updateData.title = body.title.trim();
+  }
+
+  if (body.description !== undefined) {
+    updateData.description = body.description ?? null;
+  }
+
+  if (body.column_id !== undefined) {
+    updateData.column_id = body.column_id;
+  }
+
+  if (body.start_at !== undefined) {
+    const parsedStartAt = typeof body.start_at === "string" && body.start_at.trim() ? parseDate(body.start_at) : null;
+    updateData.start_at = parsedStartAt !== null ? new Date(parsedStartAt) : null;
+  }
+
+  if (body.end_at !== undefined) {
+    const parsedEndAt = typeof body.end_at === "string" && body.end_at.trim() ? parseDate(body.end_at) : null;
+    updateData.end_at = parsedEndAt !== null ? new Date(parsedEndAt) : null;
+  }
+
+  // Only update if there's something to update
+  if (Object.keys(updateData).length === 0) {
+    return Response.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  const updated = await db.update(dos).set(updateData).where(eq(dos.id, doId)).returning();
+
+  // Fetch tags for the updated DO
+  const tagRows = await db.select({
+    id: doTags.tag_id,
+    name: tags.name,
+    colour: tags.colour,
+  }).from(doTags)
+    .innerJoin(tags, eq(doTags.tag_id, tags.id))
+    .where(eq(doTags.do_id, doId));
+
+  return Response.json({
+    success: true,
+    task: {
+      ...updated[0],
+      tags: tagRows,
+    },
+  });
+};
+
 export const MOVE: APIRoute = async ({ request }) => {
   const db = drizzle(env.just_do_it);
   const body = (await request.json()) as { id: number; column_id: number };
