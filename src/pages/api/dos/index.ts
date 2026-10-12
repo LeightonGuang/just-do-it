@@ -107,13 +107,27 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
+  // Get existing positions for this column to determine next position
+  const existingDos = await db.select({ position: dos.position }).from(dos)
+    .where(eq(dos.column_id, insertedColumnId))
+    .orderBy(desc(dos.position));
+
+  // Calculate next position (1000, 2000, 3000, etc.)
+  let newPosition = 1000;
+  if (existingDos.length > 0) {
+    const maxPosition = existingDos[existingDos.length - 1].position;
+    // Find the next thousand boundary
+    const currentThousand = Math.floor(maxPosition / 1000) * 1000;
+    newPosition = currentThousand + 1000;
+  }
+
   // Insert the task
   const insertData = {
     title,
     description,
     project_id: projectId,
     column_id: insertedColumnId,
-    position: 0,
+    position: newPosition,
     start_at: startAt !== null ? new Date(startAt) : null,
     end_at: endAt !== null ? new Date(endAt) : null,
     created_at: new Date(),

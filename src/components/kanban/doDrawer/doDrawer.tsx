@@ -57,6 +57,12 @@ const DoDrawer = ({
           setSelectedTagId(task.tags?.[0]?.id ?? null);
           setIsEditingMode(true);
 
+          // Set dropdown value to selected tag ID immediately when loading existing DO
+          const selectElement = document.getElementById("kanban-tags") as HTMLSelectElement;
+          if (selectElement && selectedTagId) {
+            selectElement.value = selectedTagId.toString();
+          }
+
           // Set datetime values for the DateTimeField components
           setStartAt(task.start_at ? new Date(task.start_at).toISOString().slice(0, 16) : "");
           setEndAt(task.end_at ? new Date(task.end_at).toISOString().slice(0, 16) : "");
@@ -208,10 +214,10 @@ const DoDrawer = ({
     >
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
         <div className="min-w-0">
-          <p className="text-xs tracking-wider text-text-muted uppercase">
+          <p className="text-[1.5rem] tracking-wider text-text-muted uppercase">
             {isCreating ? "Create task" : isEditingMode ? "Edit task" : ""}
           </p>
-          <h2 className="truncate text-sm font-semibold text-text">{doId ? "Task" : ""}</h2>
+          <h2 className="truncate text-[1.375rem] font-semibold text-text">{doId ? "Task" : ""}</h2>
         </div>
 
         <button
@@ -276,6 +282,7 @@ const DoDrawer = ({
                     <option
                       key={tag.id}
                       value={tag.id.toString()}
+                      className="text-[0.625rem]"
                     >
                       {tag.name}
                     </option>
