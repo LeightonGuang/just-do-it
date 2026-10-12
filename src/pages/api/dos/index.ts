@@ -116,9 +116,14 @@ export const POST: APIRoute = async ({ request }) => {
   let newPosition = 1000;
   if (existingDos.length > 0) {
     const maxPosition = existingDos[existingDos.length - 1].position;
-    // Find the next thousand boundary
-    const currentThousand = Math.floor(maxPosition / 1000) * 1000;
-    newPosition = currentThousand + 1000;
+    // Handle NULL positions from old DOs
+    if (maxPosition === null || maxPosition === undefined) {
+      newPosition = 1000;
+    } else {
+      // Find the next thousand boundary
+      const currentThousand = Math.floor(maxPosition / 1000) * 1000;
+      newPosition = currentThousand + 1000;
+    }
   }
 
   // Insert the task

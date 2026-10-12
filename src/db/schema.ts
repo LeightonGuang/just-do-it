@@ -30,7 +30,7 @@ export const columns = sqliteTable(
     uniqueIndex("one_done_column_per_project")
       .on(table.project_id)
       .where(sql`${table.is_done} = 1`),
-  ], // only one is done column can exist per project
+  ], // only one done column can exist per project
 );
 
 export type Column = typeof columns.$inferSelect;
@@ -50,7 +50,7 @@ export const dos = sqliteTable("dos", {
   title: text("title").notNull(),
   description: text("description"),
 
-  position: integer("position").notNull().default(0),
+  position: integer("position").default(0),
 
   start_at: integer("start_at", { mode: "timestamp_ms" }),
   end_at: integer("end_at", { mode: "timestamp_ms" }),

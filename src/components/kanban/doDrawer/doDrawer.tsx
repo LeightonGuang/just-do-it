@@ -58,7 +58,7 @@ const DoDrawer = ({
           setIsEditingMode(true);
 
           // Set dropdown value to selected tag ID immediately when loading existing DO
-          const selectElement = document.getElementById("kanban-tags") as HTMLSelectElement;
+          const selectElement = document.getElementById("kanban-tags") as unknown as HTMLSelectElement;
           if (selectElement && selectedTagId) {
             selectElement.value = selectedTagId.toString();
           }
