@@ -20,6 +20,8 @@ export const GET: APIRoute = async ({ request }) => {
       project_id: dos.project_id,
       column_id: dos.column_id,
       description: dos.description,
+      position: dos.position,
+      updated_at: dos.updated_at,
       project_name: projects.name,
       project_colour: projects.colour,
     })
@@ -27,8 +29,8 @@ export const GET: APIRoute = async ({ request }) => {
     .innerJoin(projects, eq(dos.project_id, projects.id))
     .all();
 
-    // Filter out NULL positions and order properly
-    const filteredDos = (result as Array<any>).filter((task) => task.position !== null && task.position !== undefined);
+    // Keep the sidebar deterministic and show the most recently ordered items first.
+    const filteredDos = result;
     const sortedDos = [...filteredDos].sort((a, b) => {
       if (b.position === a.position) return b.updated_at.getTime() - a.updated_at.getTime();
       return b.position - a.position;

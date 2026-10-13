@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import Kanban from "./kanban/Kanban";
 import MobileSidebar from "./Sidebar/MobileSidebar";
+import { KanbanProvider } from "./kanban/contexts";
 
 const TOP_GAP = 64;
 const SNAP_DISTANCE = 0.1;
@@ -152,9 +153,10 @@ const MobileDashboard = ({
 
   return (
     <div className={twMerge("relative min-h-dvh bg-background", className)}>
-      <Kanban doId={doId} />
+      <KanbanProvider projectId={projectId}>
+        <Kanban doId={doId} />
 
-      <div
+        <div
         className="fixed inset-x-0 bottom-0 z-50"
         style={{
           height: `calc(100dvh - ${topGap}px)`,
@@ -187,6 +189,7 @@ const MobileDashboard = ({
           </button>
         )}
       </div>
+      </KanbanProvider>
     </div>
   );
 };

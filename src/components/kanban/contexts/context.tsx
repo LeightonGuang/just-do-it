@@ -7,6 +7,7 @@ import type { KanbanDo, KanbanTag } from "./types";
 import type { Project, Column } from "../../../db";
 
 import { useDoReorder } from "./hooks";
+import { useKanbanBoard } from "../hooks/useKanbanBoard";
 
 export type CreateDoData = {
   title: string;
@@ -61,12 +62,21 @@ type KanbanContextValue = {
   // DO reordering state and handlers
   draggedDoId: number | null;
   dragOverColumnId: number | null;
+  dragOverCardId: number | null;
+  dropBeforeCard: boolean;
   movingDoId: number | null;
   handleDragStart: (event: React.DragEvent<HTMLDivElement>, id: number) => void;
   handleDragEnd: () => void;
   handleDragOver: (event: React.DragEvent<HTMLElement>, columnId: number) => void;
   handleDragLeave: (event: React.DragEvent<HTMLElement>) => void;
   handleDrop: (event: React.DragEvent<HTMLElement>, columnId: number) => Promise<void>;
+  draggedColumnId: number | null;
+  setDraggedColumnId: (id: number | null) => void;
+  dragOverColumnForReorder: number | null;
+  setDragOverColumnForReorder: (id: number | null) => void;
+  handleDropColumn: (event: React.DragEvent<HTMLElement>, id: number) => Promise<void>;
+  handleSaveColumn: (id: number, name: string) => Promise<void>;
+  handleDeleteColumn: (id: number) => Promise<void>;
 };
 
 const KanbanContext = createContext<KanbanContextValue | undefined>(undefined);
@@ -96,18 +106,34 @@ export const KanbanProvider = ({
   const [projectName, setProjectName] = useState('');
   const [projectColour, setProjectColour] = useState('#3b82f6');
   const [savingProject, setSavingProject] = useState(false);
+  const board = useKanbanBoard({ projectId });
 
   // DO reordering state and handlers
   const {
     draggedDoId: doDraggedId,
     dragOverColumnId: doDragOverColumnId,
+    dragOverCardId: doDragOverCardId,
+    dropBeforeCard: doDropBeforeCard,
     movingDoId: doMovingDoId,
     handleDragStart: handleDoDragStart,
     handleDragEnd: handleDoDragEnd,
     handleDragOver: handleDoDragOver,
     handleDragLeave: handleDoDragLeave,
     handleDrop: handleDoDrop,
-  } = useDoReorder({ projectId });
+  } = useDoReorder({
+    dos,
+    onReordered: (updates) => {
+      const byId = new Map(updates.map((update) => [update.id, update]));
+      setDos((currentDos) =>
+        currentDos.map((item) => {
+          const update = byId.get(item.id);
+          return update
+            ? { ...item, column_id: update.column_id, position: update.position }
+            : item;
+        }),
+      );
+    },
+  });
 
   const handleCloseDoEditor = useCallback(() => {
     setEditingDoId(null);
@@ -440,12 +466,21 @@ export const KanbanProvider = ({
         // DO reordering
         draggedDoId: doDraggedId,
         dragOverColumnId: doDragOverColumnId,
+        dragOverCardId: doDragOverCardId,
+        dropBeforeCard: doDropBeforeCard,
         movingDoId: doMovingDoId,
         handleDragStart: handleDoDragStart,
         handleDragEnd: handleDoDragEnd,
         handleDragOver: handleDoDragOver,
         handleDragLeave: handleDoDragLeave,
         handleDrop: handleDoDrop,
+        draggedColumnId: board.draggedColumnId,
+        setDraggedColumnId: board.setDraggedColumnId,
+        dragOverColumnForReorder: board.dragOverColumnForReorder,
+        setDragOverColumnForReorder: board.setDragOverColumnForReorder,
+        handleDropColumn: board.handleDropColumn,
+        handleSaveColumn: board.handleSaveColumn,
+        handleDeleteColumn: board.handleDeleteColumn,
       }}
     >
       {children}

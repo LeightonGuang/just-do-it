@@ -4,12 +4,15 @@ import type { KanbanDo } from "./types";
 
 /** Hook for managing DO (task) reordering state */
 type UseDoReorderOptions = {
-  projectId: string | null;
+  dos: KanbanDo[];
+  onReordered?: (updates: Array<{ id: number; column_id: number; position: number }>) => void;
 };
 
-export const useDoReorder = ({ projectId }: UseDoReorderOptions) => {
+export const useDoReorder = ({ dos, onReordered }: UseDoReorderOptions) => {
   const [draggedDoId, setDraggedDoId] = useState<number | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
+  const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
+  const [dropBeforeCard, setDropBeforeCard] = useState(true);
   const [movingDoId, setMovingDoId] = useState<number | null>(null);
 
   const handleDragStart = useCallback(
@@ -25,6 +28,7 @@ export const useDoReorder = ({ projectId }: UseDoReorderOptions) => {
   const handleDragEnd = useCallback(() => {
     setDraggedDoId(null);
     setDragOverColumnId(null);
+    setDragOverCardId(null);
     setMovingDoId(null);
   }, []);
 
@@ -35,6 +39,30 @@ export const useDoReorder = ({ projectId }: UseDoReorderOptions) => {
 
       // Only handle DO dragging over columns for moving cards between columns
       if (draggedDoId !== null) {
+        const card = (event.target as HTMLElement).closest<HTMLElement>("[data-kanban-card]");
+        if (card) {
+          const rect = card.getBoundingClientRect();
+          const targetId = Number(card.dataset.kanbanCard);
+          const before = event.clientY < rect.top + rect.height / 2;
+          const columnDos = dos
+            .filter((item) => item.column_id === columnId)
+            .sort((a, b) => a.position - b.position);
+          const draggedIndex = columnDos.findIndex((item) => item.id === draggedDoId);
+          const remainingDos = columnDos.filter((item) => item.id !== draggedDoId);
+          const invalidSelfDrop = targetId === draggedDoId;
+          const insertionIndex = remainingDos.findIndex((item) => item.id === targetId) + (before ? 0 : 1);
+          const invalidAdjacentDrop =
+            draggedIndex >= 0 && insertionIndex === draggedIndex;
+
+          if (invalidSelfDrop || invalidAdjacentDrop) {
+            setDragOverCardId(null);
+          } else {
+            setDragOverCardId(targetId);
+            setDropBeforeCard(before);
+          }
+        } else {
+          setDragOverCardId(null);
+        }
         if (dragOverColumnId !== columnId) {
           setDragOverColumnId(columnId);
         }
@@ -52,6 +80,7 @@ export const useDoReorder = ({ projectId }: UseDoReorderOptions) => {
       if (event.currentTarget.contains(event.relatedTarget as Node)) return;
 
       setDragOverColumnId(null);
+      setDragOverCardId(null);
     },
     [],
   );
@@ -71,101 +100,75 @@ export const useDoReorder = ({ projectId }: UseDoReorderOptions) => {
       try {
         setMovingDoId(draggedDoId);
 
-        // Get all DOs for the project to determine new position
-        const response = await fetch(`/api/projects/${projectId}/dos`, {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch DOs");
-        }
-
-        const projectDos = (await response.json()) as Array<{
-          id: number;
-          position: number;
-          title: string;
-          column_id: number;
-          project_id: number;
-        }>;
-
-        // Find the target column's current DOs
-        const targetDos = projectDos.filter((doItem) => doItem.column_id === columnId);
-        if (!targetDos.length) return;
-
-        // Get dragged DO info
-        const draggedDo = projectDos.find((doItem) => doItem.id === draggedDoId);
+        const draggedDo = dos.find((item) => item.id === draggedDoId);
         if (!draggedDo) return;
-
-        // Calculate new position based on drop location (vertical position in the DOM)
-        const targetRect = event.currentTarget.getBoundingClientRect();
-        const mouseY = event.clientY - targetRect.top;
-        const targetHeight = targetRect.height;
-
-        // Get current positions of all DOs for this column, sorted by position
-        const sortedDos = [...targetDos].sort((a, b) => a.position - b.position);
-        
-        // Find the index of the dragged DO in the sorted list
-        const draggedIndex = sortedDos.findIndex((doItem) => doItem.id === draggedDoId);
-
-        if (draggedIndex === -1) return;
-
-        // Determine the new position based on where we dropped relative to the target column
-        let newIndex: number;
-        if (mouseY < targetHeight / 2) {
-          // Drop in upper half - insert before target
-          // If dragged DO is after target, move it before target
-          // If dragged DO is before or at target, keep it where it is
-          newIndex = draggedIndex > 0 ? draggedIndex - 1 : draggedIndex;
-        } else {
-          // Drop in lower half - insert after target
-          // If dragged DO is before or at target, move it after target
-          // If dragged DO is after target, keep it where it is
-          newIndex = draggedIndex < targetDos.length - 1 ? draggedIndex + 1 : draggedIndex;
+        const targetDos = dos
+          .filter((item) => item.column_id === columnId && item.id !== draggedDoId)
+          .sort((a, b) => a.position - b.position);
+        const targetCard = (event.target as HTMLElement).closest<HTMLElement>("[data-kanban-card]");
+        let newIndex = targetDos.length;
+        if (targetCard) {
+          const targetId = Number(targetCard.dataset.kanbanCard);
+          const currentColumnDos = dos
+            .filter((item) => item.column_id === columnId)
+            .sort((a, b) => a.position - b.position);
+          const targetIndex = targetDos.findIndex((item) => item.id === targetId);
+          const rect = targetCard.getBoundingClientRect();
+          const before = event.clientY < rect.top + rect.height / 2;
+          if (targetId === draggedDoId) {
+            return;
+          }
+          if (targetIndex >= 0) {
+            newIndex = targetIndex + (before ? 0 : 1);
+          }
         }
 
-        // Calculate the new position value (0-indexed)
-        const newPosition = newIndex;
+        const orderedDos = [...targetDos];
+        orderedDos.splice(newIndex, 0, draggedDo);
 
-        // Get the dragged DO's current data to preserve its other fields
-        const draggedDoResponse = await fetch(`/api/dos/${draggedDoId}`, {
-          cache: "no-store",
-        });
+        const sourceDos = dos
+          .filter((item) => item.column_id === draggedDo.column_id && item.id !== draggedDoId)
+          .sort((a, b) => a.position - b.position);
+        const positionUpdates = [
+          ...(draggedDo.column_id === columnId
+            ? []
+            : sourceDos.map((item, position) => ({ id: item.id, column_id: item.column_id, position }))),
+          ...orderedDos.map((item, position) => ({ id: item.id, column_id: columnId, position })),
+        ];
 
-        if (!draggedDoResponse.ok) {
-          throw new Error("Failed to fetch dragged DO");
+        const updates = await Promise.all(
+          positionUpdates.map((item) =>
+            fetch(`/api/dos/${item.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                column_id: item.column_id,
+                position: item.position,
+              }),
+              cache: "no-store",
+            }),
+          ),
+        );
+
+        if (updates.some((response) => !response.ok)) {
+          throw new Error("Failed to persist card order");
         }
-
-        const draggedDoData = (await draggedDoResponse.json()) as { task: KanbanDo };
-
-        // Update the dragged DO's position via API
-        await fetch(`/api/dos/${draggedDoId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: draggedDoData.task.title,
-            description: draggedDoData.task.description || undefined,
-            start_at: draggedDoData.task.start_at ? new Date(draggedDoData.task.start_at).toISOString() : undefined,
-            end_at: draggedDoData.task.end_at ? new Date(draggedDoData.task.end_at).toISOString() : undefined,
-            position: newPosition,
-          }),
-          cache: "no-store",
-        });
-
+        onReordered?.(positionUpdates);
       } catch (error) {
         console.error("Failed to reorder DOs:", error);
       } finally {
         setMovingDoId(null);
       }
     },
-    [projectId],
+    [dos, onReordered],
   );
 
   return {
     draggedDoId,
     setDraggedDoId,
     dragOverColumnId,
+    dragOverCardId,
+    dropBeforeCard,
     setDragOverColumnId,
     movingDoId,
     setMovingDoId,

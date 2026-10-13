@@ -6,7 +6,6 @@ import type { Column } from "../../db";
 
 import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts";
-import { useKanbanBoard } from "./hooks/useKanbanBoard";
 
 type KanbanColumnProps = {
   column: Column;
@@ -23,22 +22,22 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
     // DO reordering handlers from context
     draggedDoId,
     dragOverColumnId,
+    dragOverCardId,
+    dropBeforeCard,
     movingDoId,
     handleDragStart: handleDoDragStart,
     handleDragEnd: handleDoDragEnd,
     handleDragOver: handleDoDragOver,
     handleDragLeave: handleDoDragLeave,
     handleDrop: handleDoDrop,
-  } = useKanban();
-
-  const {
     handleSaveColumn,
     handleDeleteColumn,
     handleDropColumn,
     setDraggedColumnId,
     draggedColumnId,
     setDragOverColumnForReorder,
-  } = useKanbanBoard();
+    dragOverColumnForReorder,
+  } = useKanban();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [name, setName] = useState(column.name);
@@ -49,8 +48,11 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
 
   const isEditing = editingColumnId === column.id;
   // Safety check for dos - prevents "Cannot read properties of undefined (reading 'filter')"
-  const columnDos = Array.isArray(dos) ? dos.filter((doItem) => doItem.column_id === column.id) : [];
+  const columnDos = Array.isArray(dos)
+    ? dos.filter((doItem) => doItem.column_id === column.id).sort((a, b) => a.position - b.position)
+    : [];
   const isDragOver = dragOverColumnId === column.id;
+  const isColumnDragOver = dragOverColumnForReorder === column.id;
 
   // Add drag event handlers for column reordering
   useEffect(() => {
@@ -156,53 +158,42 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
 
   return (
     <article
+      draggable
+      onDragStart={(event) => {
+        if (event.target === event.currentTarget) {
+          setDraggedColumnId(column.id);
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("application/x-kanban-column", String(column.id));
+        }
+      }}
+      onDragEnd={() => { setDraggedColumnId(null); setDragOverColumnForReorder(null); }}
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes("application/x-kanban-column")) {
+          event.preventDefault();
+          setDragOverColumnForReorder(column.id);
+        } else {
+          handleDoDragOver(event, column.id);
+        }
+      }}
       onDragLeave={(event) => handleDoDragLeave(event)}
       onDrop={(event) => {
+        if (event.dataTransfer.types.includes("application/x-kanban-column")) {
+          void handleDropColumn(event, column.id);
+          return;
+        }
         // Only handle DO drops here, not column reordering
         const droppedDoId = Number(event.dataTransfer.getData("text/plain"));
         if (!droppedDoId) return;
-        handleDoDrop(event, column.id);
+        event.stopPropagation();
+        void handleDoDrop(event, column.id);
       }}
-      onDragOver={(event) => handleDoDragOver(event, column.id)}
       className={twMerge(
         "min-w-0 border border-border bg-card p-2 transition-colors",
-        isDragOver && "border-green-500 bg-green-500/5",
+        (isDragOver || isColumnDragOver) && "border-green-500 bg-green-500/5",
         draggedColumnId === column.id && "opacity-50",
       )}
     >
-      {/* Drag handle for column reordering */}
-      {!showEditor && (
-        <div
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.effectAllowed = "move";
-            event.dataTransfer.setData("application/column-id", String(column.id));
-            setDraggedColumnId(column.id);
-          }}
-          onDragEnd={handleColumnDragEnd}
-          className="absolute -top-3 left-0 right-0 flex items-center justify-center cursor-grab hover:bg-background/50 rounded"
-        >
-          <div className="h-1.5 w-8 bg-border hover:bg-border-muted transition-colors" />
-        </div>
-      )}
 
-      {/* Drop zone for column reordering */}
-      {!showEditor && (
-        <div
-          onDragOver={(event) => {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "move";
-            setDragOverColumnForReorder(column.id);
-          }}
-          onDragLeave={() => setDragOverColumnForReorder(null)}
-          onDrop={async (event) => {
-            event.preventDefault();
-            await handleDropColumn(event, column.id);
-            setDragOverColumnForReorder(null);
-          }}
-          className="absolute inset-0 z-10"
-        />
-      )}
 
       <div className="flex items-center justify-between gap-2">
         {showEditor ? (
@@ -321,30 +312,29 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
           const isMoving = movingDoId === doItem.id;
 
           return (
-            <div
-              key={doItem.id}
-              onDragEnd={handleDoDragEnd}
-              draggable={!isMoving && !showEditor}
-              onDragStart={(event) => handleDoDragStart(event, doItem.id)}
+            <div key={doItem.id} className="relative">
+              {draggedDoId !== doItem.id && dragOverCardId === doItem.id && dropBeforeCard && (
+                <div className="pointer-events-none absolute -top-1.5 right-0 left-0 z-10 h-1 rounded bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.25)]" />
+              )}
+              <KanbanCard
+              doItem={doItem}
+              onEdit={handleEditDo}
+              handleDragStart={handleDoDragStart}
+              handleDragEnd={handleDoDragEnd}
+              handleDragOver={handleDoDragOver}
+              handleDragLeave={handleDoDragLeave}
+              handleDrop={handleDoDrop}
+              columnId={column.id}
               className={twMerge(
                 "cursor-grab transition-opacity active:cursor-grabbing",
                 isDragging && "opacity-40",
                 isMoving && "pointer-events-none opacity-50",
+                Number(doId) === doItem.id && "border border-green-500",
               )}
-            >
-              <KanbanCard
-                doItem={doItem}
-                onEdit={handleEditDo}
-                handleDragStart={handleDoDragStart}
-                handleDragEnd={handleDoDragEnd}
-                handleDragOver={handleDoDragOver}
-                handleDragLeave={handleDoDragLeave}
-                handleDrop={handleDoDrop}
-                columnId={column.id}
-                className={twMerge(
-                  Number(doId) === doItem.id && "border border-green-500",
-                )}
               />
+              {draggedDoId !== doItem.id && dragOverCardId === doItem.id && !dropBeforeCard && (
+                <div className="pointer-events-none absolute -bottom-1.5 right-0 left-0 z-10 h-1 rounded bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.25)]" />
+              )}
             </div>
           );
         })}

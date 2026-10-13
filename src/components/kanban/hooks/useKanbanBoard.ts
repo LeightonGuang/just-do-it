@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Column } from "../../../db";
 
 /** Hook for managing column reordering operations only */
-export const useKanbanBoard = () => {
+export const useKanbanBoard = ({ projectId }: { projectId: string | null }) => {
   const [draggedColumnId, setDraggedColumnId] = useState<number | null>(null);
   const [dragOverColumnForReorder, setDragOverColumnForReorder] = useState<number | null>(null);
   const [movingColumnId, setMovingColumnId] = useState<number | null>(null);
@@ -24,7 +24,8 @@ export const useKanbanBoard = () => {
       setMovingColumnId(draggedColumnId);
 
       // Get all columns for the project to determine new position
-      const response = await fetch(`/api/projects/columns`, {
+      if (!projectId) return;
+      const response = await fetch(`/api/projects/${projectId}/columns`, {
         cache: "no-store",
       });
 
@@ -32,7 +33,8 @@ export const useKanbanBoard = () => {
         throw new Error("Failed to fetch columns");
       }
 
-      const projectColumns = (await response.json()) as Array<{ id: number; position: number; name: string; project_id: number }>;
+      const payload = await response.json() as { columns?: Array<{ id: number; position: number; name: string; project_id: number }> } | Array<{ id: number; position: number; name: string; project_id: number }>;
+      const projectColumns = Array.isArray(payload) ? payload : payload.columns ?? [];
 
       // Find the target column's current position
       const targetColumn = projectColumns.find((col) => col.id === targetColumnId);

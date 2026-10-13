@@ -6,6 +6,7 @@ import Workspace from "./Workspace";
 import Kanban from "./kanban/Kanban";
 import DailyQuote from "./DailyQuote";
 import DesktopSidebar from "./Sidebar/DesktopSidebar";
+import { KanbanProvider } from "./kanban/contexts";
 
 const DEFAULT_SIDEBAR_WIDTH = 256;
 
@@ -33,7 +34,9 @@ const DesktopDashboard = ({
 
       <Workspace className="">
         {projectId ? (
-          <Kanban doId={doId} />
+          <KanbanProvider projectId={projectId}>
+            <Kanban doId={doId} />
+          </KanbanProvider>
         ) : (
           <div className="dot-grid flex h-dvh items-center justify-center">
             <DailyQuote />

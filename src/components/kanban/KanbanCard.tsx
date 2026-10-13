@@ -17,11 +17,20 @@ type KanbanCardProps = {
   className?: string;
   doItem: ApiDo;
   onEdit?: (id: number) => void;
-  handleDragStart?: (event: React.DragEvent<HTMLDivElement>, id: number) => void;
+  handleDragStart?: (
+    event: React.DragEvent<HTMLDivElement>,
+    id: number,
+  ) => void;
   handleDragEnd?: () => void;
-  handleDragOver?: (event: React.DragEvent<HTMLElement>, columnId: number) => void;
+  handleDragOver?: (
+    event: React.DragEvent<HTMLElement>,
+    columnId: number,
+  ) => void;
   handleDragLeave?: (event: React.DragEvent<HTMLElement>) => void;
-  handleDrop?: (event: React.DragEvent<HTMLElement>, columnId: number) => Promise<void>;
+  handleDrop?: (
+    event: React.DragEvent<HTMLElement>,
+    columnId: number,
+  ) => Promise<void>;
   columnId?: number;
 };
 
@@ -59,16 +68,25 @@ const KanbanCard = ({
 
   return (
     <div
+      draggable
+      onDragEnd={handleDragEnd}
+      data-kanban-card={doItem.id}
+      onDragLeave={handleDragLeave}
+      onDragStart={(event) =>
+        handleDragStart && handleDragStart(event, doItem.id)
+      }
+      onDrop={(event) =>
+        columnId !== undefined && handleDrop && handleDrop(event, columnId)
+      }
+      onDragOver={(event) =>
+        columnId !== undefined &&
+        handleDragOver &&
+        handleDragOver(event, columnId)
+      }
       className={twMerge(
-        "border border-border bg-do p-3 transition-colors hover:cursor-grab hover:bg-do-hover active:cursor-grabbing",
+        "border border-border bg-do p-3 transition-colors hover:cursor-grab hover:bg-do-hover active:cursor-grabbing!",
         className,
       )}
-      draggable
-      onDragStart={(event) => handleDragStart && handleDragStart(event, doItem.id)}
-      onDragEnd={handleDragEnd}
-      onDragOver={(event) => columnId !== undefined && handleDragOver && handleDragOver(event, columnId)}
-      onDragLeave={handleDragLeave}
-      onDrop={(event) => columnId !== undefined && handleDrop && handleDrop(event, columnId)}
     >
       <p
         onClick={(event) => {
