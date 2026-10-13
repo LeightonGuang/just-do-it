@@ -24,6 +24,13 @@ export type SidebarDo = Omit<
   tags: SidebarTag[];
 };
 
+const sortSidebarDos = (dos: SidebarDo[]) => [...dos].sort((a, b) => {
+  if (a.end_at && b.end_at) return new Date(a.end_at).getTime() - new Date(b.end_at).getTime();
+  if (a.end_at) return -1;
+  if (b.end_at) return 1;
+  return a.title.localeCompare(b.title);
+}).slice(0, 5);
+
 type SidebarContextValue = {
   sidebarProjects: Project[];
   sidebarDos: SidebarDo[];
@@ -37,6 +44,8 @@ type SidebarContextValue = {
   fetchSidebarTags: () => Promise<void>;
   addSidebarProject: (project: Project) => void;
   addSidebarDo: (doItem: SidebarDo) => void;
+  updateSidebarDo: (doId: number, update: Partial<SidebarDo>) => void;
+  removeSidebarDo: (doId: number) => void;
 };
 
 const SidebarContext = createContext<SidebarContextValue | undefined>(
@@ -90,7 +99,15 @@ export const SidebarProvider = ({
   }, []);
 
   const addSidebarDo = useCallback((doItem: SidebarDo) => {
-    setSidebarDos((current) => [doItem, ...current.filter((item) => item.id !== doItem.id)].slice(0, 5));
+    setSidebarDos((current) => sortSidebarDos([doItem, ...current.filter((item) => item.id !== doItem.id)]));
+  }, []);
+
+  const updateSidebarDo = useCallback((doId: number, update: Partial<SidebarDo>) => {
+    setSidebarDos((current) => sortSidebarDos(current.map((item) => item.id === doId ? { ...item, ...update } : item)));
+  }, []);
+
+  const removeSidebarDo = useCallback((doId: number) => {
+    setSidebarDos((current) => current.filter((item) => item.id !== doId));
   }, []);
 
   const fetchAll = useCallback(async () => {
@@ -129,6 +146,8 @@ export const SidebarProvider = ({
         fetchSidebarTags,
         addSidebarProject,
         addSidebarDo,
+        updateSidebarDo,
+        removeSidebarDo,
       }}
     >
       {children}

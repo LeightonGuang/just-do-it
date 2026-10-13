@@ -71,7 +71,13 @@ const DoDrawer = ({
           setEndAt(formatDateTimeForInput(task.end_at));
         }
       } else {
+        setTitle("");
+        setDescription("");
         setSelectedTagId(null);
+        setStartAt("");
+        setEndAt("");
+        setIsEditingMode(false);
+        setError("");
       }
     };
 

@@ -1,13 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
-import { createContext, useContext } from 'react';
+import { createContext, useContext } from "react";
+import { useState, useCallback, useEffect } from "react";
 
+import { useDoReorder } from "./hooks";
+import { useKanbanBoard } from "../hooks/useKanbanBoard";
+import { useSidebar } from "../../Sidebar/contexts/SidebarContext";
 import { formatDateForApi } from "../kanbanEditDrawer/libs/formatDateForApi";
 
 import type { KanbanDo, KanbanTag } from "./types";
 import type { Project, Column } from "../../../db";
-
-import { useDoReorder } from "./hooks";
-import { useKanbanBoard } from "../hooks/useKanbanBoard";
+import type { SidebarDo } from "../../Sidebar/contexts/SidebarContext";
 
 export type CreateDoData = {
   title: string;
@@ -69,14 +70,23 @@ type KanbanContextValue = {
   movingDoId: number | null;
   handleDragStart: (event: React.DragEvent<HTMLDivElement>, id: number) => void;
   handleDragEnd: () => void;
-  handleDragOver: (event: React.DragEvent<HTMLElement>, columnId: number) => void;
+  handleDragOver: (
+    event: React.DragEvent<HTMLElement>,
+    columnId: number,
+  ) => void;
   handleDragLeave: (event: React.DragEvent<HTMLElement>) => void;
-  handleDrop: (event: React.DragEvent<HTMLElement>, columnId: number) => Promise<void>;
+  handleDrop: (
+    event: React.DragEvent<HTMLElement>,
+    columnId: number,
+  ) => Promise<void>;
   draggedColumnId: number | null;
   setDraggedColumnId: (id: number | null) => void;
   dragOverColumnForReorder: number | null;
   setDragOverColumnForReorder: (id: number | null) => void;
-  handleDropColumn: (event: React.DragEvent<HTMLElement>, id: number) => Promise<void>;
+  handleDropColumn: (
+    event: React.DragEvent<HTMLElement>,
+    id: number,
+  ) => Promise<void>;
   handleSaveColumn: (id: number, name: string) => Promise<void>;
   handleDeleteColumn: (id: number) => Promise<void>;
 };
@@ -105,10 +115,11 @@ export const KanbanProvider = ({
 
   // Project editing state
   const [editingProject, setEditingProject] = useState(false);
-  const [projectName, setProjectName] = useState('');
-  const [projectColour, setProjectColour] = useState('#3b82f6');
+  const [projectName, setProjectName] = useState("");
+  const [projectColour, setProjectColour] = useState("#3b82f6");
   const [savingProject, setSavingProject] = useState(false);
   const board = useKanbanBoard({ projectId });
+  const { addSidebarDo, updateSidebarDo, removeSidebarDo } = useSidebar();
 
   // DO reordering state and handlers
   const {
@@ -130,15 +141,50 @@ export const KanbanProvider = ({
         currentDos.map((item) => {
           const update = byId.get(item.id);
           return update
-            ? { ...item, column_id: update.column_id, position: update.position }
+            ? {
+                ...item,
+                column_id: update.column_id,
+                position: update.position,
+              }
             : item;
         }),
       );
+
+      const movedUpdate = updates.find((update) => update.id === doDraggedId);
+      const targetColumn = movedUpdate
+        ? columns.find((column) => column.id === movedUpdate.column_id)
+        : undefined;
+      if (movedUpdate && targetColumn?.is_done) {
+        removeSidebarDo(movedUpdate.id);
+      } else if (movedUpdate) {
+        const movedDo = dos.find((item) => item.id === movedUpdate.id);
+        if (movedDo && project) {
+          addSidebarDo({
+            ...movedDo,
+            column_id: movedUpdate.column_id,
+            position: movedUpdate.position,
+            project_name: project.name,
+            project_colour: project.colour,
+            start_at: movedDo.start_at ?? null,
+            end_at: movedDo.end_at ?? null,
+            created_at: movedDo.created_at,
+            updated_at: movedDo.updated_at,
+            tags: movedDo.tags ?? [],
+          });
+        } else {
+          updateSidebarDo(movedUpdate.id, {
+            column_id: movedUpdate.column_id,
+            position: movedUpdate.position,
+          });
+        }
+      }
     },
   });
 
   const handleCloseDoEditor = useCallback(() => {
     setEditingDoId(null);
+    setCreatingDoId(null);
+    setIsCreatingMode(false);
   }, []);
 
   const cancelEditingProject = useCallback(() => {
@@ -151,19 +197,50 @@ export const KanbanProvider = ({
       if (!projectId) return;
 
       try {
-        await fetch("/api/dos", {
+        const response = await fetch("/api/dos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: data.title,
             description: data.description || undefined,
-            start_at: data.start_at ? formatDateForApi(data.start_at) : undefined,
+            start_at: data.start_at
+              ? formatDateForApi(data.start_at)
+              : undefined,
             end_at: data.end_at ? formatDateForApi(data.end_at) : undefined,
             project_id: Number(projectId),
             column_id: data.column_id ? Number(data.column_id) : undefined,
             tags: data.tags || [],
           }),
         });
+
+        if (!response.ok) {
+          throw new Error("Failed to create task");
+        }
+
+        const result = (await response.json()) as {
+          task?: {
+            id: number;
+            title: string;
+            description: string | null;
+            project_id: number;
+            column_id: number;
+            position: number | null;
+            start_at: string | null;
+            end_at: string | null;
+            created_at: string;
+            updated_at: string;
+            tags?: SidebarDo["tags"];
+          };
+        };
+
+        if (result.task && project) {
+          addSidebarDo({
+            ...result.task,
+            project_name: project.name,
+            project_colour: project.colour,
+            tags: result.task.tags ?? [],
+          });
+        }
 
         await fetchKanbanData();
         handleCloseDoEditor();
@@ -174,7 +251,7 @@ export const KanbanProvider = ({
         throw error;
       }
     },
-    [projectId, handleCloseDoEditor],
+    [projectId, project, addSidebarDo, handleCloseDoEditor],
   );
 
   const fetchKanbanData = useCallback(async () => {
@@ -306,29 +383,26 @@ export const KanbanProvider = ({
     );
   }, []);
 
-  const deleteColumn = useCallback(
-    async (columnId: number) => {
-      const response = await fetch(`/api/columns/${columnId}`, {
-        method: "DELETE",
-      });
+  const deleteColumn = useCallback(async (columnId: number) => {
+    const response = await fetch(`/api/columns/${columnId}`, {
+      method: "DELETE",
+    });
 
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "Failed to delete column");
-      }
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      throw new Error(data.error || "Failed to delete column");
+    }
 
-      setColumns((currentColumns) =>
-        currentColumns.filter((column) => column.id !== columnId),
-      );
+    setColumns((currentColumns) =>
+      currentColumns.filter((column) => column.id !== columnId),
+    );
 
-      setDos((currentDos) =>
-        currentDos.filter((doItem) => doItem.column_id !== columnId),
-      );
+    setDos((currentDos) =>
+      currentDos.filter((doItem) => doItem.column_id !== columnId),
+    );
 
-      handleCloseDoEditor();
-    },
-    [],
-  );
+    handleCloseDoEditor();
+  }, []);
 
   const createDo = useCallback(
     async (data: CreateDoData) => {
@@ -354,32 +428,31 @@ export const KanbanProvider = ({
     [projectId, fetchKanbanData],
   );
 
-  const deleteDo = useCallback(
-    async (doId: number) => {
-      const response = await fetch(`/api/dos/${doId}`, {
-        method: "DELETE",
-      });
+  const deleteDo = useCallback(async (doId: number) => {
+    const response = await fetch(`/api/dos/${doId}`, {
+      method: "DELETE",
+    });
 
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "Failed to delete task");
-      }
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      throw new Error(data.error || "Failed to delete task");
+    }
 
-      // Remove the task from state so the UI updates immediately.
-      setDos((currentDos) =>
-        currentDos.filter((doItem) => doItem.id !== doId),
-      );
-    },
-    [],
-  );
-
-  const updateDo = useCallback((task: Partial<KanbanDo> & { id: number }) => {
-    setDos((currentDos) =>
-      currentDos.map((currentDo) =>
-        currentDo.id === task.id ? { ...currentDo, ...task } : currentDo,
-      ),
-    );
+    // Remove the task from state so the UI updates immediately.
+    setDos((currentDos) => currentDos.filter((doItem) => doItem.id !== doId));
   }, []);
+
+  const updateDo = useCallback(
+    (task: Partial<KanbanDo> & { id: number }) => {
+      setDos((currentDos) =>
+        currentDos.map((currentDo) =>
+          currentDo.id === task.id ? { ...currentDo, ...task } : currentDo,
+        ),
+      );
+      updateSidebarDo(task.id, task as Parameters<typeof updateSidebarDo>[1]);
+    },
+    [updateSidebarDo],
+  );
 
   const setColumnIsDone = useCallback(
     async (columnId: number, isDone: boolean) => {
@@ -481,4 +554,3 @@ export const useKanban = () => {
 
   return context;
 };
-
