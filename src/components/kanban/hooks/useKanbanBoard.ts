@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import type { Column } from "../../../db";
 
 /** Hook for managing column reordering operations only */
 export const useKanbanBoard = ({ projectId }: { projectId: string | null }) => {

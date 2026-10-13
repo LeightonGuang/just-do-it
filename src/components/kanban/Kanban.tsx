@@ -243,7 +243,7 @@ const Kanban = ({
         onClose={handleCloseDoEditor}
         onCreate={isCreatingMode ? handleCreateDo : undefined}
         onDelete={deleteDo}
-        onUpdate={updateDo}
+        onUpdate={(task) => updateDo(task as Parameters<typeof updateDo>[0])}
         tags={tags || []}
       />
 

@@ -41,7 +41,7 @@ export const GET: APIRoute = async ({ request }) => {
       if (a.end_at) return -1;
       if (b.end_at) return 1;
       if (b.position === a.position) return b.updated_at.getTime() - a.updated_at.getTime();
-      return b.position - a.position;
+      return (b.position ?? 0) - (a.position ?? 0);
     }).slice(0, 5);
 
     // Fetch tags for each DO

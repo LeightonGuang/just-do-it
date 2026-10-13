@@ -1,4 +1,3 @@
-import type { JSX } from "react";
 import { ChevronDown } from "lucide-react";
 
 interface EndpointCardProps {

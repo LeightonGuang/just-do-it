@@ -101,7 +101,7 @@ export const KanbanProvider = ({
   const [isCreatingMode, setIsCreatingMode] = useState(false);
 
   // Column editing state
-  const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
+  const [editingColumnId] = useState<number | null>(null);
 
   // Project editing state
   const [editingProject, setEditingProject] = useState(false);
@@ -147,7 +147,7 @@ export const KanbanProvider = ({
 
   // Handle creating a new DO through the create mode button
   const handleCreateDo = useCallback(
-    async (data: CreateDoData & { tags?: KanbanTag[] }) => {
+    async (data: CreateDoData) => {
       if (!projectId) return;
 
       try {
@@ -410,40 +410,6 @@ export const KanbanProvider = ({
     [],
   );
 
-  const fetchKanban = async (projectId: string | null) => {
-    if (!projectId) {
-      return {
-        project: null as Project | null,
-        columns: [],
-        dos: [],
-        tags: [],
-      };
-    }
-
-    const [kanbanResponse, tagsResponse] = await Promise.all([
-      fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
-      fetch("/api/tags", { cache: "no-store" }),
-    ]);
-
-    if (!kanbanResponse.ok) {
-      throw new Error("Failed to fetch Kanban");
-    }
-
-    if (!tagsResponse.ok) {
-      throw new Error("Failed to fetch tags");
-    }
-
-    const data = (await kanbanResponse.json()) as KanbanResponse;
-    const tagData = (await tagsResponse.json()) as KanbanTag[];
-
-    return {
-      project: data.project,
-      columns: data.columns || [],
-      dos: data.dos || [],
-      tags: tagData || [],
-    };
-  };
-
   return (
     <KanbanContext.Provider
       value={{
@@ -516,9 +482,3 @@ export const useKanban = () => {
   return context;
 };
 
-type KanbanResponse = {
-  project: Project;
-  columns: Column[];
-  dos: KanbanDo[];
-  tags: KanbanTag[];
-};

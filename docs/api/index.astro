@@ -1,5 +1,4 @@
 ---
-import Workspace from "../../src/components/Workspace";
 
 import { HomePage } from "./components/home-page";
 import { EndpointCard } from "./components/endpoint-card";
@@ -391,7 +390,7 @@ const endpoints = [
                   description={endpoint.description}
                   parameters={endpoint.parameters}
                   requestBody={endpoint.requestBody}
-                  responses={endpoint.responses}
+                  responses={endpoint.responses as Record<number, { description: string; schema?: Record<string, unknown> }>}
                 />
               ))}
             </div>

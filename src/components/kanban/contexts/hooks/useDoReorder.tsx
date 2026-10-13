@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
-import type { KanbanDo } from '../types';
+import { useState, useCallback } from 'react';
 
 type UseDoReorderOptions = {
   projectId: string | null;

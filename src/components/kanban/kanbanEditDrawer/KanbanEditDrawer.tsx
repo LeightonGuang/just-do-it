@@ -167,7 +167,7 @@ const KanbanEditDrawer = ({
     currentValues.startAt !== initialValues.startAt ||
     currentValues.endAt !== initialValues.endAt;
 
-  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const trimmedTitle = title.trim();

@@ -98,7 +98,7 @@ const DoDrawer = ({
     };
   };
 
-  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!title.trim()) {

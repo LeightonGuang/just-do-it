@@ -109,9 +109,6 @@ export const useDoReorder = ({ dos, onReordered }: UseDoReorderOptions) => {
         let newIndex = targetDos.length;
         if (targetCard) {
           const targetId = Number(targetCard.dataset.kanbanCard);
-          const currentColumnDos = dos
-            .filter((item) => item.column_id === columnId)
-            .sort((a, b) => a.position - b.position);
           const targetIndex = targetDos.findIndex((item) => item.id === targetId);
           const rect = targetCard.getBoundingClientRect();
           const before = event.clientY < rect.top + rect.height / 2;

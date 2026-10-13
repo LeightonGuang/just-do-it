@@ -147,12 +147,6 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
     }
   };
 
-  // Column drag end handler
-  const handleColumnDragEnd = () => {
-    setDraggedColumnId(null);
-    setDragOverColumnForReorder(null);
-  };
-
   // Use local editing state or context editing state
   const showEditor = editingColumnLocal || isEditing;
 

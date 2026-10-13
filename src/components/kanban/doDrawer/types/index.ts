@@ -5,7 +5,7 @@ export type CreateDoData = {
   description?: string;
   start_at?: string;
   end_at?: string;
-  tags?: Array<{ id: number }> | null;
+  tags?: Array<{ id: number }>;
 };
 
 export type DoDrawerProps = {
