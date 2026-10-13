@@ -57,11 +57,11 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
       {/* Color indicator circle with border */}
       <div
         style={{ backgroundColor: project.colour }}
-        className="mt-0.5 size-3 shrink-0 rounded-sm border border-border shadow-sm group-hover:border-opacity-100"
+        className="group-hover:border-opacity-100 mt-0.5 size-3 shrink-0 border border-border shadow-sm"
       />
-      
+
       {/* Project name */}
-      <p className="font-medium truncate">{project.name}</p>
+      <p className="truncate font-medium">{project.name}</p>
     </a>
   );
 };

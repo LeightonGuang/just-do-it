@@ -75,7 +75,7 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
           <div className="flex min-w-0 items-center gap-2">
             <div
               style={{ backgroundColor: doItem.project_colour }}
-              className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border"
+              className="mt-0.5 size-2.5 shrink-0 rounded-xs border border-border shadow-sm"
             />
 
             <p className="text-[0.6875rem] leading-tight whitespace-nowrap text-text-muted">

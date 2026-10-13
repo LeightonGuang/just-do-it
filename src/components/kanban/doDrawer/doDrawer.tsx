@@ -83,8 +83,6 @@ const DoDrawer = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doId, isCreating]);
 
-
-
   // Prepare create/update data based on mode
   const prepareCreateData = (formData: CreateDoData): CreateDoData => {
     const tags = selectedTagId ? [{ id: selectedTagId }] : [];
@@ -224,10 +222,12 @@ const DoDrawer = ({
     >
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
         <div className="min-w-0">
-          <p className="text-[1.5rem] tracking-wider text-text-muted uppercase">
+          <p className="tracking-wider text-text-muted uppercase">
             {isCreating ? "Create task" : isEditingMode ? "Edit task" : ""}
           </p>
-          <h2 className="truncate text-[1.375rem] font-semibold text-text">{doId ? "Task" : ""}</h2>
+          <h2 className="truncate text-[1.375rem] font-semibold text-text">
+            {doId ? "Task" : ""}
+          </h2>
         </div>
 
         <button
@@ -244,11 +244,18 @@ const DoDrawer = ({
         <div className="flex-1 overflow-y-auto p-5">
           <div className="space-y-5">
             {error && (
-              <div className="border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">{error}</div>
+              <div className="border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+                {error}
+              </div>
             )}
 
             <div>
-              <label htmlFor="kanban-title" className="mb-1.5 block text-xs font-medium text-text-muted">Title</label>
+              <label
+                htmlFor="kanban-title"
+                className="mb-1.5 block text-xs font-medium text-text-muted"
+              >
+                Title
+              </label>
               <input
                 autoFocus
                 type="text"
@@ -261,7 +268,12 @@ const DoDrawer = ({
             </div>
 
             <div>
-              <label htmlFor="kanban-description" className="mb-1.5 block text-xs font-medium text-text-muted">Description</label>
+              <label
+                htmlFor="kanban-description"
+                className="mb-1.5 block text-xs font-medium text-text-muted"
+              >
+                Description
+              </label>
               <textarea
                 rows={5}
                 value={description}
@@ -272,20 +284,35 @@ const DoDrawer = ({
               />
             </div>
 
-            <DateTimeField label="Start" value={startAt} id="kanban-start" onChange={setStartAt} />
-            <DateTimeField label="Due" value={endAt} id="kanban-end" onChange={setEndAt} />
+            <DateTimeField
+              label="Start"
+              value={startAt}
+              id="kanban-start"
+              onChange={setStartAt}
+            />
+            <DateTimeField
+              label="Due"
+              value={endAt}
+              id="kanban-end"
+              onChange={setEndAt}
+            />
 
             {tagsArray.length > 0 && (
               <div>
-                <label htmlFor="kanban-tags" className="mb-1.5 block text-xs font-medium text-text-muted">Tags</label>
+                <label
+                  htmlFor="kanban-tags"
+                  className="mb-1.5 block text-xs font-medium text-text-muted"
+                >
+                  Tags
+                </label>
                 <select
                   id="kanban-tags"
                   value={selectedTagId ?? ""}
-                  className="w-full border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted"
                   onChange={(event) => {
                     const selectedTagId = Number(event.target.value);
                     setSelectedTagId(selectedTagId);
                   }}
+                  className="w-full border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:border-text-muted"
                 >
                   <option value="">No tag</option>
                   {tagsArray.map((tag) => (
@@ -306,7 +333,9 @@ const DoDrawer = ({
             )}
 
             {!tagsArray.length && isCreating && (
-              <div className="text-xs text-text-muted">No tags available. Create some in the Tags page first.</div>
+              <div className="text-xs text-text-muted">
+                No tags available. Create some in the Tags page first.
+              </div>
             )}
           </div>
         </div>
@@ -330,7 +359,7 @@ const DoDrawer = ({
               aria-label="Save task"
               className="flex flex-1 items-center justify-center rounded border border-text/70 bg-text/10 px-3 py-2 text-xs font-medium text-text hover:bg-text/20 disabled:opacity-40"
             >
-              {saving ? "Saving..." : (isEditingMode ? "Update" : "Create")}
+              {saving ? "Saving..." : isEditingMode ? "Update" : "Create"}
             </button>
           </div>
         </div>

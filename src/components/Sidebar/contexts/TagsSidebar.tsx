@@ -16,7 +16,7 @@ const TagsSidebar = ({ className }: { className?: string }) => {
       )}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-[1.5rem]">Tags</h2>
+        <h2 className="text-sm">Tags</h2>
 
         <a
           href="/tags"
