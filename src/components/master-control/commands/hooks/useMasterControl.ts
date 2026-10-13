@@ -19,7 +19,7 @@ const useMasterControl = (
   inputRef: React.RefObject<HTMLInputElement | null>,
   containerRef: React.RefObject<HTMLDivElement | null>,
 ) => {
-  const { fetchSidebarDos, fetchSidebarProjects } = useSidebar();
+  const { fetchSidebarDos, fetchSidebarProjects, addSidebarDo, addSidebarProject } = useSidebar();
   const { projectId: currentProjectId, fetchKanban } = useKanban();
 
   const [inputValue, setInputValue] = useState("");
@@ -318,6 +318,8 @@ const useMasterControl = (
         refetch: {
           projects: fetchSidebarProjects,
           dos: fetchSidebarDos,
+          addProject: addSidebarProject,
+          addDo: addSidebarDo,
           kanban: fetchKanban,
         },
       });
@@ -340,6 +342,8 @@ const useMasterControl = (
     validateArguments,
     fetchSidebarProjects,
     fetchSidebarDos,
+    addSidebarDo,
+    addSidebarProject,
     fetchKanban,
     currentProjectId,
   ]);

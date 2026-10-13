@@ -131,7 +131,19 @@ export const createDo: SubCommand = {
       throw new Error(data.error ?? "Failed to create do");
     }
 
-    await refetch.dos();
+    const data = (await res.json()) as { task?: import("../../../../db").Do };
+    if (data.task) {
+      refetch.addDo?.({
+        ...data.task,
+        project_name: args.project,
+        project_colour: "#000000",
+        tags: [],
+        start_at: data.task.start_at?.toISOString() ?? null,
+        end_at: data.task.end_at?.toISOString() ?? null,
+        created_at: data.task.created_at.toISOString(),
+        updated_at: data.task.updated_at.toISOString(),
+      });
+    }
 
     if (currentProjectId && String(projectId) === String(currentProjectId)) {
       await refetch.kanban?.();

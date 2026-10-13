@@ -35,6 +35,8 @@ type SidebarContextValue = {
   fetchSidebarProjects: () => Promise<void>;
   fetchSidebarDos: () => Promise<void>;
   fetchSidebarTags: () => Promise<void>;
+  addSidebarProject: (project: Project) => void;
+  addSidebarDo: (doItem: SidebarDo) => void;
 };
 
 const SidebarContext = createContext<SidebarContextValue | undefined>(
@@ -83,6 +85,14 @@ export const SidebarProvider = ({
     setSidebarTags(data);
   }, []);
 
+  const addSidebarProject = useCallback((project: Project) => {
+    setSidebarProjects((current) => [project, ...current.filter((item) => item.id !== project.id)]);
+  }, []);
+
+  const addSidebarDo = useCallback((doItem: SidebarDo) => {
+    setSidebarDos((current) => [doItem, ...current.filter((item) => item.id !== doItem.id)].slice(0, 5));
+  }, []);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -117,6 +127,8 @@ export const SidebarProvider = ({
         fetchSidebarProjects,
         fetchSidebarDos,
         fetchSidebarTags,
+        addSidebarProject,
+        addSidebarDo,
       }}
     >
       {children}

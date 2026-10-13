@@ -80,5 +80,5 @@ export const POST: APIRoute = async ({ request }) => {
     },
   ]);
 
-  return Response.json({ success: true });
+  return Response.json({ success: true, project: { id: projectId, name, colour, created_at: new Date(), updated_at: new Date() } });
 };

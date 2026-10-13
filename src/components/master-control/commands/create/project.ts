@@ -39,6 +39,7 @@ export const createProject: SubCommand = {
       throw new Error(data.error ?? "Failed to create project");
     }
 
-    await refetch.projects();
+    const data = (await res.json()) as { project?: import("../../../../db").Project };
+    if (data.project) refetch.addProject?.(data.project);
   },
 };

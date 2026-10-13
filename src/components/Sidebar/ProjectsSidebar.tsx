@@ -49,9 +49,17 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
 export default ProjectsSidebar;
 
 const ProjectSidebarItem = ({ project }: { project: Project }) => {
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    window.history.pushState({}, "", `/?project_id=${project.id}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+
   return (
     <a
       href={`/?project_id=${project.id}`}
+      onClick={handleClick}
       className="group flex items-center gap-2 bg-card p-2 text-xs hover:bg-card-hover md:p-1"
     >
       {/* Color indicator circle with border */}

@@ -7,6 +7,12 @@ import { getCountdown, type Countdown } from "./getCountdown";
 import type { SidebarDo } from "../../contexts/SidebarContext";
 
 export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    window.history.pushState({}, "", `/?project_id=${doItem.project_id}&do_id=${doItem.id}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
   const hasEndDate = Boolean(doItem.end_at);
 
   // Only initialize countdown state when there's an end date
@@ -32,6 +38,7 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
   return (
     <a
       href={`?project_id=${doItem.project_id}&do_id=${doItem.id}`}
+      onClick={handleClick}
       className={twMerge(
         "flex min-w-0 items-start gap-2 bg-card p-2 hover:bg-card-hover md:p-1",
         hasEndDate && countdown.due && "bg-danger-background",

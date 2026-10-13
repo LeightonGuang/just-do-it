@@ -1,4 +1,5 @@
 import type { Project, Column } from "../../../db";
+import type { SidebarDo } from "../../Sidebar/contexts/SidebarContext";
 
 export type ApiTag = {
   id: number;
@@ -69,6 +70,8 @@ export type CommandContext = {
     projects: () => Promise<void>;
     dos: () => Promise<void>;
     kanban?: () => Promise<void>;
+    addProject?: (project: Project) => void;
+    addDo?: (doItem: SidebarDo) => void;
   };
 };
 
