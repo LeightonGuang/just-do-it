@@ -16,6 +16,7 @@ export type CreateDoData = {
   description?: string;
   start_at?: string;
   end_at?: string;
+  tags?: Array<{ id: number }>;
 };
 
 type KanbanContextValue = {
@@ -55,6 +56,7 @@ type KanbanContextValue = {
 
   createDo: (data: CreateDoData) => Promise<void>;
   deleteDo: (doId: number) => Promise<void>;
+  updateDo: (task: Partial<KanbanDo> & { id: number }) => void;
 
   loading: boolean;
   error: string;
@@ -185,10 +187,16 @@ export const KanbanProvider = ({
     }
 
     try {
-      const response = await fetch(`/api/projects/${projectId}`, { cache: "no-store" });
+      const [response, tagsResponse] = await Promise.all([
+        fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
+        fetch("/api/tags", { cache: "no-store" }),
+      ]);
 
       if (!response.ok) {
         throw new Error("Failed to fetch Kanban");
+      }
+      if (!tagsResponse.ok) {
+        throw new Error("Failed to fetch tags");
       }
 
       const data = (await response.json()) as {
@@ -200,6 +208,7 @@ export const KanbanProvider = ({
       setProject(data.project);
       setColumns(data.columns || []);
       setDos(data.dos || []);
+      setTags((await tagsResponse.json()) as KanbanTag[]);
     } catch (error) {
       console.error("Failed to fetch Kanban:", error);
     }
@@ -364,6 +373,14 @@ export const KanbanProvider = ({
     [],
   );
 
+  const updateDo = useCallback((task: Partial<KanbanDo> & { id: number }) => {
+    setDos((currentDos) =>
+      currentDos.map((currentDo) =>
+        currentDo.id === task.id ? { ...currentDo, ...task } : currentDo,
+      ),
+    );
+  }, []);
+
   const setColumnIsDone = useCallback(
     async (columnId: number, isDone: boolean) => {
       const response = await fetch(`/api/columns/${columnId}`, {
@@ -461,6 +478,7 @@ export const KanbanProvider = ({
         setColumnIsDone,
         createDo,
         deleteDo,
+        updateDo,
         loading: false,
         error: "",
         // DO reordering

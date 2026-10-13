@@ -98,21 +98,17 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   }
 
   // Calculate start/end times for the update
-  let startAt: number | null = null;
-  let endAt: number | null = null;
+  let startAt: number | null | undefined;
+  let endAt: number | null | undefined;
 
   if (body.start_at !== undefined) {
     const parsedStart = parseDate(body.start_at ?? "");
-    if (parsedStart) {
-      startAt = parsedStart;
-    }
+    startAt = parsedStart;
   }
 
   if (body.end_at !== undefined) {
     const parsedEnd = parseDate(body.end_at ?? "");
-    if (parsedEnd) {
-      endAt = parsedEnd;
-    }
+    endAt = parsedEnd;
   }
 
   const updateData: Record<string, unknown> = {
@@ -144,12 +140,12 @@ export const PATCH: APIRoute = async ({ params, request }) => {
     updateData.project_id = body.project_id;
   }
 
-  if (startAt !== null) {
-    updateData.start_at = new Date(startAt);
+  if (startAt !== undefined) {
+    updateData.start_at = startAt === null ? null : new Date(startAt);
   }
 
-  if (endAt !== null) {
-    updateData.end_at = new Date(endAt);
+  if (endAt !== undefined) {
+    updateData.end_at = endAt === null ? null : new Date(endAt);
   }
 
   if (body.position !== undefined) {
@@ -166,7 +162,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   await db.update(dos).set(updateData).where(eq(dos.id, doId));
 
   // Update tags based on what's provided in the request.
-  if (body.tags && body.tags.length > 0) {
+  if (body.tags !== undefined) {
     // Remove existing tag assignments for this DO.
     await db.delete(doTags).where(eq(doTags.do_id, doId));
 

@@ -32,6 +32,7 @@ const Kanban = ({
     cancelEditingProject,
     handleCreateDo,
     deleteDo,
+    updateDo,
   } = useKanban();
 
   const {
@@ -242,6 +243,7 @@ const Kanban = ({
         onClose={handleCloseDoEditor}
         onCreate={isCreatingMode ? handleCreateDo : undefined}
         onDelete={deleteDo}
+        onUpdate={updateDo}
         tags={tags || []}
       />
 

@@ -13,6 +13,7 @@ export type DoDrawerProps = {
   onClose: () => void;
   onCreate?: (data: CreateDoData) => Promise<void>;
   onDelete?: (doId: number) => Promise<void>;
+  onUpdate?: (task: Partial<KanbanDo> & { id: number; tags?: Array<{ id: number; name?: string; colour?: string }> }) => void;
   isCreating?: boolean;
   createColumnId?: number;
   tags?: KanbanTag[];

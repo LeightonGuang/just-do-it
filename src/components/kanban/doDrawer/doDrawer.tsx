@@ -7,11 +7,20 @@ import type { DoDrawerProps, CreateDoData, KanbanDo, KanbanTag } from "./types";
 
 type DoWithTags = KanbanDo & { tags?: { id: number }[] };
 
+const formatDateTimeForInput = (value: string | Date | null | undefined) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 const DoDrawer = ({
   doId,
   onClose,
   onCreate,
   onDelete,
+  onUpdate,
   isCreating,
   createColumnId: initialCreateColumnId,
   tags: availableTags = [],
@@ -57,15 +66,9 @@ const DoDrawer = ({
           setSelectedTagId(task.tags?.[0]?.id ?? null);
           setIsEditingMode(true);
 
-          // Set dropdown value to selected tag ID immediately when loading existing DO
-          const selectElement = document.getElementById("kanban-tags") as unknown as HTMLSelectElement;
-          if (selectElement && selectedTagId) {
-            selectElement.value = selectedTagId.toString();
-          }
-
           // Set datetime values for the DateTimeField components
-          setStartAt(task.start_at ? new Date(task.start_at).toISOString().slice(0, 16) : "");
-          setEndAt(task.end_at ? new Date(task.end_at).toISOString().slice(0, 16) : "");
+          setStartAt(formatDateTimeForInput(task.start_at));
+          setEndAt(formatDateTimeForInput(task.end_at));
         }
       } else {
         setSelectedTagId(null);
@@ -89,6 +92,8 @@ const DoDrawer = ({
     return {
       title: formData.title || "",
       description: formData.description ?? undefined,
+      start_at: startAt || undefined,
+      end_at: endAt || undefined,
       project_id: undefined,
       column_id: initialCreateColumnId ?? undefined,
       tags,
@@ -133,9 +138,14 @@ const DoDrawer = ({
         handleClose();
 
         const updatedData = (await response.json()) as { task?: DoWithTags };
+        if (updatedData.task) {
+          onUpdate?.(updatedData.task);
+        }
         setTitle(updatedData.task?.title || "");
         setDescription(updatedData.task?.description || "");
         setSelectedTagId(updatedData.task?.tags?.[0]?.id ?? null);
+        setStartAt(formatDateTimeForInput(updatedData.task?.start_at));
+        setEndAt(formatDateTimeForInput(updatedData.task?.end_at));
       } else {
         // Create a new DO via POST (fallback when no callback is provided)
         const createResponse = await fetch("/api/dos", {

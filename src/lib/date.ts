@@ -5,11 +5,11 @@ export function parseDate(value: string): number | null {
   if (!value || value.trim() === "") return null;
   
   // Try parsing as ISO date string first
-  const isoMatch = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  const isoMatch = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?/);
   if (isoMatch) {
     try {
       const date = new Date(isoMatch[0]);
-      return Number(date.getTime());
+      return Number.isNaN(date.getTime()) ? null : Number(date.getTime());
     } catch {
       // Ignore parse errors
     }
