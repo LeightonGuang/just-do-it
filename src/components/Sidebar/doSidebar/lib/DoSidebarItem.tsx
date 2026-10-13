@@ -29,18 +29,6 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
     return () => clearInterval(interval);
   }, [hasEndDate, doItem.end_at]);
 
-  useEffect(() => {
-    if (!hasEndDate) return;
-
-    setCountdown(getCountdown(doItem.end_at));
-
-    const interval = setInterval(() => {
-      setCountdown(getCountdown(doItem.end_at));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [hasEndDate, doItem.end_at]);
-
   return (
     <a
       href={`?project_id=${doItem.project_id}&do_id=${doItem.id}`}

@@ -20,21 +20,29 @@ export const GET: APIRoute = async ({ request }) => {
       project_id: dos.project_id,
       column_id: dos.column_id,
       description: dos.description,
+      start_at: dos.start_at,
+      end_at: dos.end_at,
       position: dos.position,
       updated_at: dos.updated_at,
       project_name: projects.name,
       project_colour: projects.colour,
+      column_is_done: columns.is_done,
     })
     .from(dos)
     .innerJoin(projects, eq(dos.project_id, projects.id))
+    .innerJoin(columns, eq(dos.column_id, columns.id))
     .all();
 
-    // Keep the sidebar deterministic and show the most recently ordered items first.
-    const filteredDos = result;
+    // Show tasks with the shortest remaining countdown first. Tasks without a
+    // due time are always placed after tasks that have one.
+    const filteredDos = result.filter((task) => !task.column_is_done);
     const sortedDos = [...filteredDos].sort((a, b) => {
+      if (a.end_at && b.end_at) return a.end_at.getTime() - b.end_at.getTime();
+      if (a.end_at) return -1;
+      if (b.end_at) return 1;
       if (b.position === a.position) return b.updated_at.getTime() - a.updated_at.getTime();
       return b.position - a.position;
-    });
+    }).slice(0, 5);
 
     // Fetch tags for each DO
     const dosWithTags = await Promise.all(
