@@ -1,0 +1,428 @@
+---
+import Workspace from "../../src/components/Workspace";
+
+import { HomePage } from "./components/home-page";
+import { EndpointCard } from "./components/endpoint-card";
+
+const endpoints = [
+  // Projects Endpoints
+  {
+    category: "Projects",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/projects",
+        description: "Get all projects or filter/search by name or limit results.",
+        parameters: [
+          { name: "name", type: "string", required: false, description: "Filter projects by name (partial match)" },
+          { name: "limit", type: "number", required: false, description: "Limit number of results returned" },
+        ],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns array of Project objects or filtered/limited projects" },
+          400: { description: "Error when both 'name' and 'limit' are provided together" },
+        },
+      },
+      {
+        method: "POST",
+        path: "/api/projects",
+        description: "Create a new project with default 'Dos' and 'Done' columns.",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "name", type: "string", required: true, description: "Project name" },
+            { name: "colour", type: "string", required: false, description: "Hex color code (default: #000000)" },
+          ],
+          required: ["name"],
+        },
+        responses: {
+          200: { description: "Returns success message" },
+        },
+      },
+      {
+        method: "GET",
+        path: "/api/projects/[projectId]",
+        description: "Get a specific project by ID with all its columns and tasks.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns KanbanResponse with project, columns, and dos" },
+          400: { description: "Invalid project ID" },
+          404: { description: "Project not found" },
+        },
+      },
+      {
+        method: "PATCH",
+        path: "/api/projects/[projectId]",
+        description: "Update a project's name or color.",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "name", type: "string", required: false, description: "New project name" },
+            { name: "colour", type: "string", required: false, description: "New hex color code" },
+          ],
+          required: [],
+        },
+        responses: {
+          200: { description: "Returns updated Project object" },
+          400: { description: "Invalid JSON body or nothing to update" },
+          404: { description: "Project not found" },
+        },
+      },
+      {
+        method: "DELETE",
+        path: "/api/projects/[projectId]",
+        description: "Delete a project and all its associated data.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns success message" },
+          400: { description: "Invalid project ID" },
+        },
+      },
+    ],
+  },
+  // Columns Endpoints
+  {
+    category: "Columns",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/columns",
+        description: "Get all columns or filter by name/project_id.",
+        parameters: [
+          { name: "name", type: "string", required: false, description: "Filter columns by name (partial match)" },
+          { name: "project_id", type: "number", required: false, description: "Filter columns by project ID" },
+        ],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns array of Column objects" },
+        },
+      },
+      {
+        method: "POST",
+        path: "/api/columns",
+        description: "Create a new column for a project.",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "name", type: "string", required: true, description: "Column name" },
+            { name: "project_id", type: "number", required: true, description: "Project ID to add column to" },
+            { name: "position", type: "number", required: false, description: "Column position (auto-calculated if not provided)" },
+          ],
+          required: ["name", "project_id"],
+        },
+        responses: {
+          200: { description: "Returns success message with created column" },
+          400: { description: "Missing name or project_id" },
+        },
+      },
+      {
+        method: "PATCH",
+        path: "/api/columns/[columnId]",
+        description: "Update a column's name, position, or mark as done column.",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "name", type: "string", required: false, description: "New column name" },
+            { name: "position", type: "number", required: false, description: "New position index" },
+            { name: "isDone", type: "boolean", required: false, description: "Mark as the done column for project (only one per project allowed)" },
+          ],
+          required: [],
+        },
+        responses: {
+          200: { description: "Returns success message with updated column" },
+          400: { description: "Invalid data or no fields to update" },
+          404: { description: "Column not found" },
+          500: { description: "Failed to update done column" },
+        },
+      },
+      {
+        method: "DELETE",
+        path: "/api/columns/[columnId]",
+        description: "Delete a column and all its associated tasks.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns success message" },
+          400: { description: "Invalid column ID" },
+          404: { description: "Column not found" },
+        },
+      },
+    ],
+  },
+  // Tasks (DOs) Endpoints
+  {
+    category: "Tasks (DOs)",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/dos",
+        description: "Get all tasks. Use ?sidebar=true for sidebar mode with tags.",
+        parameters: [
+          { name: "sidebar", type: "boolean", required: false, description: "Return tasks with tags (for sidebar view)" },
+        ],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns array of Task objects (with tags if sidebar=true)" },
+          400: { description: "Invalid usage - use /api/dos/[doId] for single task" },
+        },
+      },
+      {
+        method: "POST",
+        path: "/api/dos",
+        description: "Create a new task (DO).",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "title", type: "string", required: true, description: "Task title" },
+            { name: "project_id", type: "number", required: true, description: "Project ID" },
+            { name: "column_id", type: "number", required: true, description: "Column ID to add task to" },
+            { name: "description", type: "string", required: false, description: "Task description (optional)" },
+            { name: "tags", type: "array", required: false, description: "Array of tag objects with id property" },
+            { name: "start_at", type: "string", required: false, description: "ISO date string for start time" },
+            { name: "end_at", type: "string", required: false, description: "ISO date string for end time" },
+          ],
+          required: ["title", "project_id", "column_id"],
+        },
+        responses: {
+          200: { description: "Returns success message with created task and tags" },
+          400: { description: "Missing title or project_id/column_id" },
+        },
+      },
+      {
+        method: "GET",
+        path: "/api/dos/[doId]",
+        description: "Get a specific task by ID with its tags and project info.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns task object with tags and project info" },
+          400: { description: "Invalid task ID" },
+          404: { description: "Task not found" },
+        },
+      },
+      {
+        method: "PATCH",
+        path: "/api/dos/[doId]",
+        description: "Update a task's properties including title, description, column, position, dates, and tags.",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "title", type: "string", required: false, description: "New task title" },
+            { name: "description", type: "string", required: false, description: "New description (can be null)" },
+            { name: "column_id", type: "number", required: false, description: "New column ID" },
+            { name: "project_id", type: "number", required: false, description: "New project ID" },
+            { name: "start_at", type: "string", required: false, description: "ISO date string for start time" },
+            { name: "end_at", type: "string", required: false, description: "ISO date string for end time" },
+            { name: "position", type: "number", required: false, description: "New position (1000, 2000, etc.)" },
+            { name: "tags", type: "array", required: false, description: "Array of tag objects with id property" },
+          ],
+          required: [],
+        },
+        responses: {
+          200: { description: "Returns success message with updated task and tags" },
+          400: { description: "Invalid data or no valid fields to update" },
+          404: { description: "Task not found" },
+        },
+      },
+      {
+        method: "MOVE",
+        path: "/api/dos/[doId]",
+        description: "Move a task by updating its position.",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "position", type: "number", required: true, description: "New position value" },
+          ],
+          required: ["position"],
+        },
+        responses: {
+          200: { description: "Returns success message" },
+          400: { description: "Invalid data or missing position" },
+          404: { description: "Task not found" },
+        },
+      },
+      {
+        method: "DELETE",
+        path: "/api/dos/[doId]",
+        description: "Delete a task and its associated tags.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns success message" },
+          400: { description: "Invalid task ID" },
+          404: { description: "Task not found" },
+        },
+      },
+    ],
+  },
+  // Tags Endpoints
+  {
+    category: "Tags",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/tags",
+        description: "Get all tags or filter by name or limit results.",
+        parameters: [
+          { name: "name", type: "string", required: false, description: "Filter tags by name (partial match)" },
+          { name: "limit", type: "number", required: false, description: "Limit number of results returned" },
+        ],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns array of Tag objects or filtered/limited tags" },
+          400: { description: "Error when both 'name' and 'limit' are provided together" },
+        },
+      },
+      {
+        method: "POST",
+        path: "/api/tags",
+        description: "Create a new tag.",
+        parameters: [],
+        requestBody: {
+          properties: [
+            { name: "name", type: "string", required: true, description: "Tag name (must be unique)" },
+            { name: "colour", type: "string", required: false, description: "Hex color code (default: #000000)" },
+          ],
+          required: ["name"],
+        },
+        responses: {
+          200: { description: "Returns success message with created tag" },
+          400: { description: "Missing name" },
+          409: { description: "A tag with this name already exists" },
+        },
+      },
+      {
+        method: "GET",
+        path: "/api/tags/[tagId]",
+        description: "Get a specific tag by ID and all tasks that use it.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns tag object with array of associated tasks" },
+          400: { description: "Invalid tag ID" },
+        },
+      },
+      {
+        method: "DELETE",
+        path: "/api/tags/[tagId]",
+        description: "Delete a tag and all its associations with tasks.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns success message" },
+          400: { description: "Invalid tag ID" },
+          404: { description: "Tag not found" },
+        },
+      },
+    ],
+  },
+  // Quote Endpoint
+  {
+    category: "Utilities",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/quote",
+        description: "Get today's zen quote from zenquotes.io.",
+        parameters: [],
+        requestBody: undefined,
+        responses: {
+          200: { description: "Returns zen quote object with q, a, i, h, date fields" },
+          500: { description: "Failed to fetch quote or something went wrong" },
+        },
+      },
+    ],
+  },
+];
+
+---
+
+<HomePage title="API Documentation">
+  <div class="mx-auto max-w-6xl p-8">
+    <h1 class="mb-8 text-center text-4xl font-bold">Just Do It API</h1>
+    
+    <p class="mb-12 text-center text-lg text-text-muted">
+      Complete API reference for the Just Do It task management application.
+    </p>
+
+    <div class="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <aside class="h-fit border border-border bg-card p-4 lg:sticky lg:top-24">
+        <h2 class="mb-4 text-xs font-semibold uppercase tracking-wide text-text-muted">Endpoints</h2>
+        <nav aria-label="API endpoints" class="space-y-5">
+          {endpoints.map((category) => (
+            <div>
+              <h3 class="mb-2 text-xs font-semibold text-text-muted">{category.category}</h3>
+              <ul class="space-y-1 border-l border-border">
+                {category.endpoints.map((endpoint, index) => {
+                  const id = `endpoint-${category.category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index}`;
+                  return (
+                    <li>
+                      <a href={`#${id}`} class="-ml-px block min-w-0 break-words border-l border-transparent px-3 py-1.5 text-xs text-text-muted transition-colors hover:border-text hover:bg-card-hover hover:text-text">
+                        <span class:list={[
+                          "mr-1 font-semibold",
+                          endpoint.method === "GET" && "text-success",
+                          endpoint.method === "POST" && "text-primary",
+                          endpoint.method === "PATCH" && "text-yellow-700",
+                          endpoint.method === "DELETE" && "text-danger",
+                          !["GET", "POST", "PATCH", "DELETE"].includes(endpoint.method) && "text-text-muted",
+                        ]}>{endpoint.method}</span>{endpoint.path}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+      </aside>
+
+      <div class="min-w-0 space-y-8">
+        {endpoints.map((category) => (
+          <div>
+            <h2 class="mb-4 border-b border-border pb-2 text-2xl font-semibold">{category.category}</h2>
+            <div class="space-y-3">
+              {category.endpoints.map((endpoint, index) => (
+                <EndpointCard
+                  id={`endpoint-${category.category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index}`}
+                  method={endpoint.method}
+                  path={endpoint.path}
+                  description={endpoint.description}
+                  parameters={endpoint.parameters}
+                  requestBody={endpoint.requestBody}
+                  responses={endpoint.responses}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="mt-12 border border-border bg-card p-6">
+      <h3 class="mb-2 text-lg font-semibold">Base URL</h3>
+      <p class="text-sm text-text-muted">
+        All endpoints are accessible at: <code class="border border-border bg-background px-2 py-1">/api/*</code>
+      </p>
+    </div>
+
+    <div class="mt-8 border border-border bg-card p-6">
+      <h3 class="mb-2 text-lg font-semibold">Authentication</h3>
+      <p class="text-sm text-text-muted">
+        This API does not require authentication. All endpoints are publicly accessible.
+      </p>
+    </div>
+
+    <div class="mt-8 border border-border bg-card p-6">
+      <h3 class="mb-2 text-lg font-semibold">Important Notes</h3>
+      <ul class="list-inside list-disc space-y-1 text-sm text-text-muted">
+        <li>All timestamps are stored in milliseconds since epoch (Unix time)</li>
+        <li>Date strings should be ISO format for start_at and end_at fields</li>
+        <li>Position values for tasks use thousand-based increments (1000, 2000, etc.)</li>
+        <li>Only one "done" column can exist per project</li>
+        <li>Foreign key constraints cascade delete related records</li>
+      </ul>
+    </div>
+  </div>
+</HomePage>

@@ -1,0 +1,32 @@
+---
+import Workspace from "../src/components/Workspace";
+
+const docs = [
+  {
+    title: "API Documentation",
+    path: "/docs/api",
+    description: "Complete API reference for all endpoints",
+  },
+];
+
+---
+
+<Workspace>
+  <div class="dot-grid min-h-full p-8 text-text">
+    <div class="mx-auto max-w-4xl">
+    <h1 class="mb-8 text-center text-4xl font-bold">Documentation</h1>
+    
+    <div class="space-y-4">
+      {docs.map((doc) => (
+        <a 
+          href={doc.path}
+          class="block border border-border bg-card p-6 transition-colors hover:border-text-muted hover:bg-card-hover"
+        >
+          <h2 class="mb-2 text-2xl font-semibold">{doc.title}</h2>
+          <p class="text-text-muted">{doc.description}</p>
+        </a>
+      ))}
+    </div>
+    </div>
+  </div>
+</Workspace>
