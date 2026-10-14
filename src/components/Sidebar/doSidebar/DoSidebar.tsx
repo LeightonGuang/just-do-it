@@ -8,8 +8,6 @@ import { DoSidebarSkeleton } from "./lib/DoSidebarSkeleton";
 const DoSidebar = ({ className }: { className?: string }) => {
   const { sidebarDos, loading } = useSidebar();
 
-  console.log({ sidebarDos });
-
   return (
     <div
       className={twMerge(
