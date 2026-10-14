@@ -119,7 +119,7 @@ export const KanbanProvider = ({
   const [projectColour, setProjectColour] = useState("#3b82f6");
   const [savingProject, setSavingProject] = useState(false);
   const board = useKanbanBoard({ projectId });
-  const { addSidebarDo, updateSidebarDo, removeSidebarDo } = useSidebar();
+  const { addSidebarDo, updateSidebarDo, removeSidebarDo, updateSidebarProject } = useSidebar();
 
   // DO reordering state and handlers
   const {
@@ -283,6 +283,8 @@ export const KanbanProvider = ({
       };
 
       setProject(data.project);
+      setProjectName(data.project.name);
+      setProjectColour(data.project.colour);
       setColumns(data.columns || []);
       setDos(data.dos || []);
       setTags((await tagsResponse.json()) as KanbanTag[]);
@@ -310,10 +312,16 @@ export const KanbanProvider = ({
         throw new Error(data.error || "Failed to edit project");
       }
 
-      const data = (await response.json()) as { project: Project };
-      setProject(data.project);
+      const updatedProject = (await response.json()) as Project;
+      setProject(updatedProject);
+      setProjectName(updatedProject.name);
+      setProjectColour(updatedProject.colour);
+      updateSidebarProject(updatedProject.id, {
+        name: updatedProject.name,
+        colour: updatedProject.colour,
+      });
     },
-    [projectId],
+    [projectId, updateSidebarProject],
   );
 
   const saveProject = useCallback(async () => {
@@ -505,7 +513,13 @@ export const KanbanProvider = ({
         projectName,
         projectColour,
         savingProject,
-        startEditingProject: () => setEditingProject(true),
+        startEditingProject: () => {
+          if (project) {
+            setProjectName(project.name);
+            setProjectColour(project.colour);
+          }
+          setEditingProject(true);
+        },
         cancelEditingProject,
         setProjectName,
         setProjectColour,

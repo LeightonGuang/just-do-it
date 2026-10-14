@@ -43,6 +43,7 @@ type SidebarContextValue = {
   fetchSidebarDos: () => Promise<void>;
   fetchSidebarTags: () => Promise<void>;
   addSidebarProject: (project: Project) => void;
+  updateSidebarProject: (projectId: number, update: Partial<Project>) => void;
   addSidebarDo: (doItem: SidebarDo) => void;
   updateSidebarDo: (doId: number, update: Partial<SidebarDo>) => void;
   removeSidebarDo: (doId: number) => void;
@@ -98,6 +99,10 @@ export const SidebarProvider = ({
     setSidebarProjects((current) => [project, ...current.filter((item) => item.id !== project.id)]);
   }, []);
 
+  const updateSidebarProject = useCallback((projectId: number, update: Partial<Project>) => {
+    setSidebarProjects((current) => current.map((project) => project.id === projectId ? { ...project, ...update } : project));
+  }, []);
+
   const addSidebarDo = useCallback((doItem: SidebarDo) => {
     setSidebarDos((current) => sortSidebarDos([doItem, ...current.filter((item) => item.id !== doItem.id)]));
   }, []);
@@ -145,6 +150,7 @@ export const SidebarProvider = ({
         fetchSidebarDos,
         fetchSidebarTags,
         addSidebarProject,
+        updateSidebarProject,
         addSidebarDo,
         updateSidebarDo,
         removeSidebarDo,
