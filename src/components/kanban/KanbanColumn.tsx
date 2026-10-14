@@ -49,7 +49,9 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
   const isEditing = editingColumnId === column.id;
   // Safety check for dos - prevents "Cannot read properties of undefined (reading 'filter')"
   const columnDos = Array.isArray(dos)
-    ? dos.filter((doItem) => doItem.column_id === column.id).sort((a, b) => a.position - b.position)
+    ? dos
+        .filter((doItem) => doItem.column_id === column.id)
+        .sort((a, b) => a.position - b.position)
     : [];
   const isDragOver = dragOverColumnId === column.id;
   const isColumnDragOver = dragOverColumnForReorder === column.id;
@@ -92,6 +94,10 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
   }, [menuOpen]);
 
   useEffect(() => {
+    if (column.id < 0) {
+      setEditingColumnLocal(true);
+    }
+
     if (!isEditing) return;
 
     setName(column.name);
@@ -102,7 +108,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
     });
   }, [isEditing, column.name]);
 
-  const [editingColumnLocal, setEditingColumnLocal] = useState(false);
+  const [editingColumnLocal, setEditingColumnLocal] = useState(column.id < 0);
 
   const handleEdit = () => {
     setMenuOpen(false);
@@ -153,14 +159,16 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
   return (
     <article
       draggable
-      onDragStart={(event) => {
-        if (event.target === event.currentTarget) {
-          setDraggedColumnId(column.id);
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("application/x-kanban-column", String(column.id));
-        }
+      onDragLeave={(event) => handleDoDragLeave(event)}
+      onDragEnd={() => {
+        setDraggedColumnId(null);
+        setDragOverColumnForReorder(null);
       }}
-      onDragEnd={() => { setDraggedColumnId(null); setDragOverColumnForReorder(null); }}
+      className={twMerge(
+        "min-w-0 border border-border bg-card p-2 transition-colors",
+        (isDragOver || isColumnDragOver) && "border-green-500 bg-green-500/5",
+        draggedColumnId === column.id && "opacity-50",
+      )}
       onDragOver={(event) => {
         if (event.dataTransfer.types.includes("application/x-kanban-column")) {
           event.preventDefault();
@@ -169,7 +177,16 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
           handleDoDragOver(event, column.id);
         }
       }}
-      onDragLeave={(event) => handleDoDragLeave(event)}
+      onDragStart={(event) => {
+        if (event.target === event.currentTarget) {
+          setDraggedColumnId(column.id);
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData(
+            "application/x-kanban-column",
+            String(column.id),
+          );
+        }
+      }}
       onDrop={(event) => {
         if (event.dataTransfer.types.includes("application/x-kanban-column")) {
           void handleDropColumn(event, column.id);
@@ -181,14 +198,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
         event.stopPropagation();
         void handleDoDrop(event, column.id);
       }}
-      className={twMerge(
-        "min-w-0 border border-border bg-card p-2 transition-colors",
-        (isDragOver || isColumnDragOver) && "border-green-500 bg-green-500/5",
-        draggedColumnId === column.id && "opacity-50",
-      )}
     >
-
-
       <div className="flex items-center justify-between gap-2">
         {showEditor ? (
           <div className="flex min-w-0 flex-1 items-center gap-1">
@@ -307,28 +317,32 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
 
           return (
             <div key={doItem.id} className="relative">
-              {draggedDoId !== doItem.id && dragOverCardId === doItem.id && dropBeforeCard && (
-                <div className="pointer-events-none absolute -top-1.5 right-0 left-0 z-10 h-1 rounded bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.25)]" />
-              )}
+              {draggedDoId !== doItem.id &&
+                dragOverCardId === doItem.id &&
+                dropBeforeCard && (
+                  <div className="pointer-events-none absolute -top-1.5 right-0 left-0 z-10 h-1 rounded bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.25)]" />
+                )}
               <KanbanCard
-              doItem={doItem}
-              onEdit={handleEditDo}
-              handleDragStart={handleDoDragStart}
-              handleDragEnd={handleDoDragEnd}
-              handleDragOver={handleDoDragOver}
-              handleDragLeave={handleDoDragLeave}
-              handleDrop={handleDoDrop}
-              columnId={column.id}
-              className={twMerge(
-                "cursor-grab transition-opacity active:cursor-grabbing",
-                isDragging && "opacity-40",
-                isMoving && "pointer-events-none opacity-50",
-                Number(doId) === doItem.id && "border border-green-500",
-              )}
+                doItem={doItem}
+                columnId={column.id}
+                onEdit={handleEditDo}
+                handleDrop={handleDoDrop}
+                handleDragEnd={handleDoDragEnd}
+                handleDragOver={handleDoDragOver}
+                handleDragStart={handleDoDragStart}
+                handleDragLeave={handleDoDragLeave}
+                className={twMerge(
+                  "cursor-grab transition-opacity active:cursor-grabbing",
+                  isDragging && "opacity-40",
+                  isMoving && "pointer-events-none opacity-50",
+                  Number(doId) === doItem.id && "border border-green-500",
+                )}
               />
-              {draggedDoId !== doItem.id && dragOverCardId === doItem.id && !dropBeforeCard && (
-                <div className="pointer-events-none absolute -bottom-1.5 right-0 left-0 z-10 h-1 rounded bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.25)]" />
-              )}
+              {draggedDoId !== doItem.id &&
+                dragOverCardId === doItem.id &&
+                !dropBeforeCard && (
+                  <div className="pointer-events-none absolute right-0 -bottom-1.5 left-0 z-10 h-1 rounded bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.25)]" />
+                )}
             </div>
           );
         })}

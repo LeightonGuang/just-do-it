@@ -88,6 +88,7 @@ type KanbanContextValue = {
     id: number,
   ) => Promise<void>;
   handleSaveColumn: (id: number, name: string) => Promise<void>;
+  addColumn: () => void;
   handleDeleteColumn: (id: number) => Promise<void>;
 };
 
@@ -111,7 +112,7 @@ export const KanbanProvider = ({
   const [isCreatingMode, setIsCreatingMode] = useState(false);
 
   // Column editing state
-  const [editingColumnId] = useState<number | null>(null);
+  const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
 
   // Project editing state
   const [editingProject, setEditingProject] = useState(false);
@@ -391,6 +392,39 @@ export const KanbanProvider = ({
     );
   }, []);
 
+  const addColumn = useCallback(() => {
+    if (!projectId) return;
+    const temporaryId = -Date.now();
+    setColumns((current) => [
+      ...current,
+      {
+        id: temporaryId,
+        project_id: Number(projectId),
+        name: "New column",
+        position: current.length,
+        is_done: false,
+      },
+    ]);
+    setEditingColumnId(temporaryId);
+  }, [projectId]);
+
+  const saveColumn = useCallback(async (columnId: number, name: string) => {
+    if (columnId < 0) {
+      const response = await fetch("/api/columns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, project_id: Number(projectId), position: columns.length - 1 }),
+      });
+      if (!response.ok) throw new Error("Failed to create column");
+      const data = (await response.json()) as { column: Column };
+      setColumns((current) => current.map((column) => column.id === columnId ? data.column : column));
+      setEditingColumnId(null);
+      return;
+    }
+    await editColumn(columnId, name);
+    setEditingColumnId(null);
+  }, [columns.length, editColumn, projectId]);
+
   const deleteColumn = useCallback(async (columnId: number) => {
     const response = await fetch(`/api/columns/${columnId}`, {
       method: "DELETE",
@@ -550,8 +584,9 @@ export const KanbanProvider = ({
         dragOverColumnForReorder: board.dragOverColumnForReorder,
         setDragOverColumnForReorder: board.setDragOverColumnForReorder,
         handleDropColumn: board.handleDropColumn,
-        handleSaveColumn: board.handleSaveColumn,
+        handleSaveColumn: saveColumn,
         handleDeleteColumn: board.handleDeleteColumn,
+        addColumn,
       }}
     >
       {children}

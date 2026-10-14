@@ -33,24 +33,17 @@ const Kanban = ({
     handleCreateDo,
     deleteDo,
     updateDo,
+    addColumn,
   } = useKanban();
 
-  const {
-    editingDoId,
-    editingColumnId,
-    handleCloseDoEditor,
-  } = useKanban();
+  const { editingDoId, editingColumnId, handleCloseDoEditor } = useKanban();
 
-  const {
-    isCreatingMode,
-    creatingDoId,
-    setCreatingDoId,
-    setIsCreatingMode,
-  } = useKanban();
+  const { isCreatingMode, creatingDoId, setCreatingDoId, setIsCreatingMode } =
+    useKanban();
 
-  const [createColumnId, setCreateColumnId] = useState<number | undefined>(undefined);
-
-
+  const [createColumnId, setCreateColumnId] = useState<number | undefined>(
+    undefined,
+  );
 
   if (loading) {
     return (
@@ -91,7 +84,6 @@ const Kanban = ({
   }
 
   // Find the DO object for editing mode
-
 
   return (
     <section className={twMerge("relative min-h-dvh", className)}>
@@ -200,7 +192,7 @@ const Kanban = ({
           <button
             type="button"
             onClick={() => {
-              // Open add column drawer/modal
+              addColumn();
             }}
             className="flex items-center gap-1.5 border border-border bg-card px-2 py-1 text-xs text-text-muted transition-colors hover:bg-background hover:text-text"
           >
@@ -231,20 +223,20 @@ const Kanban = ({
       {/* Backdrop - closes when clicking outside */}
       {(isCreatingMode || creatingDoId !== null || editingDoId !== null) && (
         <div
-          className="fixed inset-0 z-40 bg-black/30"
           onClick={handleCloseDoEditor}
+          className="fixed inset-0 z-40 bg-black/30"
         />
       )}
 
       <DoDrawer
-        doId={creatingDoId || editingDoId}
-        isCreating={isCreatingMode}
-        createColumnId={createColumnId}
-        onClose={handleCloseDoEditor}
-        onCreate={isCreatingMode ? handleCreateDo : undefined}
-        onDelete={deleteDo}
-        onUpdate={(task) => updateDo(task as Parameters<typeof updateDo>[0])}
         tags={tags || []}
+        onDelete={deleteDo}
+        isCreating={isCreatingMode}
+        onClose={handleCloseDoEditor}
+        createColumnId={createColumnId}
+        doId={creatingDoId || editingDoId}
+        onCreate={isCreatingMode ? handleCreateDo : undefined}
+        onUpdate={(task) => updateDo(task as Parameters<typeof updateDo>[0])}
       />
 
       {editingColumnId !== null && <div>{/* Column editor goes here */}</div>}
