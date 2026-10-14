@@ -15,6 +15,7 @@ type Countdown = {
 
 type KanbanCardProps = {
   className?: string;
+  isDragging?: boolean;
   doItem: ApiDo;
   onEdit?: (id: number) => void;
   handleDragStart?: (
@@ -36,6 +37,7 @@ type KanbanCardProps = {
 
 const KanbanCard = ({
   className,
+  isDragging = false,
   doItem,
   onEdit,
   handleDragStart,
@@ -84,7 +86,8 @@ const KanbanCard = ({
         handleDragOver(event, columnId)
       }
       className={twMerge(
-        "border border-border bg-do p-3 transition-colors hover:cursor-grab hover:bg-do-hover active:cursor-grabbing!",
+        "border border-border bg-do p-3 cursor-grab transition-colors hover:bg-do-hover",
+        isDragging && "cursor-grabbing",
         className,
       )}
     >

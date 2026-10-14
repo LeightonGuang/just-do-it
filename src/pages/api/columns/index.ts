@@ -56,7 +56,9 @@ export const POST: APIRoute = async ({ request }) => {
       .select()
       .from(columns)
       .where(eq(columns.project_id, projectId));
-    position = existing.length;
+    position = existing.length === 0
+      ? 0
+      : Math.max(...existing.map((column) => column.position)) + 1000;
   }
 
   const inserted = await db

@@ -86,6 +86,7 @@ type KanbanContextValue = {
   handleDropColumn: (
     event: React.DragEvent<HTMLElement>,
     id: number,
+    insertAfter?: boolean,
   ) => Promise<void>;
   handleSaveColumn: (id: number, name: string) => Promise<void>;
   addColumn: () => void;
@@ -119,7 +120,16 @@ export const KanbanProvider = ({
   const [projectName, setProjectName] = useState("");
   const [projectColour, setProjectColour] = useState("#3b82f6");
   const [savingProject, setSavingProject] = useState(false);
-  const board = useKanbanBoard({ projectId });
+  const board = useKanbanBoard({
+    projectId,
+    columns,
+    onReordered: (updates) => {
+      const positions = new Map(updates.map((update) => [update.id, update.position]));
+      setColumns((current) => [...current]
+        .sort((a, b) => (positions.get(a.id) ?? a.position) - (positions.get(b.id) ?? b.position))
+        .map((column) => ({ ...column, position: positions.get(column.id) ?? column.position })));
+    },
+  });
   const { addSidebarDo, updateSidebarDo, removeSidebarDo, updateSidebarProject } = useSidebar();
 
   // DO reordering state and handlers
@@ -401,7 +411,7 @@ export const KanbanProvider = ({
         id: temporaryId,
         project_id: Number(projectId),
         name: "New column",
-        position: current.length,
+        position: current.length === 0 ? 0 : Math.max(...current.map((column) => column.position)) + 1000,
         is_done: false,
       },
     ]);
@@ -413,7 +423,7 @@ export const KanbanProvider = ({
       const response = await fetch("/api/columns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, project_id: Number(projectId), position: columns.length - 1 }),
+        body: JSON.stringify({ name, project_id: Number(projectId), position: columns.length === 0 ? 0 : Math.max(...columns.map((column) => column.position)) + 1000 }),
       });
       if (!response.ok) throw new Error("Failed to create column");
       const data = (await response.json()) as { column: Column };

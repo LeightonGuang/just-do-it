@@ -158,7 +158,6 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
 
   return (
     <article
-      draggable
       onDragLeave={(event) => handleDoDragLeave(event)}
       onDragEnd={() => {
         setDraggedColumnId(null);
@@ -177,16 +176,6 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
           handleDoDragOver(event, column.id);
         }
       }}
-      onDragStart={(event) => {
-        if (event.target === event.currentTarget) {
-          setDraggedColumnId(column.id);
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData(
-            "application/x-kanban-column",
-            String(column.id),
-          );
-        }
-      }}
       onDrop={(event) => {
         if (event.dataTransfer.types.includes("application/x-kanban-column")) {
           void handleDropColumn(event, column.id);
@@ -199,7 +188,17 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
         void handleDoDrop(event, column.id);
       }}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div
+        draggable={!showEditor}
+        data-column-drag-handle
+        onDragStart={(event) => {
+          setDraggedColumnId(column.id);
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("application/x-kanban-column", String(column.id));
+        }}
+        onDragEnd={() => { setDraggedColumnId(null); setDragOverColumnForReorder(null); }}
+        className="flex items-center justify-between gap-2"
+      >
         {showEditor ? (
           <div className="flex min-w-0 flex-1 items-center gap-1">
             <input
@@ -325,6 +324,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
               <KanbanCard
                 doItem={doItem}
                 columnId={column.id}
+                isDragging={isDragging}
                 onEdit={handleEditDo}
                 handleDrop={handleDoDrop}
                 handleDragEnd={handleDoDragEnd}
@@ -332,7 +332,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
                 handleDragStart={handleDoDragStart}
                 handleDragLeave={handleDoDragLeave}
                 className={twMerge(
-                  "cursor-grab transition-opacity active:cursor-grabbing",
+                  "transition-opacity",
                   isDragging && "opacity-40",
                   isMoving && "pointer-events-none opacity-50",
                   Number(doId) === doItem.id && "border border-green-500",

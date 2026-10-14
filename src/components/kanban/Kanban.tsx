@@ -34,6 +34,10 @@ const Kanban = ({
     deleteDo,
     updateDo,
     addColumn,
+    draggedColumnId,
+    dragOverColumnForReorder,
+    setDragOverColumnForReorder,
+    handleDropColumn,
   } = useKanban();
 
   const { editingDoId, editingColumnId, handleCloseDoEditor } = useKanban();
@@ -204,18 +208,21 @@ const Kanban = ({
 
         {/* Kanban columns */}
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
-          {columnArray.map((column) => (
-            <KanbanColumn
-              doId={doId}
-              key={column.id}
-              column={column}
-              onCreateDoClick={() => {
+          {columnArray.map((column, index) => (
+            <div key={column.id} className="relative min-w-0">
+              {index > 0 && <div className={twMerge("absolute inset-y-0 -left-4 z-40 w-4 md:-left-8 md:w-8", dragOverColumnForReorder === column.id ? "bg-green-500" : "")} onDragOver={(event) => { if (!event.dataTransfer.types.includes("application/x-kanban-column") || draggedColumnId === column.id) return; event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverColumnForReorder(column.id); }} onDragLeave={() => setDragOverColumnForReorder(null)} onDrop={(event) => { event.preventDefault(); void handleDropColumn(event, column.id, false); }} />}
+              <KanbanColumn
+                doId={doId}
+                column={column}
+                onCreateDoClick={() => {
                 handleCloseDoEditor();
                 setIsCreatingMode(true);
                 setCreatingDoId(null);
                 setCreateColumnId(column.id);
-              }}
-            />
+                }}
+              />
+              {index === columnArray.length - 1 && <div className={twMerge("absolute inset-y-0 -right-4 z-40 w-4 md:-right-8 md:w-8", dragOverColumnForReorder === column.id ? "bg-green-500" : "")} onDragOver={(event) => { if (!event.dataTransfer.types.includes("application/x-kanban-column") || draggedColumnId === column.id) return; event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverColumnForReorder(column.id); }} onDragLeave={() => setDragOverColumnForReorder(null)} onDrop={(event) => { event.preventDefault(); void handleDropColumn(event, column.id, true); }} />}
+            </div>
           ))}
         </div>
       </div>
