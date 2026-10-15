@@ -16,7 +16,7 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
       )}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium">Projects</h2>
+        <h2 className="text-sm">Projects</h2>
 
         <a
           href="/projects"
@@ -50,7 +50,15 @@ export default ProjectsSidebar;
 
 const ProjectSidebarItem = ({ project }: { project: Project }) => {
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
     event.preventDefault();
     window.history.pushState({}, "", `/?project_id=${project.id}`);
     window.dispatchEvent(new PopStateEvent("popstate"));
@@ -58,8 +66,8 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
 
   return (
     <a
-      href={`/?project_id=${project.id}`}
       onClick={handleClick}
+      href={`/?project_id=${project.id}`}
       className="group flex items-center gap-2 bg-card p-2 text-xs text-text hover:bg-card-hover md:p-1"
     >
       {/* Color indicator circle with border */}
