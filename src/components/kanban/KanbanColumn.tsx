@@ -32,6 +32,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
     handleDrop: handleDoDrop,
     handleSaveColumn,
     handleDeleteColumn,
+    cancelColumn,
     handleDropColumn,
     setDraggedColumnId,
     draggedColumnId,
@@ -122,6 +123,10 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
   };
 
   const handleCancelEdit = () => {
+    if (column.id < 0) {
+      cancelColumn(column.id);
+      return;
+    }
     setName(column.name);
     setEditingColumnLocal(false);
   };

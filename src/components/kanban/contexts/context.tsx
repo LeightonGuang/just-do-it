@@ -89,6 +89,7 @@ type KanbanContextValue = {
   ) => Promise<void>;
   handleSaveColumn: (id: number, name: string) => Promise<void>;
   addColumn: () => void;
+  cancelColumn: (columnId: number) => void;
   handleDeleteColumn: (id: number) => Promise<void>;
 };
 
@@ -415,6 +416,12 @@ export const KanbanProvider = ({
     setEditingColumnId(temporaryId);
   }, [projectId]);
 
+  const cancelColumn = useCallback((columnId: number) => {
+    if (columnId >= 0) return;
+    setColumns((current) => current.filter((column) => column.id !== columnId));
+    setEditingColumnId((current) => current === columnId ? null : current);
+  }, []);
+
   const saveColumn = useCallback(async (columnId: number, name: string) => {
     if (columnId < 0) {
       const response = await fetch("/api/columns", {
@@ -594,6 +601,7 @@ export const KanbanProvider = ({
         handleSaveColumn: saveColumn,
         handleDeleteColumn: board.handleDeleteColumn,
         addColumn,
+        cancelColumn,
       }}
     >
       {children}
