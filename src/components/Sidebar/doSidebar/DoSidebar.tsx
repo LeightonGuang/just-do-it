@@ -11,7 +11,7 @@ const DoSidebar = ({ className }: { className?: string }) => {
   return (
     <div
       className={twMerge(
-        "flex min-w-0 flex-col gap-1 border-t border-border p-4 md:p-2",
+        "flex min-w-0 flex-col gap-1 border-t border-border p-4 text-text md:p-2",
         className,
       )}
     >

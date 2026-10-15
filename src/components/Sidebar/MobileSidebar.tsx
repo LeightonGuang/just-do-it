@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 import DailyQuote from "../DailyQuote";
 import DoSidebar from "./doSidebar/DoSidebar";
 import ProjectsSidebar from "./ProjectsSidebar";
+import SidebarUserMenu from "./SidebarUserMenu";
 
 const MobileSidebar = ({ className }: { className?: string }) => {
   return (
@@ -17,6 +18,7 @@ const MobileSidebar = ({ className }: { className?: string }) => {
         <DailyQuote className="m-4 md:mx-0" />
         <DoSidebar />
         <ProjectsSidebar />
+        <SidebarUserMenu />
       </div>
     </aside>
   );

@@ -40,7 +40,7 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
       href={`?project_id=${doItem.project_id}&do_id=${doItem.id}`}
       onClick={handleClick}
       className={twMerge(
-        "flex min-w-0 items-start gap-2 bg-card p-2 hover:bg-card-hover md:p-1",
+        "flex min-w-0 items-start gap-2 bg-card p-2 text-text hover:bg-card-hover md:p-1",
         hasEndDate && countdown.due && "bg-danger-background",
       )}
     >

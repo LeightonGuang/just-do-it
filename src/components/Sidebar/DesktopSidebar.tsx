@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import DoSidebar from "./doSidebar/DoSidebar";
 import ProjectsSidebar from "./ProjectsSidebar";
 import TagsSidebar from "./contexts/TagsSidebar";
+import SidebarUserMenu from "./SidebarUserMenu";
 
 const MIN_WIDTH = 150;
 const MAX_WIDTH = 400;
@@ -142,7 +143,7 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
     >
       <div
         className={twMerge(
-          "h-full overflow-hidden",
+          "flex h-full flex-col overflow-hidden",
           isCollapsed && "pointer-events-none invisible",
         )}
       >
@@ -152,11 +153,12 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
           </a>
         </h1>
 
-        <div className="flex flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <DoSidebar />
           <ProjectsSidebar />
           <TagsSidebar />
         </div>
+        <SidebarUserMenu />
       </div>
 
       <button

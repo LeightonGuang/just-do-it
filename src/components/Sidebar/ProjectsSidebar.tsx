@@ -11,7 +11,7 @@ const ProjectsSidebar = ({ className }: { className?: string }) => {
   return (
     <div
       className={twMerge(
-        "flex flex-col gap-1 border-t border-border p-4 md:p-2",
+        "flex flex-col gap-1 border-t border-border p-4 text-text md:p-2",
         className,
       )}
     >
@@ -60,7 +60,7 @@ const ProjectSidebarItem = ({ project }: { project: Project }) => {
     <a
       href={`/?project_id=${project.id}`}
       onClick={handleClick}
-      className="group flex items-center gap-2 bg-card p-2 text-xs hover:bg-card-hover md:p-1"
+      className="group flex items-center gap-2 bg-card p-2 text-xs text-text hover:bg-card-hover md:p-1"
     >
       {/* Color indicator circle with border */}
       <div
