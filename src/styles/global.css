@@ -70,13 +70,6 @@ button {
   --color-text-muted: oklch(0.68 0.012 286);
 }
 
-:root[data-theme="light"] {
-  --grid-dot-color: oklch(0.82 0.008 286);
-  --grid-background: oklch(0.98 0.002 286);
-  --color-background: oklch(0.98 0.002 286);
-  --color-sidebar: oklch(0.96 0.003 286);
-}
-
 @theme {
   --color-primary: var(--color-primary);
   --color-background: var(--color-background);

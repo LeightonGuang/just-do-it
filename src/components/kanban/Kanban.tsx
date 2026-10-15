@@ -203,7 +203,7 @@ const Kanban = ({
         </div>
 
         {/* Kanban columns */}
-        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:gap-8 md:pb-0">
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-4 pb-12 md:mt-8 md:pb-0">
           {columnArray.map((column) => (
             <KanbanColumn
               doId={doId}
