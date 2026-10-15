@@ -119,7 +119,14 @@ export const KanbanProvider = ({
   const [projectName, setProjectName] = useState("");
   const [projectColour, setProjectColour] = useState("#3b82f6");
   const [savingProject, setSavingProject] = useState(false);
-  const board = useKanbanBoard({ projectId });
+  const board = useKanbanBoard({
+    projectId,
+    onDeleted: (columnId) => {
+      setColumns((current) => current.filter((column) => column.id !== columnId));
+      setDos((current) => current.filter((doItem) => doItem.column_id !== columnId));
+      handleCloseDoEditor();
+    },
+  });
   const { addSidebarDo, updateSidebarDo, removeSidebarDo, updateSidebarProject } = useSidebar();
 
   // DO reordering state and handlers

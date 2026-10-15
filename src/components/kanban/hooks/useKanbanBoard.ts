@@ -2,7 +2,7 @@ import { useState } from "react";
 
 
 /** Hook for managing column reordering operations only */
-export const useKanbanBoard = ({ projectId }: { projectId: string | null }) => {
+export const useKanbanBoard = ({ projectId, onDeleted }: { projectId: string | null; onDeleted?: (columnId: number) => void }) => {
   const [draggedColumnId, setDraggedColumnId] = useState<number | null>(null);
   const [dragOverColumnForReorder, setDragOverColumnForReorder] = useState<number | null>(null);
   const [movingColumnId, setMovingColumnId] = useState<number | null>(null);
@@ -129,10 +129,12 @@ export const useKanbanBoard = ({ projectId }: { projectId: string | null }) => {
     if (!confirmed) return;
 
     try {
-      await fetch(`/api/columns/${id}`, {
+      const response = await fetch(`/api/columns/${id}`, {
         method: "DELETE",
         cache: "no-store",
       });
+      if (!response.ok) throw new Error("Failed to delete column");
+      onDeleted?.(id);
     } catch (error) {
       console.error("Failed to delete column:", error);
     }
