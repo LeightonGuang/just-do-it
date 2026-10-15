@@ -4,8 +4,10 @@ import { ArrowRight } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 
 import Tag from "../../tags/Tag";
+import { useTheme } from "../../../hooks/useTheme";
 
 const TagsSidebar = ({ className }: { className?: string }) => {
+  const theme = useTheme();
   const { sidebarTags, loading } = useSidebar();
 
   return (
@@ -38,7 +40,7 @@ const TagsSidebar = ({ className }: { className?: string }) => {
         ) : (
           sidebarTags.map((tag) => (
             <a href={`/tags?id=${tag.id}`} key={`${tag.name}-${tag.id}`}>
-              <Tag name={tag.name} colour={tag.colour} />
+              <Tag name={tag.name} colour={tag.colour} theme={theme} />
             </a>
           ))
         )}

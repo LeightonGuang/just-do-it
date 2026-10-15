@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Tag from "../tags/Tag";
 
 import type { ApiDo } from "../master-control/commands/types";
+import type { Theme } from "../../types/Theme";
 
 type Countdown = {
   days: number;
@@ -15,6 +16,7 @@ type Countdown = {
 
 type KanbanCardProps = {
   className?: string;
+  theme: Theme;
   doItem: ApiDo;
   onEdit?: (id: number) => void;
   handleDragStart?: (
@@ -36,6 +38,7 @@ type KanbanCardProps = {
 
 const KanbanCard = ({
   className,
+  theme,
   doItem,
   onEdit,
   handleDragStart,
@@ -110,6 +113,7 @@ const KanbanCard = ({
             <Tag
               name={tag.name}
               colour={tag.colour}
+              theme={theme}
               key={`${tag.name}-${tag.id}`}
             />
           ))}

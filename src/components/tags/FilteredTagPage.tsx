@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import Tag from "./Tag";
 import KanbanCard from "../kanban/KanbanCard";
+import { useTheme } from "../../hooks/useTheme";
 import type { ApiDo } from "../master-control/commands/types";
 
 type ApiTag = {
@@ -20,6 +21,7 @@ const FilteredTagPage = ({ tagId }: { tagId: string }) => {
   const [dos, setDos] = useState<ApiDo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchDos = async () => {
@@ -78,7 +80,7 @@ const FilteredTagPage = ({ tagId }: { tagId: string }) => {
       <div className="flex items-center gap-2">
         <h1>Todos for tag</h1>
 
-        <Tag name={tag.name} colour={tag.colour} />
+        <Tag name={tag.name} colour={tag.colour} theme={theme} />
       </div>
 
       <div className="mt-2">
@@ -89,6 +91,7 @@ const FilteredTagPage = ({ tagId }: { tagId: string }) => {
             {dos.map((doItem) => (
               <a href={`/?project_id=${doItem.project_id}&do_id=${doItem.id}`}>
                 <KanbanCard
+                  theme={theme}
                   key={doItem.id}
                   doItem={doItem}
                   className="hover:cursor-pointer"

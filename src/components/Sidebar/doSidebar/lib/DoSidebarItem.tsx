@@ -2,11 +2,14 @@ import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 
 import Tag from "../../../tags/Tag";
+import { useTheme } from "../../../../hooks/useTheme";
 import { getCountdown, type Countdown } from "./getCountdown";
 
+import type { Theme } from "../../../../types/Theme";
 import type { SidebarDo } from "../../contexts/SidebarContext";
 
 export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
+  const theme: Theme = useTheme();
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (
       event.defaultPrevented ||
@@ -95,6 +98,7 @@ export const DoSidebarItem = ({ doItem }: { doItem: SidebarDo }) => {
               {doItem.tags.map((tag) => (
                 <Tag
                   key={tag.id}
+                  theme={theme}
                   name={tag.name}
                   colour={tag.colour}
                   className="text-[0.625rem] leading-none"

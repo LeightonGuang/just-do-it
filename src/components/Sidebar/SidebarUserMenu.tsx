@@ -2,7 +2,7 @@ import { User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { BookOpen, Check, LogOut, Moon, Settings, Sun } from "lucide-react";
 
-type Theme = "light" | "dark";
+import type { Theme } from "../../types/Theme";
 
 const SidebarUserMenu = () => {
   const [open, setOpen] = useState(false);
@@ -32,9 +32,9 @@ const SidebarUserMenu = () => {
   };
 
   return (
-    <div ref={menuRef} className="relative mt-auto border-t border-border p-3">
+    <div ref={menuRef} className="relative mt-auto border-t border-border">
       {open && (
-        <div className="absolute right-3 bottom-full left-3 z-50 mb-2 border border-border bg-card p-1 shadow-lg">
+        <div className="absolute right-2 bottom-full left-2 z-50 mb-2 border border-border bg-card p-1 shadow-lg">
           <a
             href="/settings"
             className="flex items-center gap-2 px-3 py-2 text-xs text-text hover:bg-background"
@@ -61,7 +61,11 @@ const SidebarUserMenu = () => {
               className="flex w-full items-center justify-between px-3 py-2 text-left text-xs text-text capitalize hover:bg-background"
             >
               <span className="flex items-center gap-2">
-                {option === "light" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+                {option === "light" ? (
+                  <Sun className="size-3.5" />
+                ) : (
+                  <Moon className="size-3.5" />
+                )}
                 {option}
               </span>
               {theme === option && <Check className="size-3.5 text-success" />}
@@ -85,7 +89,7 @@ const SidebarUserMenu = () => {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 text-left hover:bg-card-hover"
+        className="flex w-full items-center gap-2 p-2 text-left hover:bg-card-hover"
       >
         <span className="flex size-8 items-center justify-center rounded-full bg-orange-500 text-white">
           <User className="size-4" />

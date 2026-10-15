@@ -3,8 +3,8 @@ import { useState, useRef, useEffect } from "react";
 
 import DoSidebar from "./doSidebar/DoSidebar";
 import ProjectsSidebar from "./ProjectsSidebar";
-import TagsSidebar from "./contexts/TagsSidebar";
 import SidebarUserMenu from "./SidebarUserMenu";
+import TagsSidebar from "./contexts/TagsSidebar";
 
 const MIN_WIDTH = 150;
 const MAX_WIDTH = 400;
@@ -147,7 +147,7 @@ const DesktopSidebar = ({ className, onWidthChange }: DesktopSidebarProps) => {
           isCollapsed && "pointer-events-none invisible",
         )}
       >
-        <h1 className="px-4 py-3 text-lg font-bold whitespace-nowrap text-orange-600 uppercase tracking-wide">
+        <h1 className="px-4 py-3 text-lg font-bold tracking-wide whitespace-nowrap text-orange-600 uppercase">
           <a href="/" className="hover:underline">
             Just Do it
           </a>

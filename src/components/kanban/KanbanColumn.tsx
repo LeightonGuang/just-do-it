@@ -6,6 +6,7 @@ import type { Column } from "../../db";
 
 import KanbanCard from "./KanbanCard";
 import { useKanban } from "./contexts";
+import { useTheme } from "../../hooks/useTheme";
 
 type KanbanColumnProps = {
   column: Column;
@@ -14,6 +15,7 @@ type KanbanColumnProps = {
 };
 
 const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
+  const theme = useTheme();
   const {
     dos,
     setColumnIsDone,
@@ -328,6 +330,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
                   <div className="pointer-events-none absolute -top-1.5 right-0 left-0 z-10 h-1 rounded bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.25)]" />
                 )}
               <KanbanCard
+                theme={theme}
                 doItem={doItem}
                 columnId={column.id}
                 onEdit={handleEditDo}

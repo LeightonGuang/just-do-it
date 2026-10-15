@@ -1,14 +1,20 @@
 import { twMerge } from "tailwind-merge";
 
+import type { Theme } from "../../types/Theme";
+
 interface TagProps {
-  /* name of the tag */
+  /** Name of the tag */
   name: string;
-  /* colour in hex */
+  /** Colour in hex */
   colour: string;
+  /** Colour theme */
+  theme: Theme;
   className?: string;
 }
 
-const Tag = ({ name, colour, className }: TagProps) => {
+const Tag = ({ name, colour, theme, className }: TagProps) => {
+  const isDark = theme === "dark";
+
   return (
     <div
       className={twMerge(
@@ -16,9 +22,15 @@ const Tag = ({ name, colour, className }: TagProps) => {
         className,
       )}
       style={{
-        backgroundColor: `color-mix(in srgb, ${colour} 15%, transparent)`,
-        color: `color-mix(in srgb, ${colour} 70%, black)`,
-        border: `1px solid ${colour}20`,
+        backgroundColor: `color-mix(in srgb, ${colour} ${
+          isDark ? "25%" : "15%"
+        }, transparent)`,
+        color: `color-mix(in srgb, ${colour} ${
+          isDark ? "100%" : "70%"
+        }, ${isDark ? "white" : "black"})`,
+        border: `1px solid color-mix(in srgb, ${colour} ${
+          isDark ? "45%" : "20%"
+        }, transparent)`,
       }}
     >
       {name}
