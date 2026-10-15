@@ -364,7 +364,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
                 "border border-dashed border-green-500 text-green-500",
             )}
           >
-            {isDragOver ? "Drop here" : "No cards"}
+            {isDragOver ? "Drop here" : "No Dos"}
           </div>
         )}
 
@@ -375,7 +375,7 @@ const KanbanColumn = ({ column, doId, onCreateDoClick }: KanbanColumnProps) => {
           disabled={!onCreateDoClick}
           className="mt-4 flex min-h-12 items-center justify-center border border-border bg-card px-3 text-xs font-medium text-text-muted transition-colors hover:bg-background hover:text-text disabled:opacity-50"
         >
-          Create new do
+          Create a new Do
         </button>
       </div>
     </article>
