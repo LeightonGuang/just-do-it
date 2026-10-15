@@ -1,9 +1,8 @@
 import { twMerge } from "tailwind-merge";
 import { ArrowRight } from "lucide-react";
 
-import { useSidebar } from "./SidebarContext";
-
 import Tag from "../../tags/Tag";
+import { useSidebar } from "./SidebarContext";
 import { useTheme } from "../../../hooks/useTheme";
 
 const TagsSidebar = ({ className }: { className?: string }) => {
@@ -51,11 +50,13 @@ const TagsSidebar = ({ className }: { className?: string }) => {
 
 export default TagsSidebar;
 
-const TagSidebarSkeleton = () => {
+const TagSidebarSkeleton = ({ className }: { className?: string }) => {
   return (
-    <div className="flex items-center gap-2 bg-card p-2 md:p-1">
-      <div className="size-3 shrink-0 animate-pulse rounded-full bg-border" />
-      <div className="h-3 w-24 animate-pulse rounded-sm bg-border" />
-    </div>
+    <div
+      className={twMerge(
+        "inline-flex h-4 w-10 animate-pulse rounded-full border border-border bg-border",
+        className,
+      )}
+    />
   );
 };
