@@ -90,7 +90,7 @@ const Kanban = ({
       <div className="dot-grid min-h-dvh p-4 md:p-8 md:pb-24">
         <div className="flex h-4 items-center justify-between">
           {editingProject ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {/* Colour picker */}
               <label
                 title="Change project colour"
@@ -143,7 +143,7 @@ const Kanban = ({
                   void saveProject();
                 }}
                 disabled={savingProject || !projectName.trim()}
-                className="flex size-7 items-center justify-center text-text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex items-center justify-center text-text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Check className="size-4 text-success hover:text-success-hover" />
               </button>
@@ -155,7 +155,7 @@ const Kanban = ({
                 disabled={savingProject}
                 aria-label="Cancel editing"
                 onClick={cancelEditingProject}
-                className="flex size-7 items-center justify-center text-text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex items-center justify-center text-text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <X className="size-4 text-danger hover:text-danger-hover" />
               </button>
