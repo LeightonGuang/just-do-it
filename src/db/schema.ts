@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const projects = sqliteTable("projects", {
@@ -60,6 +60,60 @@ export const dos = sqliteTable("dos", {
 });
 
 export type Do = typeof dos.$inferSelect;
+
+/** The current rule for a recurring task. Historical instances live in doOccurrences. */
+export const doRecurrences = sqliteTable(
+  "do_recurrences",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    do_id: integer("do_id")
+      .notNull()
+      .references(() => dos.id, { onDelete: "cascade" }),
+    // JSON array of ISO weekday numbers, Monday = 1 through Sunday = 7.
+    weekdays: text("weekdays").notNull(),
+    start_date: text("start_date").notNull(),
+    end_date: text("end_date"),
+    interval_weeks: integer("interval_weeks").notNull().default(1),
+    is_active: integer("is_active", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    created_at: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updated_at: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [uniqueIndex("do_recurrences_one_per_do").on(table.do_id)],
+);
+
+export type DoRecurrence = typeof doRecurrences.$inferSelect;
+
+export const doOccurrences = sqliteTable(
+  "do_occurrences",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    do_id: integer("do_id")
+      .notNull()
+      .references(() => dos.id, { onDelete: "cascade" }),
+    recurrence_id: integer("recurrence_id")
+      .notNull()
+      .references(() => doRecurrences.id, { onDelete: "cascade" }),
+    occurrence_date: text("occurrence_date").notNull(),
+    status: text("status", {
+      enum: ["pending", "completed", "skipped", "missed"],
+    })
+      .notNull()
+      .default("pending"),
+    completed_at: integer("completed_at", { mode: "timestamp_ms" }),
+    created_at: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("do_occurrences_recurrence_date").on(
+      table.recurrence_id,
+      table.occurrence_date,
+    ),
+    index("do_occurrences_do_date").on(table.do_id, table.occurrence_date),
+  ],
+);
+
+export type DoOccurrence = typeof doOccurrences.$inferSelect;
 
 export const tags = sqliteTable(
   "tags",

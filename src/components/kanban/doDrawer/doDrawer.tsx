@@ -93,6 +93,7 @@ const DoDrawer = ({
               value={drawer.startAt}
               onChange={drawer.setStartAt}
             />
+
             <DateTimeField
               label="Due"
               id="kanban-end"
@@ -129,6 +130,91 @@ const DoDrawer = ({
                 No tags available. Create some in the Tags page first.
               </div>
             )}
+
+            <div className="border-t border-border pt-4">
+              <label className="flex items-center gap-2 text-sm text-text">
+                <input
+                  type="checkbox"
+                  checked={drawer.recurrenceEnabled}
+                  onChange={(e) =>
+                    drawer.setRecurrenceEnabled(e.target.checked)
+                  }
+                />
+                Repeat this task
+              </label>
+              {drawer.recurrenceEnabled && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <span className="mb-1.5 block text-xs font-medium text-text-muted">
+                      Days
+                    </span>
+                    <div className="grid grid-cols-7 gap-1">
+                      {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+                        <button
+                          type="button"
+                          key={`${day}-${i}`}
+                          className={twMerge(
+                            "border px-1 py-2 text-xs",
+                            drawer.recurrenceWeekdays.includes(i + 1)
+                              ? "border-text bg-text/10"
+                              : "border-border",
+                          )}
+                          onClick={() =>
+                            drawer.setRecurrenceWeekdays(
+                              drawer.recurrenceWeekdays.includes(i + 1)
+                                ? drawer.recurrenceWeekdays.filter(
+                                    (d) => d !== i + 1,
+                                  )
+                                : [...drawer.recurrenceWeekdays, i + 1],
+                            )
+                          }
+                        >
+                          {day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="block text-xs text-text-muted">
+                    Every{" "}
+                    <select
+                      value={drawer.recurrenceInterval}
+                      onChange={(e) =>
+                        drawer.setRecurrenceInterval(Number(e.target.value))
+                      }
+                      className="ml-2 border border-border bg-background px-2 py-1 text-text"
+                    >
+                      <option value="1">week</option>
+                      <option value="2">2 weeks</option>
+                      <option value="3">3 weeks</option>
+                      <option value="4">4 weeks</option>
+                    </select>
+                  </label>
+                  <label className="block text-xs text-text-muted">
+                    Start date{" "}
+                    <input
+                      type="date"
+                      value={drawer.recurrenceStartDate}
+                      onChange={(e) =>
+                        drawer.setRecurrenceStartDate(e.target.value)
+                      }
+                      className="ml-2 border border-border bg-background px-2 py-1 text-text"
+                    />
+                  </label>
+                  <label className="block text-xs text-text-muted">
+                    End date{" "}
+                    <input
+                      type="date"
+                      value={drawer.recurrenceEndDate}
+                      onChange={(e) =>
+                        drawer.setRecurrenceEndDate(e.target.value)
+                      }
+                      className="ml-2 border border-border bg-background px-2 py-1 text-text"
+                    />
+                    <span className="ml-2">blank = indefinitely</span>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="shrink-0 border-t border-border p-5">
@@ -147,7 +233,7 @@ const DoDrawer = ({
               type="submit"
               aria-label="Save task"
               disabled={drawer.saving}
-              className="flex flex-1 items-center justify-center rounded border border-text/70 bg-text/10 px-3 py-2 text-xs font-medium text-text hover:bg-text/20 disabled:opacity-40"
+              className="flex flex-1 items-center justify-center rounded border border-border bg-text/10 px-3 py-2 text-xs font-medium text-text hover:bg-text/20 disabled:opacity-40"
             >
               {drawer.saving
                 ? "Saving..."

@@ -6,6 +6,15 @@ export type CreateDoData = {
   start_at?: string;
   end_at?: string;
   tags?: Array<{ id: number }>;
+  recurrence?: RecurrenceInput | null;
+};
+
+export type RecurrenceInput = {
+  weekdays: number[];
+  start_date: string;
+  end_date?: string | null;
+  interval_weeks: number;
+  is_active: boolean;
 };
 
 export type DoDrawerProps = {
@@ -31,6 +40,7 @@ export type KanbanDo = {
   project_id: number | null;
   start_at?: string | null;
   end_at?: string | null;
+  recurrence?: RecurrenceInput | null;
 };
 
 export type KanbanTag = {

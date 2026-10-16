@@ -5,60 +5,69 @@ import { drizzle } from "drizzle-orm/d1";
 import type { APIRoute } from "astro";
 
 import { parseDate } from "../../../lib/date";
-import { dos, doTags, tags, projects, columns } from "../../../db/schema";
+import { doRecurrences } from '../../../db/schema';
+import { dos, doTags, tags, projects, columns } from '../../../db/schema';
 
 export const GET: APIRoute = async ({ request }) => {
   const db = drizzle(env.just_do_it);
 
-  const sidebarMode = new URL(request.url).searchParams.get("sidebar") === "true";
+  const sidebarMode =
+    new URL(request.url).searchParams.get("sidebar") === "true";
 
   if (sidebarMode) {
     // Sidebar mode - return up to 5 tasks with their tags
-    const result = await db.select({
-      id: dos.id,
-      title: dos.title,
-      project_id: dos.project_id,
-      column_id: dos.column_id,
-      description: dos.description,
-      start_at: dos.start_at,
-      end_at: dos.end_at,
-      position: dos.position,
-      updated_at: dos.updated_at,
-      project_name: projects.name,
-      project_colour: projects.colour,
-      column_is_done: columns.is_done,
-    })
-    .from(dos)
-    .innerJoin(projects, eq(dos.project_id, projects.id))
-    .innerJoin(columns, eq(dos.column_id, columns.id))
-    .all();
+    const result = await db
+      .select({
+        id: dos.id,
+        title: dos.title,
+        project_id: dos.project_id,
+        column_id: dos.column_id,
+        description: dos.description,
+        start_at: dos.start_at,
+        end_at: dos.end_at,
+        position: dos.position,
+        updated_at: dos.updated_at,
+        project_name: projects.name,
+        project_colour: projects.colour,
+        column_is_done: columns.is_done,
+      })
+      .from(dos)
+      .innerJoin(projects, eq(dos.project_id, projects.id))
+      .innerJoin(columns, eq(dos.column_id, columns.id))
+      .all();
 
     // Show tasks with the shortest remaining countdown first. Tasks without a
     // due time are always placed after tasks that have one.
     const filteredDos = result.filter((task) => !task.column_is_done);
-    const sortedDos = [...filteredDos].sort((a, b) => {
-      if (a.end_at && b.end_at) return a.end_at.getTime() - b.end_at.getTime();
-      if (a.end_at) return -1;
-      if (b.end_at) return 1;
-      if (b.position === a.position) return b.updated_at.getTime() - a.updated_at.getTime();
-      return (b.position ?? 0) - (a.position ?? 0);
-    }).slice(0, 5);
+    const sortedDos = [...filteredDos]
+      .sort((a, b) => {
+        if (a.end_at && b.end_at)
+          return a.end_at.getTime() - b.end_at.getTime();
+        if (a.end_at) return -1;
+        if (b.end_at) return 1;
+        if (b.position === a.position)
+          return b.updated_at.getTime() - a.updated_at.getTime();
+        return (b.position ?? 0) - (a.position ?? 0);
+      })
+      .slice(0, 5);
 
     // Fetch tags for each DO
     const dosWithTags = await Promise.all(
       sortedDos.map(async (task) => {
-        const taskTags = await db.select({
-          id: doTags.tag_id,
-          name: tags.name,
-          colour: tags.colour,
-        }).from(doTags)
+        const taskTags = await db
+          .select({
+            id: doTags.tag_id,
+            name: tags.name,
+            colour: tags.colour,
+          })
+          .from(doTags)
           .innerJoin(tags, eq(doTags.tag_id, tags.id))
           .where(eq(doTags.do_id, task.id));
         return {
           ...task,
           tags: taskTags,
         };
-      })
+      }),
     );
 
     return Response.json(dosWithTags);
@@ -80,6 +89,13 @@ export const POST: APIRoute = async ({ request }) => {
     tags?: Array<{ id: number }>;
     start_at?: string | null;
     end_at?: string | null;
+    recurrence?: {
+      weekdays: number[];
+      start_date: string;
+      end_date?: string | null;
+      interval_weeks: number;
+      is_active: boolean;
+    } | null;
   };
 
   if (!body.title) {
@@ -91,14 +107,24 @@ export const POST: APIRoute = async ({ request }) => {
 
   const title = body.title.trim();
   const description = body.description ?? null;
-  const startAt = typeof body.start_at === "string" && body.start_at.trim() ? parseDate(body.start_at) : null;
-  const endAt = typeof body.end_at === "string" && body.end_at.trim() ? parseDate(body.end_at) : null;
+  const startAt =
+    typeof body.start_at === "string" && body.start_at.trim()
+      ? parseDate(body.start_at)
+      : null;
+  const endAt =
+    typeof body.end_at === "string" && body.end_at.trim()
+      ? parseDate(body.end_at)
+      : null;
 
   // If no project_id or column_id provided, we need to determine them from context
   if (!projectIdFromContext || !columnIdFromContext) {
-    return Response.json({
-      error: "project_id and column_id must be provided when creating tasks via API"
-    }, { status: 400 });
+    return Response.json(
+      {
+        error:
+          "project_id and column_id must be provided when creating tasks via API",
+      },
+      { status: 400 },
+    );
   }
 
   const projectId = Number(projectIdFromContext);
@@ -107,11 +133,17 @@ export const POST: APIRoute = async ({ request }) => {
   // Handle column assignment if not provided
   let insertedColumnId: number | undefined = columnId;
   if (!columnId) {
-    const existingCols = await db.select().from(columns).where(eq(columns.project_id, projectId));
+    const existingCols = await db
+      .select()
+      .from(columns)
+      .where(eq(columns.project_id, projectId));
     if (existingCols.length > 0) {
       insertedColumnId = existingCols[0].id;
     } else {
-      const insertedCol = await db.insert(columns).values({ project_id: projectId, name: "To Do", position: 0 }).returning();
+      const insertedCol = await db
+        .insert(columns)
+        .values({ project_id: projectId, name: "To Do", position: 0 })
+        .returning();
       insertedColumnId = insertedCol[0]?.id;
     }
   }
@@ -124,7 +156,9 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // Get existing positions for this column to determine next position
-  const existingDos = await db.select({ position: dos.position }).from(dos)
+  const existingDos = await db
+    .select({ position: dos.position })
+    .from(dos)
     .where(eq(dos.column_id, insertedColumnId))
     .orderBy(desc(dos.position));
 
@@ -158,6 +192,33 @@ export const POST: APIRoute = async ({ request }) => {
   const insertResult = await db.insert(dos).values(insertData).returning();
   const newDo = insertResult[0];
 
+  if (newDo && body.recurrence) {
+    const r = body.recurrence;
+    if (
+      !r.start_date ||
+      !r.weekdays.length ||
+      r.weekdays.some((d) => d < 1 || d > 7) ||
+      !Number.isInteger(r.interval_weeks) ||
+      r.interval_weeks < 1
+    )
+      return Response.json(
+        { error: "Invalid recurrence rule" },
+        { status: 400 },
+      );
+    await db
+      .insert(doRecurrences)
+      .values({
+        do_id: newDo.id,
+        weekdays: JSON.stringify(r.weekdays),
+        start_date: r.start_date,
+        end_date: r.end_date || null,
+        interval_weeks: r.interval_weeks,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+  }
+
   if (newDo && body.tags && body.tags.length > 0) {
     for (const tag of body.tags) {
       await db.insert(doTags).values({ do_id: newDo.id, tag_id: tag.id });
@@ -166,10 +227,12 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Fetch tags for the newly created DO
   const tagRows = newDo
-    ? await db.select({
-        id: doTags.tag_id,
-        name: tags.name,
-      }).from(doTags)
+    ? await db
+        .select({
+          id: doTags.tag_id,
+          name: tags.name,
+        })
+        .from(doTags)
         .innerJoin(tags, eq(doTags.tag_id, tags.id))
         .where(eq(doTags.do_id, newDo.id))
     : [];
@@ -201,7 +264,11 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   };
 
   // Check if task exists
-  const existing = await db.select({ id: dos.id, title: dos.title, description: dos.description }).from(dos).where(eq(dos.id, doId)).limit(1);
+  const existing = await db
+    .select({ id: dos.id, title: dos.title, description: dos.description })
+    .from(dos)
+    .where(eq(dos.id, doId))
+    .limit(1);
   if (existing.length === 0) {
     return Response.json({ error: "Task not found" }, { status: 404 });
   }
@@ -226,28 +293,44 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   }
 
   if (body.start_at !== undefined) {
-    const parsedStartAt = typeof body.start_at === "string" && body.start_at.trim() ? parseDate(body.start_at) : null;
-    updateData.start_at = parsedStartAt !== null ? new Date(parsedStartAt) : null;
+    const parsedStartAt =
+      typeof body.start_at === "string" && body.start_at.trim()
+        ? parseDate(body.start_at)
+        : null;
+    updateData.start_at =
+      parsedStartAt !== null ? new Date(parsedStartAt) : null;
   }
 
   if (body.end_at !== undefined) {
-    const parsedEndAt = typeof body.end_at === "string" && body.end_at.trim() ? parseDate(body.end_at) : null;
+    const parsedEndAt =
+      typeof body.end_at === "string" && body.end_at.trim()
+        ? parseDate(body.end_at)
+        : null;
     updateData.end_at = parsedEndAt !== null ? new Date(parsedEndAt) : null;
   }
 
   // Only update if there's something to update
   if (Object.keys(updateData).length === 0) {
-    return Response.json({ error: "No valid fields to update" }, { status: 400 });
+    return Response.json(
+      { error: "No valid fields to update" },
+      { status: 400 },
+    );
   }
 
-  const updated = await db.update(dos).set(updateData).where(eq(dos.id, doId)).returning();
+  const updated = await db
+    .update(dos)
+    .set(updateData)
+    .where(eq(dos.id, doId))
+    .returning();
 
   // Fetch tags for the updated DO
-  const tagRows = await db.select({
-    id: doTags.tag_id,
-    name: tags.name,
-    colour: tags.colour,
-  }).from(doTags)
+  const tagRows = await db
+    .select({
+      id: doTags.tag_id,
+      name: tags.name,
+      colour: tags.colour,
+    })
+    .from(doTags)
     .innerJoin(tags, eq(doTags.tag_id, tags.id))
     .where(eq(doTags.do_id, doId));
 
@@ -277,16 +360,23 @@ export const MOVE: APIRoute = async ({ params, request }) => {
   const newPosition = Number(body.position);
 
   // Check if task exists
-  const existing = await db.select({ id: dos.id }).from(dos).where(eq(dos.id, doId)).limit(1);
+  const existing = await db
+    .select({ id: dos.id })
+    .from(dos)
+    .where(eq(dos.id, doId))
+    .limit(1);
   if (existing.length === 0) {
     return Response.json({ error: "Task not found" }, { status: 404 });
   }
 
   // Update the task's position
-  await db.update(dos).set({
-    position: newPosition,
-    updated_at: new Date(),
-  }).where(eq(dos.id, doId));
+  await db
+    .update(dos)
+    .set({
+      position: newPosition,
+      updated_at: new Date(),
+    })
+    .where(eq(dos.id, doId));
 
   return Response.json({ success: true });
 };

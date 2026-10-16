@@ -11,6 +11,7 @@
     "deploy": "wrangler deploy",
     "preview": "astro preview",
     "astro": "astro",
+    "check": "astro check",
     "cf-typegen": "wrangler types",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:studio": "drizzle-kit studio",

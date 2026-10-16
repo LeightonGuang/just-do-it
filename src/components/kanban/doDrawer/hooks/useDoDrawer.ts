@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 
-import type { CreateDoData, DoDrawerProps, KanbanDo } from "../types";
+import type { RecurrenceInput } from '../types';
+import type { CreateDoData, DoDrawerProps, KanbanDo } from '../types';
 
 type DoWithTags = KanbanDo & {
   tags?: { id: number; name?: string; colour?: string }[];
+  recurrence?: RecurrenceInput | null;
 };
 
 const formatDateTimeForInput = (value: string | Date | null | undefined) => {
@@ -41,6 +43,11 @@ export const useDoDrawer = ({
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
+  const [recurrenceEnabled, setRecurrenceEnabled] = useState(false);
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([]);
+  const [recurrenceStartDate, setRecurrenceStartDate] = useState("");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
 
   const reset = () => {
     setTitle("");
@@ -50,6 +57,11 @@ export const useDoDrawer = ({
     setStartAt("");
     setEndAt("");
     setError("");
+    setRecurrenceEnabled(false);
+    setRecurrenceWeekdays([]);
+    setRecurrenceStartDate("");
+    setRecurrenceEndDate("");
+    setRecurrenceInterval(1);
   };
 
   useEffect(() => {
@@ -69,6 +81,12 @@ export const useDoDrawer = ({
         setSelectedTagId(data.task.tags?.[0]?.id ?? null);
         setStartAt(formatDateTimeForInput(data.task.start_at));
         setEndAt(formatDateTimeForInput(data.task.end_at));
+        const recurrence = data.task.recurrence;
+        setRecurrenceEnabled(Boolean(recurrence?.is_active));
+        setRecurrenceWeekdays(recurrence?.weekdays ?? []);
+        setRecurrenceStartDate(recurrence?.start_date ?? "");
+        setRecurrenceEndDate(recurrence?.end_date ?? "");
+        setRecurrenceInterval(recurrence?.interval_weeks ?? 1);
         setIsEditingMode(true);
         setError("");
       } catch (loadError) {
@@ -88,6 +106,15 @@ export const useDoDrawer = ({
     end_at: endAt || undefined,
     column_id: createColumnId,
     tags: selectedTagId ? [{ id: selectedTagId }] : [],
+    recurrence: recurrenceEnabled
+      ? {
+          weekdays: recurrenceWeekdays,
+          start_date: recurrenceStartDate,
+          end_date: recurrenceEndDate || null,
+          interval_weeks: recurrenceInterval,
+          is_active: true,
+        }
+      : null,
   });
 
   const handleSave = async (event: React.SyntheticEvent<HTMLFormElement>) => {
@@ -170,6 +197,16 @@ export const useDoDrawer = ({
     setStartAt,
     endAt,
     setEndAt,
+    recurrenceEnabled,
+    setRecurrenceEnabled,
+    recurrenceWeekdays,
+    setRecurrenceWeekdays,
+    recurrenceStartDate,
+    setRecurrenceStartDate,
+    recurrenceEndDate,
+    setRecurrenceEndDate,
+    recurrenceInterval,
+    setRecurrenceInterval,
     handleSave,
     handleDelete,
     handleClose,
